@@ -356,118 +356,163 @@
   // ── Step: Date & time ──────────────────────────────────────────────────────
 
   function StepDatetime(props) {
-    var { useState, useRef, useEffect } = React;
+    var { useState } = React;
     var category = props.category;
     var duration = bkTotalDuration(props.services);
+    var today    = bkTodayPacific();
 
-    var [selectedDate, setSelectedDate] = useState(null);
-    var [selectedTime, setSelectedTime] = useState(null);
-    var dateStripRef = useRef(null);
-
-    // Stop horizontal touch events from bubbling to the app-level page-swipe handler.
-    // Only intercept when the gesture is predominantly horizontal so vertical
-    // swipes (hero↔content) still work if the user starts on the date strip.
-    useEffect(function() {
-      var el = dateStripRef.current;
-      if (!el) return;
-      var startX = 0, startY = 0;
-      var onStart = function(e) {
-        startX = e.touches[0].clientX;
-        startY = e.touches[0].clientY;
-      };
-      var onMove = function(e) {
-        var dx = Math.abs(e.touches[0].clientX - startX);
-        var dy = Math.abs(e.touches[0].clientY - startY);
-        if (dx > dy) e.stopPropagation();
-      };
-      el.addEventListener('touchstart', onStart, { passive: true });
-      el.addEventListener('touchmove',  onMove,  { passive: true });
-      return function() {
-        el.removeEventListener('touchstart', onStart);
-        el.removeEventListener('touchmove',  onMove);
-      };
-    }, []);
-
-    var dates = bkDates(21);
-    var slots = selectedDate ? bkSlots(selectedDate, duration, category) : [];
-
-    var DAY   = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
-    var MONTH = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-    function pickDate(d) {
-      setSelectedDate(d);
-      setSelectedTime(null);
+    // First available day: today if open, otherwise the next open day
+    function firstAvailable() {
+      for (var i = 0; i <= 60; i++) {
+        var d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
+        if (BK_HOURS[d.getDay()]) return d;
+      }
+      return today;
     }
+
+    var defDate = firstAvailable();
+    var [selectedDate, setSelectedDate] = useState(defDate);
+    var [selectedTime, setSelectedTime] = useState(null);
+    var [viewMonth,    setViewMonth]    = useState(defDate.getMonth());
+    var [viewYear,     setViewYear]     = useState(defDate.getFullYear());
+
+    var slots   = bkSlots(selectedDate, duration, category);
+    var todayMs = today.getTime();
+    // Limit bookable window to 60 days out
+    var maxMs   = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 60).getTime();
+
+    var DAY_HDRS    = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    var MONTH_NAMES = ['January','February','March','April','May','June',
+                       'July','August','September','October','November','December'];
+
+    function pickDate(d) { setSelectedDate(d); setSelectedTime(null); }
+
+    function goPrev() {
+      if (viewMonth === 0) { setViewMonth(11); setViewYear(viewYear - 1); }
+      else setViewMonth(viewMonth - 1);
+    }
+    function goNext() {
+      if (viewMonth === 11) { setViewMonth(0); setViewYear(viewYear + 1); }
+      else setViewMonth(viewMonth + 1);
+    }
+
+    // Build 7-column grid: leading nulls, Date objects, trailing nulls to fill last row
+    function buildGrid() {
+      var firstDow    = new Date(viewYear, viewMonth, 1).getDay();
+      var daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+      var cells = [];
+      for (var p = 0; p < firstDow; p++) cells.push(null);
+      for (var n = 1; n <= daysInMonth; n++) cells.push(new Date(viewYear, viewMonth, n));
+      while (cells.length % 7 !== 0) cells.push(null);
+      return cells;
+    }
+
+    var cells   = buildGrid();
+    var canPrev = viewYear > today.getFullYear() ||
+                  (viewYear === today.getFullYear() && viewMonth > today.getMonth());
+
+    var navBtn = {
+      appearance: 'none', border: 'none', background: 'none',
+      padding: '4px 10px', lineHeight: 1, cursor: 'pointer',
+      fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 20,
+      color: 'var(--ink-soft)',
+    };
 
     return (
       <div>
         <BkBack onClick={props.onBack} />
         <BkEyebrow left="Choose a date" />
 
-        {/* Date strip */}
-        <div ref={dateStripRef} style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 10, marginBottom: 28, scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
-          {dates.map(function(d, i) {
-            var dow    = d.getDay();
-            var closed = !BK_HOURS[dow];
-            var isSel  = selectedDate && d.toDateString() === selectedDate.toDateString();
+        {/* Month navigator */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <button onClick={goPrev} disabled={!canPrev}
+            style={Object.assign({}, navBtn, { opacity: canPrev ? 1 : 0.2, cursor: canPrev ? 'pointer' : 'default' })}>
+            ←
+          </button>
+          <span style={{ fontFamily: 'var(--display)', fontWeight: 400, fontSize: 20, letterSpacing: '-0.01em' }}>
+            {MONTH_NAMES[viewMonth]} {viewYear}
+          </span>
+          <button onClick={goNext} style={navBtn}>→</button>
+        </div>
+
+        {/* Day-of-week headers */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: 4 }}>
+          {DAY_HDRS.map(function(h) {
+            return (
+              <span key={h} style={{ textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-faint)', padding: '2px 0 6px' }}>
+                {h}
+              </span>
+            );
+          })}
+        </div>
+
+        {/* Calendar grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, marginBottom: 28 }}>
+          {cells.map(function(d, i) {
+            if (!d) return <span key={i} />;
+            var dMs      = d.getTime();
+            var isPast   = dMs < todayMs;
+            var isFar    = dMs > maxMs;
+            var isClosed = !BK_HOURS[d.getDay()];
+            var isOff    = isPast || isFar || isClosed;
+            var isSel    = selectedDate && d.toDateString() === selectedDate.toDateString();
+            var isToday  = d.toDateString() === today.toDateString();
             return (
               <button key={i}
-                onClick={function() { if (!closed) pickDate(d); }}
-                disabled={closed}
+                onClick={function() { if (!isOff) pickDate(d); }}
+                disabled={isOff}
                 style={{
-                  flex: '0 0 auto', width: 52, padding: '10px 0',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
-                  background: isSel ? 'var(--ink)' : 'var(--bg)',
-                  color: isSel ? 'var(--bg)' : closed ? 'var(--ink-faint)' : 'var(--ink)',
-                  border: isSel ? '1px solid transparent' : '1px solid var(--rule)',
-                  borderRadius: 2, cursor: closed ? 'default' : 'pointer',
-                  opacity: closed ? 0.3 : 1,
-                  transition: 'background 0.15s ease, color 0.15s ease',
+                  padding: '10px 2px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: isSel ? 'var(--ink)' : 'transparent',
+                  color: isSel ? 'var(--bg)' : isOff ? 'var(--ink-faint)' : 'var(--ink)',
+                  border: isToday && !isSel ? '1px solid var(--ink-soft)' : '1px solid transparent',
+                  borderRadius: 2,
+                  opacity: isOff ? 0.28 : 1,
+                  cursor: isOff ? 'default' : 'pointer',
+                  fontFamily: 'var(--display)', fontSize: 18, fontWeight: 400, lineHeight: 1,
+                  transition: 'background 0.15s ease',
                 }}
               >
-                <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{DAY[dow]}</span>
-                <span style={{ fontFamily: 'var(--display)', fontSize: 22, fontWeight: 400, lineHeight: 1, marginTop: 2 }}>{d.getDate()}</span>
-                <span style={{ fontFamily: 'var(--mono)', fontSize: 9, letterSpacing: '0.06em', textTransform: 'uppercase', opacity: 0.65 }}>{MONTH[d.getMonth()]}</span>
+                {d.getDate()}
               </button>
             );
           })}
         </div>
 
-        {/* Time slots */}
-        {selectedDate && (<>
-          <BkEyebrow left={'Available · ' + bkFmtDate(selectedDate)} />
-          {slots.length === 0
-            ? <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--ink-faint)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 20 }}>No slots available.</p>
-            : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6, marginBottom: 28 }}>
-                {slots.map(function(slot, i) {
-                  var taken = bkSlotTaken(selectedDate, slot.h, slot.m);
-                  var isSel = selectedTime && selectedTime.h === slot.h && selectedTime.m === slot.m;
-                  return (
-                    <button key={i}
-                      onClick={function() { if (!taken) setSelectedTime(slot); }}
-                      disabled={taken}
-                      style={{
-                        padding: '11px 4px',
-                        background: isSel ? 'var(--ink)' : 'var(--bg)',
-                        color:      isSel ? 'var(--bg)' : taken ? 'var(--ink-faint)' : 'var(--ink)',
-                        border:     isSel ? '1px solid transparent' : '1px solid var(--rule)',
-                        borderRadius: 2, cursor: taken ? 'default' : 'pointer',
-                        fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: '0.04em',
-                        opacity: taken ? 0.28 : 1,
-                        transition: 'background 0.15s ease',
-                      }}
-                    >
-                      {bkFmtTime(slot.h, slot.m)}
-                    </button>
-                  );
-                })}
-              </div>
-            )
-          }
-        </>)}
+        {/* Time slots — pre-populated since a date is always selected */}
+        <BkEyebrow left={'Available · ' + bkFmtDate(selectedDate)} />
+        {slots.length === 0
+          ? <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--ink-faint)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 20 }}>No slots available.</p>
+          : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6, marginBottom: 28 }}>
+              {slots.map(function(slot, i) {
+                var taken = bkSlotTaken(selectedDate, slot.h, slot.m);
+                var isSel = selectedTime && selectedTime.h === slot.h && selectedTime.m === slot.m;
+                return (
+                  <button key={i}
+                    onClick={function() { if (!taken) setSelectedTime(slot); }}
+                    disabled={taken}
+                    style={{
+                      padding: '11px 4px',
+                      background: isSel ? 'var(--ink)' : 'var(--bg)',
+                      color:      isSel ? 'var(--bg)' : taken ? 'var(--ink-faint)' : 'var(--ink)',
+                      border:     isSel ? '1px solid transparent' : '1px solid var(--rule)',
+                      borderRadius: 2, cursor: taken ? 'default' : 'pointer',
+                      fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: '0.04em',
+                      opacity: taken ? 0.28 : 1,
+                      transition: 'background 0.15s ease',
+                    }}
+                  >
+                    {bkFmtTime(slot.h, slot.m)}
+                  </button>
+                );
+              })}
+            </div>
+          )
+        }
 
-        {selectedDate && selectedTime && (
+        {selectedTime && (
           <BkBtn onClick={function() { props.onNext(selectedDate, selectedTime); }}>
             Continue to your info
           </BkBtn>
