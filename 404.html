@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Page Not Found — Edit Studio</title>
+<meta name="robots" content="noindex, follow" />
+<link rel="icon" type="image/png" sizes="512x512" href="assets/favicon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;1,9..144,300&family=Inter+Tight:wght@300;400&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%;
+    background: #efeae0;
+    color: #141210;
+    font-family: "Inter Tight", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  }
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 40px 24px;
+    text-align: center;
+  }
+  .logo {
+    height: 48px;
+    margin-bottom: 48px;
+    opacity: 0.9;
+  }
+  .code {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(20,18,16,0.42);
+    margin-bottom: 20px;
+  }
+  h1 {
+    font-family: "Fraunces", "Times New Roman", serif;
+    font-weight: 300;
+    font-size: clamp(36px, 8vw, 56px);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-bottom: 20px;
+  }
+  h1 em {
+    font-style: italic;
+  }
+  p {
+    font-size: 15px;
+    line-height: 1.6;
+    color: rgba(20,18,16,0.6);
+    max-width: 34ch;
+    margin-bottom: 40px;
+  }
+  a.home {
+    display: inline-block;
+    padding: 13px 28px;
+    background: #141210;
+    color: #efeae0;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-decoration: none;
+    border-radius: 999px;
+    transition: opacity 0.2s ease;
+  }
+  a.home:hover { opacity: 0.8; }
+</style>
+</head>
+<body>
+  <img class="logo" src="assets/logo-black.png" alt="Edit Studio" />
+  <p class="code">404 — Page not found</p>
+  <h1>Wrong turn.<br /><em>Happens.</em></h1>
+  <p>This page doesn't exist — but the studio does. Head back home and find what you're looking for.</p>
+  <a class="home" href="/home">Back to Edit Studio</a>
+</body>
+</html>
