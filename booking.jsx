@@ -192,6 +192,7 @@
         style={{
           display: 'grid', gridTemplateColumns: '1fr auto', gap: 16, padding: '15px 0 15px ' + (active ? '10px' : '0'),
           background: active ? 'var(--paper)' : 'var(--bg)',
+          color: 'var(--ink)',
           border: 'none', borderLeft: active ? '2px solid var(--ink)' : '2px solid transparent',
           cursor: 'pointer', textAlign: 'left', alignItems: 'baseline', width: '100%',
           transition: 'background 0.15s ease',
@@ -224,7 +225,7 @@
           {cats.map(function(cat) {
             return (
               <button key={cat.id} onClick={function() { props.onSelect(cat.id); }}
-                style={{ display: 'grid', gridTemplateColumns: '28px 1fr auto', gap: 14, padding: '18px 4px 18px 0', background: 'var(--bg)', border: 'none', cursor: 'pointer', textAlign: 'left', alignItems: 'center', transition: 'background 0.15s ease' }}
+                style={{ display: 'grid', gridTemplateColumns: '28px 1fr auto', gap: 14, padding: '18px 4px 18px 0', background: 'var(--bg)', color: 'var(--ink)', border: 'none', cursor: 'pointer', textAlign: 'left', alignItems: 'center', transition: 'background 0.15s ease' }}
                 onMouseEnter={function(e) { e.currentTarget.style.background = 'var(--paper)'; }}
                 onMouseLeave={function(e) { e.currentTarget.style.background = 'var(--bg)'; }}
               >
@@ -245,10 +246,20 @@
   // ── Step: Service ──────────────────────────────────────────────────────────
 
   function StepService(props) {
-    var { useState } = React;
+    var { useState, useRef, useEffect } = React;
     var category = props.category;
     var [selected, setSelected]     = useState([]);
     var [addons,   setAddons]       = useState([]);
+    var ctaRef = useRef(null);
+
+    useEffect(function() {
+      if (selected.length > 0 && ctaRef.current) {
+        var el = ctaRef.current;
+        setTimeout(function() {
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 60);
+      }
+    }, [selected.length]);
 
     var isMulti = category === 'wax';
 
@@ -328,7 +339,7 @@
 
         {/* Footer / totals / CTA */}
         {selected.length > 0 && (
-          <div style={{ marginTop: 24 }}>
+          <div ref={ctaRef} style={{ marginTop: 24 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '12px 0', borderTop: '1px solid var(--rule)', marginBottom: 12 }}>
               <span style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-faint)' }}>
                 {all.length} service{all.length !== 1 ? 's' : ''} · {dur} min
@@ -345,12 +356,37 @@
   // ── Step: Date & time ──────────────────────────────────────────────────────
 
   function StepDatetime(props) {
-    var { useState } = React;
+    var { useState, useRef, useEffect } = React;
     var category = props.category;
     var duration = bkTotalDuration(props.services);
 
     var [selectedDate, setSelectedDate] = useState(null);
     var [selectedTime, setSelectedTime] = useState(null);
+    var dateStripRef = useRef(null);
+
+    // Stop horizontal touch events from bubbling to the app-level page-swipe handler.
+    // Only intercept when the gesture is predominantly horizontal so vertical
+    // swipes (hero↔content) still work if the user starts on the date strip.
+    useEffect(function() {
+      var el = dateStripRef.current;
+      if (!el) return;
+      var startX = 0, startY = 0;
+      var onStart = function(e) {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+      };
+      var onMove = function(e) {
+        var dx = Math.abs(e.touches[0].clientX - startX);
+        var dy = Math.abs(e.touches[0].clientY - startY);
+        if (dx > dy) e.stopPropagation();
+      };
+      el.addEventListener('touchstart', onStart, { passive: true });
+      el.addEventListener('touchmove',  onMove,  { passive: true });
+      return function() {
+        el.removeEventListener('touchstart', onStart);
+        el.removeEventListener('touchmove',  onMove);
+      };
+    }, []);
 
     var dates = bkDates(21);
     var slots = selectedDate ? bkSlots(selectedDate, duration, category) : [];
@@ -369,7 +405,7 @@
         <BkEyebrow left="Choose a date" />
 
         {/* Date strip */}
-        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 10, marginBottom: 28, scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
+        <div ref={dateStripRef} style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 10, marginBottom: 28, scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
           {dates.map(function(d, i) {
             var dow    = d.getDay();
             var closed = !BK_HOURS[dow];
