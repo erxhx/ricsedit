@@ -1,0 +1,17 @@
+{
+  "name": "Edit Studio",
+  "short_name": "Edit Studio",
+  "description": "Barbering, sunless tanning and waxing in Oak Bay, Victoria BC.",
+  "start_url": "/home",
+  "display": "standalone",
+  "background_color": "#efeae0",
+  "theme_color": "#efeae0",
+  "icons": [
+    {
+      "src": "assets/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
