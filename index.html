@@ -3,6 +3,13 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<!-- Base href: fixes relative asset paths (images, CSS) after pushState changes the URL.
+     On GitHub Pages the app lives at /ricsedit/; on editstudio.space it lives at the root.
+     Without this, panels rendered after the first navigation resolve assets/ against the
+     pushState URL (/home, /barbering, …) instead of the repo root, breaking images. -->
+<script>
+  (function(){var b=document.createElement('base');b.href=location.hostname.indexOf('github.io')!==-1?'/ricsedit/':'/';document.head.appendChild(b);})();
+</script>
 <title>Edit Studio — Barber · Wax · Tan</title>
 
 <!-- Google Analytics 4 + Google Ads -->
