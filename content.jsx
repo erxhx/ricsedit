@@ -365,9 +365,6 @@ function VisitContent() {
         <div className="row"><div>BEFORE/AFTER HOURS</div><div style={{ textAlign: "right" }}>By request</div></div>
       </div>
 
-      <div style={{ height: 32 }} />
-      <window.BookingEmbed />
-
       <div className="rule" />
       <Eyebrow left="FAQ" right="Read me first" />
       <div className="faq">
@@ -406,6 +403,9 @@ function VisitContent() {
         </p>
         <div className="row"><span>Visit in person</span><span>→</span></div>
       </div>
+
+      <div style={{ height: 32 }} />
+      <window.BookingEmbed />
 
       <div className="rule" />
       <p style={{ fontSize: 12, color: 'var(--ink-faint)', textAlign: 'center', lineHeight: 1.6 }}>

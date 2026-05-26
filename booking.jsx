@@ -803,38 +803,6 @@
       }, 80);
     }, [step]);
 
-    // Stop vertical touch events from reaching the strip's panel-swipe handler
-    // while .cpanel still has room to scroll in that direction. This lets the
-    // user scroll through and past the embed to reach content below it (e.g.
-    // the FAQ section on the Visit panel). Panel transitions still work once
-    // the inner scroller reaches its edge.
-    useEffect(function() {
-      var el = embedRef.current;
-      if (!el) return;
-      var startX = 0, startY = 0;
-      var onStart = function(e) {
-        startX = e.touches[0].clientX;
-        startY = e.touches[0].clientY;
-      };
-      var onMove = function(e) {
-        var dx = Math.abs(e.touches[0].clientX - startX);
-        var dy = e.touches[0].clientY - startY;
-        if (Math.abs(dy) <= dx) return; // horizontal — pass through
-        var scroller = el.closest('.cpanel');
-        if (!scroller) return;
-        var atTop    = scroller.scrollTop <= 0;
-        var atBottom = scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 1;
-        if (dy > 0 && !atTop)    { e.stopPropagation(); return; }
-        if (dy < 0 && !atBottom) { e.stopPropagation(); return; }
-      };
-      el.addEventListener('touchstart', onStart, { passive: true });
-      el.addEventListener('touchmove',  onMove,  { passive: true });
-      return function() {
-        el.removeEventListener('touchstart', onStart);
-        el.removeEventListener('touchmove',  onMove);
-      };
-    }, []);
-
     return (
       <div ref={embedRef} className="booking-embed">
         {/* Header bar — shown on all steps except initial category selection and done */}
