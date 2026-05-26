@@ -256,7 +256,7 @@
       if (selected.length > 0 && ctaRef.current) {
         var el = ctaRef.current;
         setTimeout(function() {
-          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'end' });
         }, 60);
       }
     }, [selected.length]);
@@ -356,7 +356,7 @@
   // ── Step: Date & time ──────────────────────────────────────────────────────
 
   function StepDatetime(props) {
-    var { useState } = React;
+    var { useState, useRef, useEffect } = React;
     var category = props.category;
     var duration = bkTotalDuration(props.services);
     var today    = bkTodayPacific();
@@ -380,6 +380,17 @@
     var todayMs = today.getTime();
     // Limit bookable window to 60 days out
     var maxMs   = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 60).getTime();
+
+    // Scroll CTA into view when a time is selected
+    var ctaRef  = useRef(null);
+    var timeKey = selectedTime ? selectedTime.h * 100 + selectedTime.m : null;
+    useEffect(function() {
+      if (!timeKey || !ctaRef.current) return;
+      var el = ctaRef.current;
+      setTimeout(function() {
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }, 60);
+    }, [timeKey]);
 
     var DAY_HDRS    = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     var MONTH_NAMES = ['January','February','March','April','May','June',
@@ -513,9 +524,11 @@
         }
 
         {selectedTime && (
-          <BkBtn onClick={function() { props.onNext(selectedDate, selectedTime); }}>
-            Continue to your info
-          </BkBtn>
+          <div ref={ctaRef}>
+            <BkBtn onClick={function() { props.onNext(selectedDate, selectedTime); }}>
+              Continue to your info
+            </BkBtn>
+          </div>
         )}
       </div>
     );
@@ -725,7 +738,7 @@
   // ── Main component ─────────────────────────────────────────────────────────
 
   function BookingEmbed(props) {
-    var { useState } = React;
+    var { useState, useRef, useEffect } = React;
     var categoryProp = props.category || null;
 
     var [step,       setStep]       = useState(categoryProp ? 'service' : 'category');
@@ -778,8 +791,52 @@
       setError(null);
     }
 
+    var embedRef = useRef(null);
+
+    // Scroll the embed's top into view on every step change so the new step
+    // content always starts visible rather than appearing below the fold.
+    useEffect(function() {
+      var el = embedRef.current;
+      if (!el) return;
+      setTimeout(function() {
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 80);
+    }, [step]);
+
+    // Stop vertical touch events from reaching the strip's panel-swipe handler
+    // while .cpanel still has room to scroll in that direction. This lets the
+    // user scroll through and past the embed to reach content below it (e.g.
+    // the FAQ section on the Visit panel). Panel transitions still work once
+    // the inner scroller reaches its edge.
+    useEffect(function() {
+      var el = embedRef.current;
+      if (!el) return;
+      var startX = 0, startY = 0;
+      var onStart = function(e) {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+      };
+      var onMove = function(e) {
+        var dx = Math.abs(e.touches[0].clientX - startX);
+        var dy = e.touches[0].clientY - startY;
+        if (Math.abs(dy) <= dx) return; // horizontal — pass through
+        var scroller = el.closest('.cpanel');
+        if (!scroller) return;
+        var atTop    = scroller.scrollTop <= 0;
+        var atBottom = scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 1;
+        if (dy > 0 && !atTop)    { e.stopPropagation(); return; }
+        if (dy < 0 && !atBottom) { e.stopPropagation(); return; }
+      };
+      el.addEventListener('touchstart', onStart, { passive: true });
+      el.addEventListener('touchmove',  onMove,  { passive: true });
+      return function() {
+        el.removeEventListener('touchstart', onStart);
+        el.removeEventListener('touchmove',  onMove);
+      };
+    }, []);
+
     return (
-      <div className="booking-embed">
+      <div ref={embedRef} className="booking-embed">
         {/* Header bar — shown on all steps except initial category selection and done */}
         {step !== 'category' && step !== 'done' && (
           <div className="booking-head">
