@@ -254,9 +254,19 @@
 
     useEffect(function() {
       if (selected.length > 0 && ctaRef.current) {
-        var el = ctaRef.current;
+        // Scroll the whole booking-embed to the top of the cpanel (same technique
+        // as the goto-booking FAB) so the full service list + CTA is in view.
+        // block:'end' on ctaRef was pushing the button under the chrome-bot overlay.
+        var embed = ctaRef.current.closest('.booking-embed');
+        var scroller = embed && embed.closest('.cpanel');
         setTimeout(function() {
-          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'end' });
+          if (embed && scroller) {
+            var top = embed.getBoundingClientRect().top
+                      - scroller.getBoundingClientRect().top
+                      + scroller.scrollTop
+                      - 24;
+            scroller.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+          }
         }, 60);
       }
     }, [selected.length]);
@@ -386,9 +396,16 @@
     var timeKey = selectedTime ? selectedTime.h * 100 + selectedTime.m : null;
     useEffect(function() {
       if (!timeKey || !ctaRef.current) return;
-      var el = ctaRef.current;
+      var embed = ctaRef.current.closest('.booking-embed');
+      var scroller = embed && embed.closest('.cpanel');
       setTimeout(function() {
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        if (embed && scroller) {
+          var top = embed.getBoundingClientRect().top
+                    - scroller.getBoundingClientRect().top
+                    + scroller.scrollTop
+                    - 24;
+          scroller.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+        }
       }, 60);
     }, [timeKey]);
 
