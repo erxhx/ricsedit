@@ -791,11 +791,14 @@
       setError(null);
     }
 
-    var embedRef = useRef(null);
+    var embedRef   = useRef(null);
+    var mountedRef = useRef(false);
 
-    // Scroll the embed's top into view on every step change so the new step
-    // content always starts visible rather than appearing below the fold.
+    // Scroll the embed's top into view when the step changes (not on initial mount).
+    // Skipping mount prevents the 3 simultaneously-rendered panels from all
+    // auto-scrolling their cpanels to the embed before the user has done anything.
     useEffect(function() {
+      if (!mountedRef.current) { mountedRef.current = true; return; }
       var el = embedRef.current;
       if (!el) return;
       setTimeout(function() {
