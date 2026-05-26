@@ -419,11 +419,30 @@ function ServiceColumn({ service, isActive, hProgress, animSpeed, density, headl
     const el = stripRef.current;
     if (!el) return;
 
-    const start = (y) => {dragRef.current = { y, dy: 0, dragging: true, t: performance.now() };el.classList.add('dragging');};
+    // Helper: get the cpanel scroller for the current vertical panel (if any).
+    const getCpanel = () => {
+      const activePanel = el.children[vIdx];
+      return activePanel ? activePanel.querySelector('.cpanel') : null;
+    };
+
+    const start = (y) => {
+      // Snapshot the inner-panel scroll position at the moment the gesture starts.
+      // Used by move/end to distinguish "scroll inside content" from "switch panel".
+      const scroller = getCpanel();
+      dragRef.current = {
+        y, dy: 0, dragging: true, t: performance.now(),
+        startScrollTop: scroller ? scroller.scrollTop : 0,
+      };
+      el.classList.add('dragging');
+    };
     const move = (y) => {
       if (!dragRef.current.dragging) return;
       const dy = y - dragRef.current.y;
       dragRef.current.dy = dy;
+      // Swiping downward (dy > 0) while the content panel wasn't already at its
+      // top means the user is scrolling inside the content, not switching panels.
+      // Skip the strip translate so native scroll can work unobstructed.
+      if (dy > 0 && vIdx > 0 && dragRef.current.startScrollTop > 2) return;
       const offset = -vIdx * el.clientHeight + dy;
       el.style.transform = `translateY(${offset}px)`;
     };
@@ -436,8 +455,13 @@ function ServiceColumn({ service, isActive, hProgress, animSpeed, density, headl
       const v = dy / dt; // px/ms
       const threshold = el.clientHeight * 0.18;
       let next = vIdx;
-      if ((dy < -threshold || v < -0.45) && vIdx < panels.length - 1) next = vIdx + 1;else
-      if ((dy > threshold || v > 0.45) && vIdx > 0) next = vIdx - 1;
+      if ((dy < -threshold || v < -0.45) && vIdx < panels.length - 1) next = vIdx + 1;
+      else if ((dy > threshold || v > 0.45) && vIdx > 0) {
+        // Mirror the wheel-handler guard: only switch back to the hero if the
+        // content was already at the top when the gesture began. A fast upward
+        // scroll inside the content has high velocity but non-zero startScrollTop.
+        if (dragRef.current.startScrollTop <= 2) next = vIdx - 1;
+      }
       setVIdx(next);
       el.style.transform = `translateY(${-next * el.clientHeight}px)`;
     };
