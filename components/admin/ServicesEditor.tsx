@@ -1,28 +1,61 @@
 'use client';
 import { useState } from 'react';
 import type { ServicesData } from '@/lib/services-store';
+import type { AddTarget } from '@/lib/services-store';
 import type { Service, ServiceGroup } from '@/lib/services';
 
-type EditState = {
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+type SheetState = {
+  /** Existing service id when editing, empty string when adding new. */
   id: string;
   name: string;
   description: string;
   price: string;
   durationMinutes: string;
   isAddon: boolean;
+  requiresWaiver: boolean;
+  addTarget: AddTarget | null;
+  /** Label shown at top of sheet ("Barbering", "Sunless Tan", …) */
+  sectionLabel: string;
+  confirmDelete: boolean;
 } | null;
 
-function updateServiceInData(d: ServicesData, updated: Service): ServicesData {
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function addToData(d: ServicesData, svc: Service, target: AddTarget): ServicesData {
+  if (target.kind === 'barber')   return { ...d, barberServices: [...d.barberServices, svc] };
+  if (target.kind === 'tan')      return { ...d, tanServices:    [...d.tanServices, svc] };
+  if (target.kind === 'tanAddon') return { ...d, tanAddons:      [...d.tanAddons, svc] };
   return {
-    barberServices:  d.barberServices.map((s) => s.id === updated.id ? updated : s),
-    tanServices:     d.tanServices.map((s) => s.id === updated.id ? updated : s),
-    tanAddons:       d.tanAddons.map((s) => s.id === updated.id ? updated : s),
-    waxGroups:       d.waxGroups.map((g) => ({
-      ...g,
-      services: g.services.map((s) => s.id === updated.id ? updated : s),
-    })),
+    ...d,
+    waxGroups: d.waxGroups.map((g) =>
+      g.name === target.groupName ? { ...g, services: [...g.services, svc] } : g
+    ),
   };
 }
+
+function updateInData(d: ServicesData, svc: Service): ServicesData {
+  const upd = (arr: Service[]) => arr.map((s) => s.id === svc.id ? svc : s);
+  return {
+    barberServices: upd(d.barberServices),
+    tanServices:    upd(d.tanServices),
+    tanAddons:      upd(d.tanAddons),
+    waxGroups:      d.waxGroups.map((g) => ({ ...g, services: upd(g.services) })),
+  };
+}
+
+function removeFromData(d: ServicesData, id: string): ServicesData {
+  const rm = (arr: Service[]) => arr.filter((s) => s.id !== id);
+  return {
+    barberServices: rm(d.barberServices),
+    tanServices:    rm(d.tanServices),
+    tanAddons:      rm(d.tanAddons),
+    waxGroups:      d.waxGroups.map((g) => ({ ...g, services: rm(g.services) })),
+  };
+}
+
+// ── Styles ────────────────────────────────────────────────────────────────────
 
 const inputStyle: React.CSSProperties = {
   width: '100%', boxSizing: 'border-box',
@@ -32,43 +65,95 @@ const inputStyle: React.CSSProperties = {
   outline: 'none',
 };
 
-export default function ServicesEditor({ initial }: { initial: ServicesData }) {
-  const [data, setData] = useState(initial);
-  const [editing, setEditing] = useState<EditState>(null);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
+// ── Main component ────────────────────────────────────────────────────────────
 
+export default function ServicesEditor({ initial }: { initial: ServicesData }) {
+  const [data, setData]     = useState(initial);
+  const [sheet, setSheet]   = useState<SheetState>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError]   = useState('');
+
+  // Open sheet to edit an existing service
   function openEdit(svc: Service) {
-    setEditing({
-      id: svc.id,
-      name: svc.name,
-      description: svc.description ?? '',
-      price: String(svc.price),
+    setSheet({
+      id:              svc.id,
+      name:            svc.name,
+      description:     svc.description ?? '',
+      price:           String(svc.price),
       durationMinutes: String(svc.durationMinutes),
-      isAddon: svc.isAddon ?? false,
+      isAddon:         svc.isAddon ?? false,
+      requiresWaiver:  svc.requiresWaiver,
+      addTarget:       null,
+      sectionLabel:    '',
+      confirmDelete:   false,
     });
     setError('');
   }
 
-  async function saveEdit() {
-    if (!editing) return;
+  // Open sheet to add a new service to a given section
+  function openAdd(target: AddTarget, sectionLabel: string) {
+    const isWax    = target.kind === 'wax';
+    const isAddon  = target.kind === 'tanAddon';
+    setSheet({
+      id:              '',
+      name:            '',
+      description:     '',
+      price:           '',
+      durationMinutes: isAddon ? '0' : '30',
+      isAddon,
+      requiresWaiver:  isWax,
+      addTarget:       target,
+      sectionLabel,
+      confirmDelete:   false,
+    });
+    setError('');
+  }
+
+  async function handleSave() {
+    if (!sheet) return;
     setSaving(true);
     setError('');
+
+    const price    = Number(sheet.price);
+    const duration = Number(sheet.durationMinutes);
+    if (!sheet.name.trim())    { setError('Name is required.'); setSaving(false); return; }
+    if (isNaN(price) || price < 0) { setError('Enter a valid price.'); setSaving(false); return; }
+
     try {
-      const res = await fetch(`/api/admin/services/${editing.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: editing.name.trim(),
-          description: editing.description.trim(),
-          price: Number(editing.price),
-          durationMinutes: Number(editing.durationMinutes),
-        }),
-      });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error ?? 'Failed to save');
-      setData((d) => updateServiceInData(d, body as Service));
-      setEditing(null);
+      if (sheet.id) {
+        // ── Edit existing ──
+        const res = await fetch(`/api/admin/services/${sheet.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: sheet.name.trim(),
+            description: sheet.description.trim(),
+            price,
+            durationMinutes: duration,
+          }),
+        });
+        const body = await res.json();
+        if (!res.ok) throw new Error(body.error ?? 'Failed to save');
+        setData((d) => updateInData(d, body as Service));
+      } else {
+        // ── Add new ──
+        const res = await fetch('/api/admin/services', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name:            sheet.name.trim(),
+            description:     sheet.description.trim(),
+            price,
+            durationMinutes: duration,
+            requiresWaiver:  sheet.requiresWaiver,
+            addTarget:       sheet.addTarget,
+          }),
+        });
+        const body = await res.json();
+        if (!res.ok) throw new Error(body.error ?? 'Failed to add');
+        setData((d) => addToData(d, body as Service, sheet.addTarget!));
+      }
+      setSheet(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong');
     } finally {
@@ -76,35 +161,57 @@ export default function ServicesEditor({ initial }: { initial: ServicesData }) {
     }
   }
 
+  async function handleDelete() {
+    if (!sheet?.id) return;
+    setSaving(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/admin/services/${sheet.id}`, { method: 'DELETE' });
+      if (!res.ok) { const b = await res.json(); throw new Error(b.error ?? 'Failed to delete'); }
+      setData((d) => removeFromData(d, sheet.id));
+      setSheet(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Something went wrong');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const isNew = sheet && !sheet.id;
+
   return (
     <div style={{ paddingBottom: 48 }}>
-      {/* Barbering */}
+      {/* ── Barbering ── */}
       <SectionHeader label="Barbering" staff="Eric" />
       <ServiceList services={data.barberServices} onEdit={openEdit} />
+      <AddRow onClick={() => openAdd({ kind: 'barber' }, 'Barbering')} />
 
-      {/* Sunless Tan */}
+      {/* ── Sunless Tan ── */}
       <SectionHeader label="Sunless Tan" staff="Livi" />
       <ServiceList services={data.tanServices} onEdit={openEdit} />
+      <AddRow onClick={() => openAdd({ kind: 'tan' }, 'Sunless Tan')} />
       <GroupLabel label="Add-ons" />
       <ServiceList services={data.tanAddons} onEdit={openEdit} />
+      <AddRow onClick={() => openAdd({ kind: 'tanAddon' }, 'Tan Add-ons')} />
 
-      {/* Waxing */}
+      {/* ── Waxing ── */}
       <SectionHeader label="Waxing" staff="Livi" />
       {data.waxGroups.map((group) => (
         <div key={group.name}>
           <GroupLabel label={group.name} note={group.note} />
           <ServiceList services={group.services} onEdit={openEdit} />
+          <AddRow onClick={() => openAdd({ kind: 'wax', groupName: group.name }, `Waxing — ${group.name}`)} />
         </div>
       ))}
 
-      {/* Edit sheet */}
-      {editing && (
+      {/* ── Bottom sheet ── */}
+      {sheet && (
         <div
           style={{
             position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
             display: 'flex', alignItems: 'flex-end', zIndex: 100,
           }}
-          onClick={() => setEditing(null)}
+          onClick={() => { if (!saving) setSheet(null); }}
         >
           <div
             onClick={(e) => e.stopPropagation()}
@@ -112,83 +219,91 @@ export default function ServicesEditor({ initial }: { initial: ServicesData }) {
               width: '100%', background: 'var(--admin-sheet)',
               borderRadius: '16px 16px 0 0',
               padding: '24px 20px 48px',
-              maxHeight: '85vh', overflowY: 'auto',
+              maxHeight: '90vh', overflowY: 'auto',
             }}
           >
-            <div style={{
-              fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 500,
-              color: 'var(--admin-text)', marginBottom: 20,
-            }}>
-              Edit service
+            {/* Title */}
+            <div style={{ marginBottom: 4, fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 500, color: 'var(--admin-text)' }}>
+              {isNew ? 'Add service' : 'Edit service'}
             </div>
+            {isNew && sheet.sectionLabel && (
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)', marginBottom: 20 }}>
+                {sheet.sectionLabel}
+              </div>
+            )}
+            {!isNew && <div style={{ marginBottom: 20 }} />}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {/* Name */}
               <div>
                 <Label>Name</Label>
                 <input
                   type="text"
-                  value={editing.name}
-                  onChange={(e) => setEditing((ed) => ed && ({ ...ed, name: e.target.value }))}
+                  value={sheet.name}
+                  autoFocus={!!isNew}
+                  onChange={(e) => setSheet((s) => s && ({ ...s, name: e.target.value, confirmDelete: false }))}
                   style={inputStyle}
                 />
               </div>
 
-              {/* Description */}
               <div>
                 <Label>Description</Label>
                 <textarea
-                  value={editing.description}
-                  onChange={(e) => setEditing((ed) => ed && ({ ...ed, description: e.target.value }))}
+                  value={sheet.description}
+                  onChange={(e) => setSheet((s) => s && ({ ...s, description: e.target.value }))}
                   placeholder="Short description shown to clients…"
                   rows={3}
                   style={{ ...inputStyle, resize: 'none' }}
                 />
               </div>
 
-              {/* Price + Duration side by side */}
               <div style={{ display: 'flex', gap: 10 }}>
                 <div style={{ flex: 1 }}>
                   <Label>Price ($)</Label>
                   <input
-                    type="number"
-                    inputMode="decimal"
-                    value={editing.price}
-                    min={0}
-                    step={1}
-                    onChange={(e) => setEditing((ed) => ed && ({ ...ed, price: e.target.value }))}
+                    type="number" inputMode="decimal"
+                    value={sheet.price} min={0} step={1}
+                    onChange={(e) => setSheet((s) => s && ({ ...s, price: e.target.value }))}
                     style={inputStyle}
                   />
                 </div>
-                {(!editing.isAddon || Number(editing.durationMinutes) > 0) && (
+                {(!sheet.isAddon || Number(sheet.durationMinutes) > 0 || isNew) && (
                   <div style={{ flex: 1 }}>
                     <Label>Duration (min)</Label>
                     <input
-                      type="number"
-                      inputMode="numeric"
-                      value={editing.durationMinutes}
-                      min={0}
-                      step={5}
-                      onChange={(e) => setEditing((ed) => ed && ({ ...ed, durationMinutes: e.target.value }))}
+                      type="number" inputMode="numeric"
+                      value={sheet.durationMinutes} min={0} step={5}
+                      onChange={(e) => setSheet((s) => s && ({ ...s, durationMinutes: e.target.value }))}
                       style={inputStyle}
                     />
                   </div>
                 )}
               </div>
+
+              {/* Requires waiver — only shown when adding a new service */}
+              {isNew && (
+                <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={sheet.requiresWaiver}
+                    onChange={(e) => setSheet((s) => s && ({ ...s, requiresWaiver: e.target.checked }))}
+                    style={{ width: 16, height: 16, cursor: 'pointer' }}
+                  />
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)' }}>
+                    Requires intake form
+                  </span>
+                </label>
+              )}
             </div>
 
             {error && (
-              <div style={{
-                marginTop: 14, fontFamily: 'var(--font-body)',
-                fontSize: 13, color: 'var(--admin-error)',
-              }}>
+              <div style={{ marginTop: 14, fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-error)' }}>
                 {error}
               </div>
             )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 24 }}>
               <button
-                onClick={saveEdit}
+                onClick={handleSave}
                 disabled={saving}
                 style={{
                   width: '100%', padding: 14, borderRadius: 10, border: 'none',
@@ -196,21 +311,57 @@ export default function ServicesEditor({ initial }: { initial: ServicesData }) {
                   fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 500,
                   color: saving ? 'var(--admin-muted)' : 'var(--admin-btn-primary-fg)',
                   cursor: saving ? 'default' : 'pointer',
+                  WebkitTapHighlightColor: 'transparent',
                 }}
               >
-                {saving ? 'Saving…' : 'Save changes'}
+                {saving ? 'Saving…' : isNew ? 'Add service' : 'Save changes'}
               </button>
+
               <button
-                onClick={() => setEditing(null)}
+                onClick={() => setSheet(null)}
+                disabled={saving}
                 style={{
                   width: '100%', padding: 14, borderRadius: 10,
                   border: '1px solid var(--admin-border)', background: 'none',
                   fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text2)',
                   cursor: 'pointer',
+                  WebkitTapHighlightColor: 'transparent',
                 }}
               >
                 Cancel
               </button>
+
+              {/* Delete — only for existing services */}
+              {!isNew && (
+                sheet.confirmDelete ? (
+                  <button
+                    onClick={handleDelete}
+                    disabled={saving}
+                    style={{
+                      width: '100%', padding: 14, borderRadius: 10, border: 'none',
+                      background: 'var(--admin-danger, #c0392b)',
+                      fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 500,
+                      color: '#fff', cursor: saving ? 'default' : 'pointer',
+                      WebkitTapHighlightColor: 'transparent',
+                    }}
+                  >
+                    {saving ? 'Deleting…' : 'Confirm delete'}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setSheet((s) => s && ({ ...s, confirmDelete: true }))}
+                    style={{
+                      width: '100%', padding: 12, background: 'none', border: 'none',
+                      fontFamily: 'var(--font-body)', fontSize: 13,
+                      color: 'var(--admin-danger, #c0392b)',
+                      cursor: 'pointer',
+                      WebkitTapHighlightColor: 'transparent',
+                    }}
+                  >
+                    Delete service
+                  </button>
+                )
+              )}
             </div>
           </div>
         </div>
@@ -219,13 +370,12 @@ export default function ServicesEditor({ initial }: { initial: ServicesData }) {
   );
 }
 
+// ── Sub-components ────────────────────────────────────────────────────────────
+
 function SectionHeader({ label, staff }: { label: string; staff: string }) {
   return (
     <div style={{ padding: '28px 20px 10px' }}>
-      <div style={{
-        fontFamily: 'var(--font-body)', fontSize: 10, letterSpacing: '0.12em',
-        textTransform: 'uppercase', color: 'var(--admin-muted)', marginBottom: 2,
-      }}>
+      <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--admin-muted)', marginBottom: 2 }}>
         {label}
       </div>
       <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)' }}>
@@ -237,14 +387,8 @@ function SectionHeader({ label, staff }: { label: string; staff: string }) {
 
 function GroupLabel({ label, note }: { label: string; note?: string }) {
   return (
-    <div style={{
-      padding: '12px 20px 6px',
-      display: 'flex', alignItems: 'baseline', gap: 8,
-    }}>
-      <span style={{
-        fontFamily: 'var(--font-body)', fontSize: 11,
-        letterSpacing: '0.08em', color: 'var(--admin-muted)',
-      }}>
+    <div style={{ padding: '12px 20px 6px', display: 'flex', alignItems: 'baseline', gap: 8 }}>
+      <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, letterSpacing: '0.08em', color: 'var(--admin-muted)' }}>
         {label}
       </span>
       {note && (
@@ -257,12 +401,9 @@ function GroupLabel({ label, note }: { label: string; note?: string }) {
 }
 
 function ServiceList({ services, onEdit }: { services: Service[]; onEdit: (s: Service) => void }) {
+  if (services.length === 0) return null;
   return (
-    <div style={{
-      margin: '0 20px',
-      background: 'var(--admin-card)', border: '1px solid var(--admin-border)',
-      borderRadius: 10, overflow: 'hidden',
-    }}>
+    <div style={{ margin: '0 20px', background: 'var(--admin-card)', border: '1px solid var(--admin-border)', borderRadius: 10, overflow: 'hidden' }}>
       {services.map((svc, i) => (
         <button
           key={svc.id}
@@ -270,27 +411,18 @@ function ServiceList({ services, onEdit }: { services: Service[]; onEdit: (s: Se
           style={{
             width: '100%', textAlign: 'left',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '13px 16px',
-            background: 'none', border: 'none',
+            padding: '13px 16px', background: 'none', border: 'none',
             borderBottomWidth: i < services.length - 1 ? 1 : 0,
-            borderBottomStyle: 'solid',
-            borderBottomColor: 'var(--admin-border-sub)',
-            cursor: 'pointer',
-            WebkitTapHighlightColor: 'transparent',
+            borderBottomStyle: 'solid', borderBottomColor: 'var(--admin-border-sub)',
+            cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
           }}
         >
           <div style={{ flex: 1, minWidth: 0, marginRight: 12 }}>
-            <div style={{
-              fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)',
-              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-            }}>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {svc.name}
             </div>
             {svc.description && (
-              <div style={{
-                fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-muted)',
-                marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-              }}>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-muted)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {svc.description}
               </div>
             )}
@@ -314,13 +446,29 @@ function ServiceList({ services, onEdit }: { services: Service[]; onEdit: (s: Se
   );
 }
 
+function AddRow({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        margin: '6px 20px 0',
+        padding: '10px 4px',
+        background: 'none', border: 'none',
+        fontFamily: 'var(--font-body)', fontSize: 13,
+        color: 'var(--admin-muted)',
+        cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
+      }}
+    >
+      <span style={{ fontSize: 18, lineHeight: 1, marginTop: -1 }}>+</span>
+      Add service
+    </button>
+  );
+}
+
 function Label({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{
-      fontFamily: 'var(--font-body)', fontSize: 11,
-      letterSpacing: '0.06em', color: 'var(--admin-text3)',
-      marginBottom: 6, textTransform: 'uppercase',
-    }}>
+    <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, letterSpacing: '0.06em', color: 'var(--admin-text3)', marginBottom: 6, textTransform: 'uppercase' }}>
       {children}
     </div>
   );

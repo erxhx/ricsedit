@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { verifySession, SESSION_COOKIE } from '@/lib/admin-auth';
-import { updateService, saveServicesStore } from '@/lib/services-store';
+import { updateService, removeServiceFromStore, saveServicesStore } from '@/lib/services-store';
 import type { Service } from '@/lib/services';
 
 export async function PATCH(
@@ -32,4 +32,21 @@ export async function PATCH(
   saveServicesStore().catch(() => {});
 
   return Response.json(updated);
+}
+
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE)?.value;
+  const session = token ? await verifySession(token) : null;
+  if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const { id } = await params;
+  const removed = removeServiceFromStore(id);
+  if (!removed) return Response.json({ error: 'Service not found' }, { status: 404 });
+
+  saveServicesStore().catch(() => {});
+  return Response.json({ ok: true });
 }

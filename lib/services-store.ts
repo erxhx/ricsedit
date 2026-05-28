@@ -87,3 +87,33 @@ export function updateService(
   Object.assign(svc, patch);
   return { ...svc };
 }
+
+export type AddTarget =
+  | { kind: 'barber' }
+  | { kind: 'tan' }
+  | { kind: 'tanAddon' }
+  | { kind: 'wax'; groupName: string };
+
+export function addServiceToStore(service: Service, target: AddTarget): void {
+  const store = getServicesStore();
+  if (target.kind === 'barber')   store.barberServices.push(service);
+  else if (target.kind === 'tan') store.tanServices.push(service);
+  else if (target.kind === 'tanAddon') store.tanAddons.push(service);
+  else {
+    const group = store.waxGroups.find((g) => g.name === target.groupName);
+    if (group) group.services.push(service);
+  }
+}
+
+export function removeServiceFromStore(id: string): boolean {
+  const store = getServicesStore();
+  let found = false;
+  store.barberServices = store.barberServices.filter((s) => { if (s.id === id) { found = true; return false; } return true; });
+  store.tanServices    = store.tanServices.filter((s)    => { if (s.id === id) { found = true; return false; } return true; });
+  store.tanAddons      = store.tanAddons.filter((s)      => { if (s.id === id) { found = true; return false; } return true; });
+  store.waxGroups      = store.waxGroups.map((g) => ({
+    ...g,
+    services: g.services.filter((s) => { if (s.id === id) { found = true; return false; } return true; }),
+  }));
+  return found;
+}
