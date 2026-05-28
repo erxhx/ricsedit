@@ -186,9 +186,9 @@
 
   // Available start times for a given date, service duration, category, and already-booked ranges.
   //
-  // Barber  — 45-min steps through free time (maximises haircut slots); allows slots that end
-  //           up to 15 min past close so e.g. a 5:30 pm haircut ending at 6:15 pm is offered.
-  // Livi    — 15-min steps through free time, no end-of-day flex.
+  // All categories — 30-min steps (:00 and :30 boundaries) matching the Next.js booking flow.
+  // Barber allows slots that end up to 15 min past close so e.g. a 5:30 pm haircut ending at
+  // 6:15 pm is offered. Livi — no end-of-day flex.
   //
   // When a booking ends at an off-cadence time the cursor jumps to that exact end time and
   // continues stepping from there — appointments always chain off real end times.
@@ -201,7 +201,7 @@
     if (category === 'barber' && dow === 4) close = BK_BARBER_THU_CLOSE * 60;
 
     var isBarber = category === 'barber';
-    var step     = isBarber ? 45 : 15;
+    var step     = 30; // 30-min steps for all categories — keeps slots on :00/:30 boundaries
     var deadline = close + (isBarber ? 15 : 0); // latest minute a slot may end
 
     var sorted = (bookedRanges || []).slice().sort(function(a, b) { return a.startMinutes - b.startMinutes; });
