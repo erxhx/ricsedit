@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifySession, SESSION_COOKIE } from '@/lib/admin-auth';
-import { searchClients } from '@/lib/admin-mock';
+import { dbSearchClients } from '@/lib/db';
 
 export async function GET(req: NextRequest) {
   const cookieStore = await cookies();
@@ -12,5 +12,5 @@ export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams.get('q') ?? '';
   if (q.trim().length < 2) return Response.json([]);
 
-  return Response.json(searchClients(q));
+  return Response.json(await dbSearchClients(q));
 }

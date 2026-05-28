@@ -1,7 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { verifySession, SESSION_COOKIE } from '@/lib/admin-auth';
-import { getAppointmentById, getAppointmentsByClient } from '@/lib/admin-mock';
+import { dbGetAppointmentById, dbGetAppointmentsByClient } from '@/lib/db';
 import AdminHeader from '@/components/admin/AdminHeader';
 import AppointmentDetail from '@/components/admin/AppointmentDetail';
 
@@ -12,10 +12,10 @@ export default async function AppointmentPage({ params }: { params: Promise<{ id
   if (!session) redirect('/admin/login');
 
   const { id } = await params;
-  const apt = getAppointmentById(id);
+  const apt = await dbGetAppointmentById(id);
   if (!apt) notFound();
 
-  const history = getAppointmentsByClient(apt.clientName, apt.id);
+  const history = await dbGetAppointmentsByClient(apt.clientName, apt.id);
 
   return (
     <>

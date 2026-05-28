@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { verifySession, SESSION_COOKIE } from '@/lib/admin-auth';
-import { getAppointmentsForDate } from '@/lib/admin-mock';
+import { dbGetAppointmentsForDate } from '@/lib/db';
 import AdminHeader from '@/components/admin/AdminHeader';
 import DaySchedule from '@/components/admin/DaySchedule';
 
@@ -26,7 +26,7 @@ export default async function DayPage({ params }: { params: Promise<{ date: stri
   const { date } = await params;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) redirect('/admin');
 
-  const appointments = getAppointmentsForDate(date);
+  const appointments = await dbGetAppointmentsForDate(date);
 
   return (
     <>

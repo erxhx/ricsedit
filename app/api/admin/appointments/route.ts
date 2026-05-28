@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { verifySession, SESSION_COOKIE } from '@/lib/admin-auth';
-import { createAppointment } from '@/lib/admin-mock';
+import { dbCreateAppointment } from '@/lib/db';
 import type { Appointment } from '@/lib/admin-mock';
 
 export async function POST(request: Request) {
@@ -15,6 +15,10 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Missing required fields' }, { status: 400 });
   }
 
-  const apt = createAppointment(body);
-  return Response.json(apt, { status: 201 });
+  try {
+    const apt = await dbCreateAppointment(body);
+    return Response.json(apt, { status: 201 });
+  } catch (e) {
+    return Response.json({ error: e instanceof Error ? e.message : 'Failed to create' }, { status: 500 });
+  }
 }

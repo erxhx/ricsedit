@@ -1,4 +1,4 @@
-import { getAppointmentByToken, updateAppointment } from '@/lib/admin-mock';
+import { dbGetAppointmentByToken, dbUpdateAppointment } from '@/lib/db';
 
 function addMinutes(t: string, mins: number): string {
   const [h, m] = t.split(':').map(Number);
@@ -11,7 +11,7 @@ export async function POST(
   { params }: { params: Promise<{ token: string }> },
 ) {
   const { token } = await params;
-  const apt = getAppointmentByToken(token);
+  const apt = await dbGetAppointmentByToken(token);
 
   if (!apt) return Response.json({ error: 'Not found' }, { status: 404 });
   if (apt.status !== 'confirmed') {
@@ -29,7 +29,7 @@ export async function POST(
   }
 
   const endTime = addMinutes(body.startTime, apt.durationMinutes);
-  updateAppointment(apt.id, { date: body.date, startTime: body.startTime, endTime });
-  // TODO: trigger reschedule notification when Supabase is connected
+  await dbUpdateAppointment(apt.id, { date: body.date, startTime: body.startTime, endTime });
+  // TODO: trigger reschedule notification
   return Response.json({ ok: true, date: body.date, startTime: body.startTime, endTime });
 }

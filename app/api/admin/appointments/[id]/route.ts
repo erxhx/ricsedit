@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { verifySession, SESSION_COOKIE } from '@/lib/admin-auth';
-import { updateAppointment } from '@/lib/admin-mock';
+import { dbUpdateAppointment } from '@/lib/db';
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const cookieStore = await cookies();
@@ -10,7 +10,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   const { id } = await params;
   const patch = await request.json();
-  const updated = updateAppointment(id, patch);
+  const updated = await dbUpdateAppointment(id, patch);
   if (!updated) return Response.json({ error: 'Not found' }, { status: 404 });
   return Response.json(updated);
 }

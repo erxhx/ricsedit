@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { verifySession, SESSION_COOKIE } from '@/lib/admin-auth';
-import { getAppointmentsForDate, getAppointmentsForRange } from '@/lib/admin-mock';
+import { dbGetAppointmentsForDate, dbGetAppointmentsForRange } from '@/lib/db';
 import AdminHeader from '@/components/admin/AdminHeader';
 import DashboardTabs from '@/components/admin/DashboardTabs';
 
@@ -38,8 +38,8 @@ export default async function AdminPage({
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekStart.getDate() + 6);
 
-  const todayApts = getAppointmentsForDate(todayStr);
-  const weekApts = getAppointmentsForRange(
+  const todayApts = await dbGetAppointmentsForDate(todayStr);
+  const weekApts = await dbGetAppointmentsForRange(
     localDateStr(weekStart),
     localDateStr(weekEnd),
   );
