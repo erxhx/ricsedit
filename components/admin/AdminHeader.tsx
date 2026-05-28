@@ -12,7 +12,7 @@ interface NavItem {
 
 const NAV: NavItem[] = [
   { label: 'Schedule',           href: '/admin',           icon: '▦' },
-  { label: 'Clients',            href: '/admin/clients',   icon: '⌘', soon: true },
+  { label: 'Clients',            href: '/admin/clients',   icon: '⌘' },
   { label: 'Services & Pricing', href: '/admin/services',  icon: '✦' },
   { label: 'Settings',           href: '/admin/settings',  icon: '◎', soon: true },
 ];
