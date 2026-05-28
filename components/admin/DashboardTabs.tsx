@@ -4,6 +4,7 @@ import { useSearchParams } from 'next/navigation';
 import type { Appointment } from '@/lib/admin-mock';
 import DayView from './DayView';
 import WeekView from './WeekView';
+import WeekGridView from './WeekGridView';
 
 export default function DashboardTabs({
   todayApts,
@@ -20,9 +21,14 @@ export default function DashboardTabs({
   const [tab, setTab] = useState<'today' | 'week'>(
     searchParams.get('tab') === 'week' ? 'week' : 'today'
   );
+  const [weekView, setWeekView] = useState<'list' | 'grid'>(
+    searchParams.get('view') === 'grid' ? 'grid' : 'list'
+  );
 
   useEffect(() => {
     if (searchParams.get('tab') === 'week') setTab('week');
+    if (searchParams.get('view') === 'grid') setWeekView('grid');
+    else if (searchParams.get('tab') === 'week') setWeekView('list');
   }, [searchParams]);
 
   return (
@@ -56,6 +62,33 @@ export default function DashboardTabs({
           </button>
         ))}
 
+        {/* Week view toggle — list vs grid */}
+        {tab === 'week' && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 2,
+            marginLeft: 8, alignSelf: 'center',
+          }}>
+            {(['list', 'grid'] as const).map((mode) => (
+              <button
+                key={mode}
+                onClick={() => setWeekView(mode)}
+                title={mode === 'list' ? 'List view' : 'Grid view'}
+                style={{
+                  width: 28, height: 28, borderRadius: 6,
+                  border: weekView === mode ? '1px solid #4a4844' : '1px solid transparent',
+                  background: weekView === mode ? '#252320' : 'none',
+                  color: weekView === mode ? '#ece9e2' : '#4a4844',
+                  cursor: 'pointer', fontSize: 13, lineHeight: 1,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  padding: 0,
+                }}
+              >
+                {mode === 'list' ? '≡' : '⊞'}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* New booking button */}
         <a
           href="/admin/new-booking"
@@ -76,10 +109,9 @@ export default function DashboardTabs({
         </a>
       </div>
 
-      {tab === 'today'
-        ? <DayView appointments={todayApts} date={today} />
-        : <WeekView appointments={weekApts} weekStart={weekStart} />
-      }
+      {tab === 'today' && <DayView appointments={todayApts} date={today} />}
+      {tab === 'week' && weekView === 'list' && <WeekView appointments={weekApts} weekStart={weekStart} />}
+      {tab === 'week' && weekView === 'grid' && <WeekGridView appointments={weekApts} weekStart={weekStart} />}
     </div>
   );
 }
