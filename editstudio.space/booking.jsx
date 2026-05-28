@@ -97,20 +97,52 @@
     return new Date(get('year'), get('month') - 1, get('day'));
   }
 
-  // Available time slots for a given Date + service duration
-  function bkSlots(date, durationMins, category) {
+  // Available start times for a given date, service duration, category, and already-booked ranges.
+  // Walks the open hours in 15-min steps; when a booking blocks the current cursor it jumps
+  // straight to that booking's end time — so appointments chain exactly off each other.
+  function bkAvailableSlots(date, durationMins, category, bookedRanges) {
     var dow = date.getDay();
     var hrs = BK_HOURS[dow];
     if (!hrs) return [];
-    var open = hrs[0], close = hrs[1];
-    if (category === 'barber' && dow === 4) close = BK_BARBER_THU_CLOSE;
-    var slots = [];
-    var cur = open * 60;
-    var end = close * 60 - durationMins;
-    while (cur <= end) {
-      slots.push({ h: Math.floor(cur / 60), m: cur % 60 });
-      cur += 30;
+    var open  = hrs[0] * 60;
+    var close = hrs[1] * 60;
+    if (category === 'barber' && dow === 4) close = BK_BARBER_THU_CLOSE * 60;
+
+    var sorted = (bookedRanges || []).slice().sort(function(a, b) { return a.startMinutes - b.startMinutes; });
+    var slots  = [];
+    var cursor = open;
+
+    while (cursor + durationMins <= close) {
+      // If cursor lands inside a booked range, jump to its end
+      var jumped = false;
+      for (var i = 0; i < sorted.length; i++) {
+        var r = sorted[i];
+        if (cursor >= r.startMinutes && cursor < r.startMinutes + r.durationMinutes) {
+          cursor = r.startMinutes + r.durationMinutes;
+          jumped = true;
+          break;
+        }
+      }
+      if (jumped) continue;
+
+      // Check if the proposed slot overlaps any booked range
+      var overlapEnd = -1;
+      for (var j = 0; j < sorted.length; j++) {
+        var r2 = sorted[j];
+        if (cursor < r2.startMinutes + r2.durationMinutes && cursor + durationMins > r2.startMinutes) {
+          overlapEnd = r2.startMinutes + r2.durationMinutes;
+          break;
+        }
+      }
+
+      if (overlapEnd >= 0) {
+        cursor = overlapEnd; // jump past blocking range
+      } else {
+        slots.push({ h: Math.floor(cursor / 60), m: cursor % 60 });
+        cursor += 15; // 15-min steps through free time
+      }
     }
+
     return slots;
   }
 
@@ -126,16 +158,6 @@
     return result;
   }
 
-  // Check if a proposed slot (startH:startM, durationMins) overlaps any booked range.
-  // bookedRanges: Array<{startMinutes, durationMinutes}>
-  function bkSlotTaken(bookedRanges, startH, startM, durationMins) {
-    var slotStart = startH * 60 + startM;
-    var slotEnd   = slotStart + durationMins;
-    return bookedRanges.some(function(r) {
-      return slotStart < r.startMinutes + r.durationMinutes &&
-             slotEnd   > r.startMinutes;
-    });
-  }
 
   // ── Shared micro-components ────────────────────────────────────────────────
 
@@ -396,13 +418,13 @@
     var [viewMonth,     setViewMonth]     = useState(defDate.getMonth());
     var [viewYear,      setViewYear]      = useState(defDate.getFullYear());
     var [bookedRanges,  setBookedRanges]  = useState([]);
-    var [loadingSlots,  setLoadingSlots]  = useState(false);
+    var [loadingSlots,  setLoadingSlots]  = useState(true);
 
     // Fetch real availability whenever the selected date or category changes
     useEffect(function() {
       var staff    = category === 'barber' ? 'eric' : 'livi';
       var endpoint = window.__booking && window.__booking.endpoint;
-      if (!endpoint) return; // dev / no backend wired — leave empty (all slots open)
+      if (!endpoint) { setLoadingSlots(false); return; } // dev — show all slots open
 
       var dateStr = selectedDate.getFullYear() + '-' +
                     String(selectedDate.getMonth() + 1).padStart(2, '0') + '-' +
@@ -413,21 +435,16 @@
 
       var cancelled = false;
       setLoadingSlots(true);
+      setBookedRanges([]);
       fetch(url)
         .then(function(r) { return r.json(); })
-        .then(function(data) {
-          if (!cancelled) setBookedRanges(data.bookedRanges || []);
-        })
-        .catch(function() {
-          if (!cancelled) setBookedRanges([]); // on error, show all slots as open
-        })
-        .finally(function() {
-          if (!cancelled) setLoadingSlots(false);
-        });
+        .then(function(data) { if (!cancelled) setBookedRanges(data.bookedRanges || []); })
+        .catch(function()    { if (!cancelled) setBookedRanges([]); })
+        .finally(function()  { if (!cancelled) setLoadingSlots(false); });
       return function() { cancelled = true; };
     }, [selectedDate.toDateString(), category]);
 
-    var slots   = bkSlots(selectedDate, duration, category);
+    var slots   = loadingSlots ? [] : bkAvailableSlots(selectedDate, duration, category, bookedRanges);
     var todayMs = today.getTime();
     // Limit bookable window to 60 days out
     var maxMs   = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 60).getTime();
@@ -549,39 +566,38 @@
           })}
         </div>
 
-        {/* Time slots — pre-populated since a date is always selected */}
+        {/* Time slots */}
         <BkEyebrow
           left={'Available · ' + bkFmtDate(selectedDate)}
           right={loadingSlots ? 'Checking…' : null}
         />
-        {slots.length === 0
-          ? <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--ink-faint)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 20 }}>No slots available.</p>
-          : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6, marginBottom: 28 }}>
-              {slots.map(function(slot, i) {
-                var taken = bkSlotTaken(bookedRanges, slot.h, slot.m, duration);
-                var isSel = selectedTime && selectedTime.h === slot.h && selectedTime.m === slot.m;
-                return (
-                  <button key={i}
-                    onClick={function() { if (!taken) setSelectedTime(slot); }}
-                    disabled={taken || loadingSlots}
-                    style={{
-                      padding: '11px 4px',
-                      background: isSel ? 'var(--ink)' : 'var(--bg)',
-                      color:      isSel ? 'var(--bg)' : taken ? 'var(--ink-faint)' : 'var(--ink)',
-                      border:     isSel ? '1px solid transparent' : '1px solid var(--rule)',
-                      borderRadius: 2, cursor: (taken || loadingSlots) ? 'default' : 'pointer',
-                      fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: '0.04em',
-                      opacity: taken ? 0.28 : loadingSlots ? 0.5 : 1,
-                      transition: 'background 0.15s ease, opacity 0.2s ease',
-                    }}
-                  >
-                    {bkFmtTime(slot.h, slot.m)}
-                  </button>
-                );
-              })}
-            </div>
-          )
+        {loadingSlots
+          ? <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--ink-faint)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 20 }}>Checking availability…</p>
+          : slots.length === 0
+            ? <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--ink-faint)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 20 }}>No slots available.</p>
+            : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6, marginBottom: 28 }}>
+                {slots.map(function(slot, i) {
+                  var isSel = selectedTime && selectedTime.h === slot.h && selectedTime.m === slot.m;
+                  return (
+                    <button key={i}
+                      onClick={function() { setSelectedTime(slot); }}
+                      style={{
+                        padding: '11px 4px',
+                        background: isSel ? 'var(--ink)' : 'var(--bg)',
+                        color:      isSel ? 'var(--bg)' : 'var(--ink)',
+                        border:     isSel ? '1px solid transparent' : '1px solid var(--rule)',
+                        borderRadius: 2, cursor: 'pointer',
+                        fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: '0.04em',
+                        transition: 'background 0.15s ease',
+                      }}
+                    >
+                      {bkFmtTime(slot.h, slot.m)}
+                    </button>
+                  );
+                })}
+              </div>
+            )
         }
 
         {selectedTime && (
