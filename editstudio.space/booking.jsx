@@ -964,6 +964,14 @@
     );
   }
 
+  // Shared helpers used by app.jsx for the "Next available" barber CTA.
+  // bkAvailableSlots already closes over BK_HOURS and BK_BARBER_THU_CLOSE.
+  window.__bk = {
+    availableSlots: bkAvailableSlots,
+    fmtTime: bkFmtTime,
+    todayPacific: bkTodayPacific,
+  };
+
   window.BookingEmbed = BookingEmbed;
 
 })();

@@ -301,6 +301,93 @@ const PILL_COLORS = {
   visit:  { background: '#1a1714', color: '#f5f0e8' },
 };
 
+// ── Next available slot CTA (barber page only) ─────────────────
+// Fetches today's (or nearest upcoming) open slot for Eric and renders
+// a live pill: "● Next available · 2:45 pm →"
+function NextAvailableBarber() {
+  const [state, setState] = useState('loading'); // 'loading' | 'ready' | 'none'
+  const [slot,  setSlot]  = useState(null);
+
+  useEffect(() => {
+    const endpoint = window.__booking && window.__booking.endpoint;
+    const bk = window.__bk;
+    if (!endpoint || !bk) { setState('none'); return; }
+
+    let cancelled = false;
+
+    async function findNext() {
+      // Current Pacific time in minutes-from-midnight
+      const pacParts = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/Vancouver', hour: 'numeric', minute: 'numeric', hour12: false
+      }).formatToParts(new Date());
+      const nowMins = (parseInt(pacParts.find(p => p.type === 'hour').value, 10) % 24) * 60
+                    + parseInt(pacParts.find(p => p.type === 'minute').value, 10);
+
+      const today = bk.todayPacific();
+
+      for (let i = 0; i < 8; i++) {
+        if (cancelled) return;
+        const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
+        if (!STUDIO_HOURS[d.getDay()]) continue; // closed
+
+        const dateStr = d.getFullYear() + '-' +
+          String(d.getMonth() + 1).padStart(2, '0') + '-' +
+          String(d.getDate()).padStart(2, '0');
+        const url = endpoint.replace(/\/booking\/create$/, '') +
+          '/booking/availability?date=' + dateStr + '&staff=eric';
+
+        try {
+          const res = await fetch(url);
+          if (!res.ok) { setState('none'); return; }
+          const data = await res.json();
+          let slots = bk.availableSlots(d, 45, 'barber', data.bookedRanges || []);
+
+          // For today, only show slots that haven't already started
+          if (i === 0) slots = slots.filter(s => s.h * 60 + s.m > nowMins);
+
+          if (slots.length > 0) {
+            if (!cancelled) {
+              setSlot({ isToday: i === 0, isTomorrow: i === 1, dow: d.getDay(), ...slots[0] });
+              setState('ready');
+            }
+            return;
+          }
+        } catch (_) {
+          if (!cancelled) setState('none');
+          return;
+        }
+      }
+      if (!cancelled) setState('none');
+    }
+
+    findNext();
+    return () => { cancelled = true; };
+  }, []);
+
+  if (state !== 'ready' || !slot) return null;
+
+  const bk = window.__bk;
+  const timeStr = bk.fmtTime(slot.h, slot.m);
+  const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const when = slot.isToday   ? timeStr
+              : slot.isTomorrow ? `Tomorrow · ${timeStr}`
+              : `${DOW[slot.dow]} · ${timeStr}`;
+
+  return (
+    <button
+      type="button"
+      className="next-avail"
+      onClick={() => window.dispatchEvent(new CustomEvent('edit-studio:goto-booking'))}
+      aria-label={`Next available barber slot: ${when} — jump to booking`}
+    >
+      <span className="avail-dot" aria-hidden="true" />
+      <span className="next-avail-eyebrow">Next available</span>
+      <span className="next-avail-time">{when}</span>
+      <span className="next-avail-arr" aria-hidden="true">→</span>
+    </button>
+  );
+}
+
 function Hero({ data, animComp, progress, speed, service }) {
   const Anim = window[animComp] || (() => null);
   return (
@@ -320,6 +407,7 @@ function Hero({ data, animComp, progress, speed, service }) {
           onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent('edit-studio:goto-booking')); }}>
           Book now <span className="arr" style={{ fontStyle: 'normal', fontFamily: 'var(--mono)', fontSize: '12px' }}>↓</span>
         </a>
+        {service === 'barber' && <NextAvailableBarber />}
         {service === 'home' &&
         <div className="hero-contact" aria-label="Contact the studio">
             <OpenStatus />

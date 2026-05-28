@@ -434,6 +434,53 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
   .hero-contact-sep { display: none; }
 }
 
+/* ── Next available barber CTA ───────────────────────────────────── */
+.next-avail {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: transparent;
+  border: 1px solid color-mix(in oklch, var(--ink) 20%, transparent);
+  border-radius: 999px;
+  padding: 9px 18px 9px 12px;
+  cursor: pointer;
+  margin-top: 12px; margin-left: 10px;
+  transition: border-color 0.2s ease, background 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.next-avail:hover {
+  border-color: color-mix(in oklch, var(--ink) 38%, transparent);
+  background: color-mix(in oklch, var(--ink) 5%, transparent);
+}
+.avail-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: oklch(0.58 0.13 150);
+  flex-shrink: 0; position: relative;
+  animation: openPulse 2.4s ease-in-out infinite;
+}
+.avail-dot::after {
+  content: ''; position: absolute; inset: -4px;
+  border-radius: 50%;
+  background: oklch(0.58 0.13 150);
+  opacity: 0.25;
+  animation: openHalo 2.4s ease-out infinite;
+}
+.next-avail-eyebrow {
+  font-family: var(--mono); font-size: 9px;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.next-avail-time {
+  font-family: var(--display); font-style: italic;
+  font-size: 17px; letter-spacing: -0.01em; line-height: 1;
+  color: var(--ink);
+}
+.next-avail-arr {
+  font-family: var(--display); font-style: italic;
+  font-size: 16px; color: var(--ink-soft);
+}
+@media (prefers-reduced-motion: reduce) {
+  .avail-dot, .avail-dot::after { animation: none; }
+}
+
 /* Animation canvas (full bleed under hero text) */
 .anim-canvas {
   position: absolute; inset: 0;
