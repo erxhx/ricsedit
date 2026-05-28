@@ -15,6 +15,7 @@ interface DaySummary {
   liviWaxCount: number;
   liviTanCount: number;
   revenue: number;
+  hasNotes: boolean;
 }
 
 function localDateStr(d: Date): string {
@@ -60,7 +61,8 @@ export default function WeekView({ appointments, weekStart }: { appointments: Ap
       ericCount: dayApts.filter((a) => a.staff === 'eric').length,
       liviWaxCount: liviApts.filter((a) => liviCategory(a.service) === 'wax').length,
       liviTanCount: liviApts.filter((a) => liviCategory(a.service) === 'tan').length,
-      revenue: dayApts.reduce((s, a) => s + a.price, 0),
+      revenue:  dayApts.reduce((s, a) => s + a.price, 0),
+      hasNotes: dayApts.some((a) => !!a.notes),
     };
   });
 
@@ -182,15 +184,24 @@ function DayCard({ day }: { day: DaySummary }) {
             )}
           </div>
 
-          {/* Revenue + chevron */}
+          {/* Revenue + note indicator + chevron */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             {day.total > 0 && (
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 500, color: '#ece9e2' }}>
                   ${day.revenue}
                 </div>
-                <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: '#4a4844' }}>
-                  {day.total} apt{day.total !== 1 ? 's' : ''}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 5, marginTop: 2 }}>
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: '#4a4844' }}>
+                    {day.total} apt{day.total !== 1 ? 's' : ''}
+                  </span>
+                  {day.hasNotes && (
+                    <span style={{
+                      fontSize: 10, color: '#b5824a',
+                      background: '#2a2318', border: '1px solid #3a3020',
+                      borderRadius: 3, padding: '0px 4px', lineHeight: '16px',
+                    }}>≡</span>
+                  )}
                 </div>
               </div>
             )}

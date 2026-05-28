@@ -42,14 +42,22 @@ export default function AppointmentCard({ apt }: { apt: Appointment }) {
             ${apt.price}
           </span>
         </div>
-        <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#7a7570', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {apt.service}
-        </div>
-        {apt.notes && (
-          <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: '#524f4a', marginTop: 4, fontStyle: 'italic' }}>
-            {apt.notes}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#7a7570', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
+            {apt.service}
           </div>
-        )}
+          {apt.notes && (
+            <div style={{
+              flexShrink: 0,
+              display: 'flex', alignItems: 'center', gap: 3,
+              background: '#2a2318', border: '1px solid #3a3020',
+              borderRadius: 4, padding: '1px 5px',
+            }}>
+              <span style={{ fontSize: 9, color: '#b5824a', lineHeight: 1 }}>≡</span>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: '#8a6a3a', letterSpacing: '0.04em' }}>note</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Staff dot + chevron */}
