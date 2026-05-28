@@ -149,7 +149,7 @@ function DayCard({ day }: { day: DaySummary }) {
       border: `1px solid ${day.isToday ? '#3a3530' : '#252320'}`,
       borderRadius: 10,
       padding: '12px 16px',
-      opacity: day.isOpen ? 1 : 0.4,
+      opacity: day.isOpen ? 1 : 0.6,
       textDecoration: 'none',
       WebkitTapHighlightColor: 'transparent',
     }}>
@@ -163,57 +163,55 @@ function DayCard({ day }: { day: DaySummary }) {
         </div>
       </div>
 
-      {day.isOpen ? (
-        <>
-          {/* Booking dots */}
-          <div style={{ flex: 1 }}>
-            {day.total === 0 ? (
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#3a3835' }}>No bookings</span>
-            ) : (
-              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                {Array.from({ length: day.ericCount }, (_, i) => (
-                  <div key={`e${i}`} style={{ width: 7, height: 7, borderRadius: '50%', background: SERVICE_COLORS.ericBarber }} />
-                ))}
-                {Array.from({ length: day.liviWaxCount }, (_, i) => (
-                  <div key={`lw${i}`} style={{ width: 7, height: 7, borderRadius: '50%', background: SERVICE_COLORS.liviWax }} />
-                ))}
-                {Array.from({ length: day.liviTanCount }, (_, i) => (
-                  <div key={`lt${i}`} style={{ width: 7, height: 7, borderRadius: '50%', background: SERVICE_COLORS.liviTan }} />
-                ))}
-              </div>
-            )}
-          </div>
+      <>
+        {/* Booking dots */}
+        <div style={{ flex: 1 }}>
+          {day.total === 0 ? (
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#3a3835' }}>
+              {day.isOpen ? 'No bookings' : 'Closed'}
+            </span>
+          ) : (
+            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
+              {Array.from({ length: day.ericCount }, (_, i) => (
+                <div key={`e${i}`} style={{ width: 7, height: 7, borderRadius: '50%', background: SERVICE_COLORS.ericBarber }} />
+              ))}
+              {Array.from({ length: day.liviWaxCount }, (_, i) => (
+                <div key={`lw${i}`} style={{ width: 7, height: 7, borderRadius: '50%', background: SERVICE_COLORS.liviWax }} />
+              ))}
+              {Array.from({ length: day.liviTanCount }, (_, i) => (
+                <div key={`lt${i}`} style={{ width: 7, height: 7, borderRadius: '50%', background: SERVICE_COLORS.liviTan }} />
+              ))}
+              {!day.isOpen && (
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: '#4a4844', letterSpacing: '0.06em', marginLeft: 2 }}>closed</span>
+              )}
+            </div>
+          )}
+        </div>
 
-          {/* Revenue + note indicator + chevron */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            {day.total > 0 && (
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 500, color: '#ece9e2' }}>
-                  ${day.revenue}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 5, marginTop: 2 }}>
-                  <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: '#4a4844' }}>
-                    {day.total} apt{day.total !== 1 ? 's' : ''}
-                  </span>
-                  {day.hasNotes && (
-                    <span style={{
-                      fontSize: 10, color: '#b5824a',
-                      background: '#2a2318', border: '1px solid #3a3020',
-                      borderRadius: 3, padding: '0px 4px', lineHeight: '16px',
-                    }}>≡</span>
-                  )}
-                </div>
+        {/* Revenue + note indicator + chevron */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {day.total > 0 && (
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 500, color: '#ece9e2' }}>
+                ${day.revenue}
               </div>
-            )}
-            <span style={{ fontSize: 16, color: '#3a3835' }}>›</span>
-          </div>
-        </>
-      ) : (
-        <>
-          <span style={{ flex: 1, fontFamily: 'var(--font-body)', fontSize: 12, color: '#3a3835' }}>Closed</span>
-          <span style={{ fontSize: 16, color: '#252320' }}>›</span>
-        </>
-      )}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 5, marginTop: 2 }}>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: '#4a4844' }}>
+                  {day.total} apt{day.total !== 1 ? 's' : ''}
+                </span>
+                {day.hasNotes && (
+                  <span style={{
+                    fontSize: 10, color: '#b5824a',
+                    background: '#2a2318', border: '1px solid #3a3020',
+                    borderRadius: 3, padding: '0px 4px', lineHeight: '16px',
+                  }}>≡</span>
+                )}
+              </div>
+            </div>
+          )}
+          <span style={{ fontSize: 16, color: '#3a3835' }}>›</span>
+        </div>
+      </>
     </Link>
   );
 }

@@ -304,7 +304,7 @@ export default function WeekGridView({
           return (
             <div
               key={day.dateStr}
-              style={{ flex: 1, position: 'relative', height: TOTAL_PX, borderLeft: '1px solid #1e1d1a', opacity: day.isOpen ? 1 : 0.18, background: day.isToday ? '#141412' : 'transparent' }}
+              style={{ flex: 1, position: 'relative', height: TOTAL_PX, borderLeft: '1px solid #1e1d1a', opacity: day.isOpen ? 1 : 0.6, background: day.isToday ? '#141412' : 'transparent' }}
             >
               {/* Hour gridlines */}
               {HOURS.map((h) => (
@@ -317,7 +317,7 @@ export default function WeekGridView({
               ))}
 
               {/* Tap-to-book slots */}
-              {day.isOpen && Array.from({ length: (H1 - H0) * 2 }, (_, i) => {
+              {Array.from({ length: (H1 - H0) * 2 }, (_, i) => {
                 const s0 = i * 30, s1 = s0 + 30;
                 const busy = day.apts.some((a) => t2m(a.startTime) < s1 && t2m(a.endTime) > s0);
                 if (busy) return null;
