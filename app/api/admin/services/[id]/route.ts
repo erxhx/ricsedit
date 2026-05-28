@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { verifySession, SESSION_COOKIE } from '@/lib/admin-auth';
-import { updateService } from '@/lib/services-store';
+import { updateService, saveServicesStore } from '@/lib/services-store';
 import type { Service } from '@/lib/services';
 
 export async function PATCH(
@@ -27,6 +27,9 @@ export async function PATCH(
 
   const updated = updateService(id, body);
   if (!updated) return Response.json({ error: 'Service not found' }, { status: 404 });
+
+  // Fire-and-forget persist — don't block the response on Supabase latency
+  saveServicesStore().catch(() => {});
 
   return Response.json(updated);
 }

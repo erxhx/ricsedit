@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { verifySession, SESSION_COOKIE } from '@/lib/admin-auth';
-import { getServicesStore } from '@/lib/services-store';
+import { getServicesStoreAsync } from '@/lib/services-store';
 import AdminHeader from '@/components/admin/AdminHeader';
 import ServicesEditor from '@/components/admin/ServicesEditor';
 import Link from 'next/link';
@@ -12,7 +12,7 @@ export default async function ServicesPage() {
   const session = token ? await verifySession(token) : null;
   if (!session) redirect('/admin/login');
 
-  const servicesData = getServicesStore();
+  const servicesData = await getServicesStoreAsync();
 
   return (
     <>

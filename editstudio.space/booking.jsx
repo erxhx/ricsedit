@@ -68,6 +68,40 @@
     },
   ];
 
+  // ── Service data — fetched from admin on init so price/name edits propagate ──
+
+  // Maps a Next.js Service object → booking.jsx format
+  function mapSvc(s) {
+    return { id: s.id, name: s.name, desc: s.description || '', price: s.price, duration: s.durationMinutes };
+  }
+
+  // Fetch current services from the admin app and update the BK_ arrays in place.
+  (function () {
+    var endpoint = (window.__booking || {}).endpoint || '';
+    var base = endpoint.replace(/\/api\/booking\/create$/, '');
+    if (!base) return;
+    fetch(base + '/api/booking/services')
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        if (!d) return;
+        if (Array.isArray(d.barberServices) && d.barberServices.length) {
+          BK_BARBER = d.barberServices.map(mapSvc);
+        }
+        if (Array.isArray(d.tanServices) && d.tanServices.length) {
+          BK_TAN = d.tanServices.map(mapSvc);
+        }
+        if (Array.isArray(d.tanAddons) && d.tanAddons.length) {
+          BK_TAN_ADDONS = d.tanAddons.map(mapSvc);
+        }
+        if (Array.isArray(d.waxGroups) && d.waxGroups.length) {
+          BK_WAX_GROUPS = d.waxGroups.map(function (g) {
+            return { label: g.name, note: g.note || '', items: (g.services || []).map(mapSvc) };
+          });
+        }
+      })
+      .catch(function () {});
+  })();
+
   // Studio hours (Pacific time). null = closed.
   // Mutable vars — updated async from admin config so the calendar stays in sync.
   var BK_HOURS = { 0: [10, 18], 1: null, 2: null, 3: [10, 18], 4: [10, 18], 5: [10, 18], 6: [10, 18] };

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import BookingFlow from '@/components/booking/BookingFlow';
-import { getServicesStore } from '@/lib/services-store';
+import { getServicesStoreAsync } from '@/lib/services-store';
 import { getAvailabilityConfig } from '@/lib/availability-store';
 
 export const metadata: Metadata = {
@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 };
 
 export default async function BookPage() {
-  const servicesData = getServicesStore();
+  const servicesData = await getServicesStoreAsync();
   const availability = await getAvailabilityConfig();
   return <BookingFlow servicesData={servicesData} availability={availability} />;
 }
