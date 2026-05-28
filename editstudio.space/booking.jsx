@@ -11,9 +11,9 @@
     { id: 'haircut',          name: 'Haircut',               desc: 'Signature cut and style.',                              price: 40, duration: 45 },
     { id: 'beard',            name: 'Beard Trim',            desc: 'Trim, shape, line, oil.',                               price: 25, duration: 30 },
     { id: 'haircut-beard',    name: 'Haircut + Beard',        desc: 'The whole package.',                                    price: 60, duration: 60 },
-    { id: 'freshen-haircut',  name: 'Freshen Up — Cut',       desc: 'Must be within 2 weeks of last service.',              price: 25, duration: 30 },
-    { id: 'freshen-both',     name: 'Freshen Up — Cut + Beard', desc: 'Must be within 2 weeks of last service.',            price: 40, duration: 45 },
-    { id: 'kids',             name: 'Kids Cut',               desc: 'Ages 10 and under.',                                   price: 30, duration: 30 },
+    { id: 'freshen-haircut',  name: 'Freshen Up — Cut',       desc: 'Must be within 2 weeks of last service.',              price: 25, duration: 45 },
+    { id: 'freshen-both',     name: 'Freshen Up — Cut + Beard', desc: 'Must be within 2 weeks of last service.',            price: 40, duration: 60 },
+    { id: 'kids',             name: 'Kids Cut',               desc: 'Ages 10 and under.',                                   price: 30, duration: 45 },
     { id: 'senior',           name: 'Senior Cut',             desc: 'Ages 65+.',                                            price: 30, duration: 30 },
   ];
 
