@@ -269,14 +269,19 @@ export function generateTimeSlots(
   date: Date,
   category: ServiceCategory,
   durationMinutes: number,
+  weekHours?: Record<number, [number, number] | null>,
+  barberThuClose?: number,
 ): string[] {
   const dow = date.getDay();
-  const hours = STUDIO_HOURS[dow];
+  const effectiveHours = weekHours ?? STUDIO_HOURS;
+  const hours = effectiveHours[dow];
   if (!hours) return [];
 
   const [open, baseClose] = hours;
   const close =
-    category === 'barber' && dow === 4 ? BARBER_THU_CLOSE : baseClose;
+    category === 'barber' && dow === 4
+      ? (barberThuClose ?? BARBER_THU_CLOSE)
+      : baseClose;
 
   const slots: string[] = [];
   for (let h = open; h < close; h++) {

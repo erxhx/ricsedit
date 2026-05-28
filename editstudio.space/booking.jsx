@@ -69,8 +69,33 @@
   ];
 
   // Studio hours (Pacific time). null = closed.
+  // Mutable vars — updated async from admin config so the calendar stays in sync.
   var BK_HOURS = { 0: [10, 18], 1: null, 2: null, 3: [10, 18], 4: [10, 18], 5: [10, 18], 6: [10, 18] };
   var BK_BARBER_THU_CLOSE = 21;
+
+  // Fetch current hours from the admin app and update in place.
+  (function () {
+    var endpoint = (window.__booking || {}).endpoint || '';
+    var base = endpoint.replace(/\/api\/booking\/create$/, '');
+    if (!base) return;
+    fetch(base + '/api/booking/hours')
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (cfg) {
+        if (!cfg) return;
+        if (cfg.days) {
+          var h = {};
+          Object.keys(cfg.days).forEach(function (k) {
+            var v = cfg.days[k];
+            h[Number(k)] = Array.isArray(v) ? v : null;
+          });
+          BK_HOURS = h;
+        }
+        if (typeof cfg.barberThuClose === 'number') {
+          BK_BARBER_THU_CLOSE = cfg.barberThuClose;
+        }
+      })
+      .catch(function () {});
+  })();
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 

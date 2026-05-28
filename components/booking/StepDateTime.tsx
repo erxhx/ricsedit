@@ -20,6 +20,8 @@ interface Props {
   onTimeChange: (slot: string) => void;
   onNext: () => void;
   onBack: () => void;
+  weekHours?: Record<number, [number, number] | null>;
+  barberThuClose?: number;
 }
 
 const DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
@@ -37,6 +39,8 @@ export default function StepDateTime({
   onTimeChange,
   onNext,
   onBack,
+  weekHours,
+  barberThuClose,
 }: Props) {
   const accent = CATEGORY_META[category].accent;
   const today = new Date();
@@ -45,8 +49,12 @@ export default function StepDateTime({
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
 
+  const effectiveHours = weekHours ?? STUDIO_HOURS;
+
   const totalDuration = getTotalDuration(selectedServices);
-  const timeSlots = date ? generateTimeSlots(date, category, totalDuration) : [];
+  const timeSlots = date
+    ? generateTimeSlots(date, category, totalDuration, effectiveHours, barberThuClose)
+    : [];
 
   function prevMonth() {
     if (viewMonth === 0) {
@@ -78,7 +86,7 @@ export default function StepDateTime({
 
   function isAvailable(d: Date): boolean {
     if (d < today) return false;
-    return STUDIO_HOURS[d.getDay()] !== null;
+    return effectiveHours[d.getDay()] !== null;
   }
 
   function isSelected(d: Date): boolean {

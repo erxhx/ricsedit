@@ -197,7 +197,7 @@ function SideArrow({ side, service, onClick }) {
 }
 
 // Studio hours, by JS day-of-week (0 = Sunday). null = closed.
-// MUST stay in sync with the visible Hours rows in content.jsx + JSON-LD.
+// Mutated async from admin config — kept as const object so closures stay live.
 const STUDIO_HOURS = {
   0: [10, 18], // Sun
   1: null,     // Mon — closed
@@ -207,6 +207,24 @@ const STUDIO_HOURS = {
   5: [10, 18], // Fri
   6: [10, 18]  // Sat
 };
+
+// Fetch current hours and update STUDIO_HOURS in place so Open/Closed status
+// and NextAvailableBarber reflect any admin changes.
+(function () {
+  const endpoint = (window.__booking || {}).endpoint || '';
+  const base = endpoint.replace(/\/api\/booking\/create$/, '');
+  if (!base) return;
+  fetch(base + '/api/booking/hours')
+    .then(r => r.ok ? r.json() : null)
+    .then(cfg => {
+      if (!cfg?.days) return;
+      for (let d = 0; d <= 6; d++) {
+        const v = cfg.days[d] ?? cfg.days[String(d)];
+        STUDIO_HOURS[d] = Array.isArray(v) ? v : null;
+      }
+    })
+    .catch(() => {});
+})();
 
 function computeStudioStatus() {
   // Always evaluate in Pacific time — site is local-business, not visitor-local.

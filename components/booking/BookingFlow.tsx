@@ -12,6 +12,7 @@ import {
   getSteps,
 } from '@/lib/services';
 import type { ServicesData } from '@/lib/services-store';
+import type { AvailabilityConfig } from '@/lib/availability-store';
 import StepCategory from './StepCategory';
 import StepClient from './StepClient';
 import StepConfirm from './StepConfirm';
@@ -28,7 +29,13 @@ const STEP_LABELS: Partial<Record<BookingStep, string>> = {
   confirm: 'Confirm',
 };
 
-export default function BookingFlow({ servicesData }: { servicesData?: ServicesData }) {
+export default function BookingFlow({
+  servicesData,
+  availability,
+}: {
+  servicesData?: ServicesData;
+  availability?: AvailabilityConfig;
+}) {
   const [state, setState] = useState<BookingState>(INITIAL_BOOKING_STATE);
   const [currentStep, setCurrentStep] = useState<BookingStep>('category');
 
@@ -153,6 +160,8 @@ export default function BookingFlow({ servicesData }: { servicesData?: ServicesD
             onTimeChange={handleTimeChange}
             onNext={nextStep}
             onBack={prevStep}
+            weekHours={availability?.days}
+            barberThuClose={availability?.barberThuClose}
           />
         )}
 

@@ -10,10 +10,11 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
-  { label: 'Schedule',           href: '/admin',           icon: '▦' },
-  { label: 'Clients',            href: '/admin/clients',   icon: '⌘' },
-  { label: 'Services & Pricing', href: '/admin/services',  icon: '✦' },
-  { label: 'Settings',           href: '/admin/settings',  icon: '◎' },
+  { label: 'Schedule',           href: '/admin',                icon: '▦' },
+  { label: 'Clients',            href: '/admin/clients',        icon: '⌘' },
+  { label: 'Services & Pricing', href: '/admin/services',       icon: '✦' },
+  { label: 'Availability',       href: '/admin/availability',   icon: '◷' },
+  { label: 'Settings',           href: '/admin/settings',       icon: '◎' },
 ];
 
 function isActive(href: string, pathname: string): boolean {
