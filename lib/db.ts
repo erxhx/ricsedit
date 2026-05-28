@@ -127,6 +127,64 @@ export async function dbSearchClients(query: string): Promise<ClientRecord[]> {
   return results.slice(0, 5);
 }
 
+export interface ClientSummary {
+  name: string;
+  email: string;
+  phone: string;
+  visitCount: number;
+  lastVisit: string;   // "YYYY-MM-DD"
+  lastService: string;
+  totalSpent: number;
+}
+
+export async function dbGetAllClients(): Promise<ClientSummary[]> {
+  const { data, error } = await db
+    .from('appointments')
+    .select('client_name, client_email, client_phone, date, service, price, status')
+    .order('date', { ascending: false });
+
+  if (error || !data) return [];
+
+  const map = new Map<string, ClientSummary>();
+  for (const row of data) {
+    if (!map.has(row.client_name)) {
+      map.set(row.client_name, {
+        name:        row.client_name,
+        email:       row.client_email ?? '',
+        phone:       row.client_phone ?? '',
+        visitCount:  0,
+        lastVisit:   '',
+        lastService: '',
+        totalSpent:  0,
+      });
+    }
+    const c = map.get(row.client_name)!;
+    c.visitCount++;
+    if (!c.lastVisit || row.date > c.lastVisit) {
+      c.lastVisit   = row.date;
+      c.lastService = row.service;
+    }
+    if (row.status !== 'cancelled') {
+      c.totalSpent += Number(row.price) || 0;
+    }
+  }
+
+  return Array.from(map.values()).sort((a, b) =>
+    b.lastVisit.localeCompare(a.lastVisit),
+  );
+}
+
+export async function dbGetClientAppointments(clientName: string): Promise<Appointment[]> {
+  const { data, error } = await db
+    .from('appointments')
+    .select('*')
+    .eq('client_name', clientName)
+    .order('date', { ascending: false })
+    .order('start_time', { ascending: false });
+  if (error || !data) return [];
+  return data.map(toApt);
+}
+
 // ── Writes ────────────────────────────────────────────────────────────────────
 
 export async function dbCreateAppointment(
