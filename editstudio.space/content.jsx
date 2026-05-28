@@ -271,6 +271,9 @@ function WaxContent({ headline }) {
 function VisitContent() {
   return (
     <div className="cpanel">
+      <window.BookingEmbed />
+
+      <div className="rule" />
       <Eyebrow left="Visit" right="Oak Bay · Victoria" />
       <h2>The <em>Studio</em>.</h2>
       <div className="address">
@@ -341,9 +344,6 @@ function VisitContent() {
         </p>
         <div className="row"><span>Visit in person</span><span>→</span></div>
       </div>
-
-      <div style={{ height: 32 }} />
-      <window.BookingEmbed />
 
       <div className="rule" />
       <p style={{ fontSize: 12, color: 'var(--ink-faint)', textAlign: 'center', lineHeight: 1.6 }}>
