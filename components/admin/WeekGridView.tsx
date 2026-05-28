@@ -87,9 +87,11 @@ type SlotAction  = { date: string; time: string } | null;
 export default function WeekGridView({
   appointments: initial,
   weekStart,
+  stickyTop = 96,
 }: {
   appointments: Appointment[];
   weekStart: Date;
+  stickyTop?: number;
 }) {
   const router = useRouter();
   const gridRef   = useRef<HTMLDivElement>(null);
@@ -238,12 +240,12 @@ export default function WeekGridView({
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px 10px 10px', borderBottom: '1px solid #1e1d1a' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {!isThisWeek && (
-            <Link href="/admin?tab=week&view=grid" style={{ fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500, color: '#b5824a', textDecoration: 'none', padding: '4px 9px', borderRadius: 6, border: '1px solid #3a3530', WebkitTapHighlightColor: 'transparent' }}>
+            <Link href="/admin?tab=calendar&mode=week" style={{ fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500, color: '#b5824a', textDecoration: 'none', padding: '4px 9px', borderRadius: 6, border: '1px solid #3a3530', WebkitTapHighlightColor: 'transparent' }}>
               Today
             </Link>
           )}
-          <Link href={`/admin?tab=week&week=${localStr(prevWeek)}&view=grid`} style={navArrow}>‹</Link>
-          <Link href={`/admin?tab=week&week=${localStr(nextWeek)}&view=grid`} style={navArrow}>›</Link>
+          <Link href={`/admin?tab=calendar&mode=week&week=${localStr(prevWeek)}`} style={navArrow}>‹</Link>
+          <Link href={`/admin?tab=calendar&mode=week&week=${localStr(nextWeek)}`} style={navArrow}>›</Link>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           {(['eric', 'livi'] as const).map((s) => (
@@ -256,7 +258,7 @@ export default function WeekGridView({
       </div>
 
       {/* ── day headers ── sticky ─────────────────────────────────────────── */}
-      <div style={{ display: 'flex', paddingLeft: TW, position: 'sticky', top: 96, zIndex: 6, background: '#0d0c0a', borderBottom: '1px solid #1e1d1a' }}>
+      <div style={{ display: 'flex', paddingLeft: TW, position: 'sticky', top: stickyTop, zIndex: 6, background: '#0d0c0a', borderBottom: '1px solid #1e1d1a' }}>
         {days.map((day) => (
           <div key={day.dateStr} style={{ flex: 1, textAlign: 'center', padding: '6px 2px', opacity: day.isOpen ? 1 : 0.3 }}>
             <div style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: '#4a4844', letterSpacing: '0.06em', textTransform: 'uppercase', lineHeight: 1 }}>

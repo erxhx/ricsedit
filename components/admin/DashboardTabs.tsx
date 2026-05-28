@@ -4,7 +4,15 @@ import { useSearchParams } from 'next/navigation';
 import type { Appointment } from '@/lib/admin-mock';
 import DayView from './DayView';
 import WeekView from './WeekView';
+import DaySchedule from './DaySchedule';
 import WeekGridView from './WeekGridView';
+
+// Heights: AdminHeader=52, tab bar=44, sub-toggle=36 → column headers sticky at 132
+const SUB_STICKY = 132;
+
+function localDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 
 export default function DashboardTabs({
   todayApts,
@@ -18,76 +26,74 @@ export default function DashboardTabs({
   weekStart: Date;
 }) {
   const searchParams = useSearchParams();
-  const [tab, setTab] = useState<'today' | 'week'>(
-    searchParams.get('tab') === 'week' ? 'week' : 'today'
-  );
-  const [weekView, setWeekView] = useState<'list' | 'grid'>(
-    searchParams.get('view') === 'grid' ? 'grid' : 'list'
-  );
+
+  // Derive initial state from URL params (supports old ?tab=week URLs too)
+  function initTab(): 'overview' | 'calendar' {
+    const t = searchParams.get('tab');
+    if (t === 'calendar') return 'calendar';
+    if (t === 'overview') return 'overview';
+    // legacy: old ?view=grid or ?tab=week → calendar
+    if (searchParams.get('view') === 'grid') return 'calendar';
+    return 'overview';
+  }
+  function initOverviewMode(): 'day' | 'week' {
+    if (searchParams.get('tab') === 'overview' && searchParams.get('mode') === 'week') return 'week';
+    if (searchParams.get('tab') === 'week') return 'week'; // legacy
+    return 'day';
+  }
+  function initCalendarMode(): 'day' | 'week' {
+    if (searchParams.get('tab') === 'calendar' && searchParams.get('mode') === 'day') return 'day';
+    return 'week'; // default Calendar to week grid
+  }
+
+  const [activeTab,    setActiveTab]    = useState<'overview' | 'calendar'>(initTab);
+  const [overviewMode, setOverviewMode] = useState<'day' | 'week'>(initOverviewMode);
+  const [calendarMode, setCalendarMode] = useState<'day' | 'week'>(initCalendarMode);
 
   useEffect(() => {
-    if (searchParams.get('tab') === 'week') setTab('week');
-    if (searchParams.get('view') === 'grid') setWeekView('grid');
-    else if (searchParams.get('tab') === 'week') setWeekView('list');
+    const t = searchParams.get('tab');
+    if (t === 'calendar') { setActiveTab('calendar'); }
+    else if (t === 'overview') { setActiveTab('overview'); }
+    const mode = searchParams.get('mode');
+    if (t === 'overview') setOverviewMode(mode === 'week' ? 'week' : 'day');
+    if (t === 'calendar') setCalendarMode(mode === 'day' ? 'day' : 'week');
   }, [searchParams]);
+
+  const dayMode   = activeTab === 'overview' ? overviewMode   : calendarMode;
+  const setDayMode = activeTab === 'overview' ? setOverviewMode : setCalendarMode;
 
   return (
     <div>
-      {/* Tab bar */}
+      {/* ── main tab bar ──────────────────────────────────────────────────── */}
       <div style={{
-        display: 'flex', gap: 0,
+        display: 'flex', alignItems: 'center',
         borderBottom: '1px solid #252320',
-        padding: '0 20px',
+        padding: '0 16px',
         background: '#0d0c0a',
         position: 'sticky', top: 52, zIndex: 9,
+        height: 44,
       }}>
-        {(['today', 'week'] as const).map((t) => (
+        {(['overview', 'calendar'] as const).map((t) => (
           <button
             key={t}
-            onClick={() => setTab(t)}
+            onClick={() => setActiveTab(t)}
             style={{
-              fontFamily: 'var(--font-body)',
-              fontSize: 13,
-              fontWeight: tab === t ? 500 : 400,
-              color: tab === t ? '#ece9e2' : '#4a4844',
+              fontFamily: 'var(--font-body)', fontSize: 13,
+              fontWeight: activeTab === t ? 500 : 400,
+              color: activeTab === t ? '#ece9e2' : '#4a4844',
               background: 'none', border: 'none',
-              borderBottom: tab === t ? '2px solid #ece9e2' : '2px solid transparent',
-              padding: '12px 16px 10px',
+              borderBottom: activeTab === t ? '2px solid #ece9e2' : '2px solid transparent',
+              padding: '0 14px',
+              height: '100%',
               cursor: 'pointer',
               marginBottom: -1,
               textTransform: 'capitalize',
+              WebkitTapHighlightColor: 'transparent',
             }}
           >
             {t}
           </button>
         ))}
-
-        {/* Week view toggle — list vs grid */}
-        {tab === 'week' && (
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 2,
-            marginLeft: 8, alignSelf: 'center',
-          }}>
-            {(['list', 'grid'] as const).map((mode) => (
-              <button
-                key={mode}
-                onClick={() => setWeekView(mode)}
-                title={mode === 'list' ? 'List view' : 'Grid view'}
-                style={{
-                  width: 28, height: 28, borderRadius: 6,
-                  border: weekView === mode ? '1px solid #4a4844' : '1px solid transparent',
-                  background: weekView === mode ? '#252320' : 'none',
-                  color: weekView === mode ? '#ece9e2' : '#4a4844',
-                  cursor: 'pointer', fontSize: 13, lineHeight: 1,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  padding: 0,
-                }}
-              >
-                {mode === 'list' ? '≡' : '⊞'}
-              </button>
-            ))}
-          </div>
-        )}
 
         {/* New booking button */}
         <a
@@ -101,7 +107,6 @@ export default function DashboardTabs({
             border: 'none', borderRadius: 6,
             padding: '5px 12px',
             textDecoration: 'none',
-            alignSelf: 'center',
             whiteSpace: 'nowrap',
           }}
         >
@@ -109,9 +114,55 @@ export default function DashboardTabs({
         </a>
       </div>
 
-      {tab === 'today' && <DayView appointments={todayApts} date={today} />}
-      {tab === 'week' && weekView === 'list' && <WeekView appointments={weekApts} weekStart={weekStart} />}
-      {tab === 'week' && weekView === 'grid' && <WeekGridView appointments={weekApts} weekStart={weekStart} />}
+      {/* ── day / week sub-toggle ─────────────────────────────────────────── */}
+      <div style={{
+        display: 'flex', alignItems: 'center',
+        padding: '0 16px',
+        background: '#0d0c0a',
+        borderBottom: '1px solid #1a1917',
+        position: 'sticky', top: 96, zIndex: 8,
+        height: 36,
+        gap: 4,
+      }}>
+        {(['day', 'week'] as const).map((m) => (
+          <button
+            key={m}
+            onClick={() => setDayMode(m)}
+            style={{
+              fontFamily: 'var(--font-body)', fontSize: 12,
+              fontWeight: dayMode === m ? 500 : 400,
+              color: dayMode === m ? '#ece9e2' : '#4a4844',
+              background: dayMode === m ? '#252320' : 'none',
+              border: dayMode === m ? '1px solid #3a3835' : '1px solid transparent',
+              borderRadius: 6,
+              padding: '3px 12px',
+              cursor: 'pointer',
+              textTransform: 'capitalize',
+              WebkitTapHighlightColor: 'transparent',
+            }}
+          >
+            {m}
+          </button>
+        ))}
+
+        {/* Date context label */}
+        <span style={{
+          marginLeft: 'auto',
+          fontFamily: 'var(--font-body)', fontSize: 11,
+          color: '#3a3835', letterSpacing: '0.03em',
+        }}>
+          {dayMode === 'day'
+            ? today.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' })
+            : null
+          }
+        </span>
+      </div>
+
+      {/* ── content ───────────────────────────────────────────────────────── */}
+      {activeTab === 'overview' && overviewMode === 'day'  && <DayView appointments={todayApts} date={today} />}
+      {activeTab === 'overview' && overviewMode === 'week' && <WeekView appointments={weekApts} weekStart={weekStart} />}
+      {activeTab === 'calendar' && calendarMode === 'day'  && <DaySchedule appointments={todayApts} date={localDateStr(today)} stickyTop={SUB_STICKY} />}
+      {activeTab === 'calendar' && calendarMode === 'week' && <WeekGridView appointments={weekApts} weekStart={weekStart} stickyTop={SUB_STICKY} />}
     </div>
   );
 }

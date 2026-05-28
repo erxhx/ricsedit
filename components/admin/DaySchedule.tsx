@@ -65,9 +65,11 @@ type BlockSheet = { staff: 'eric' | 'livi'; time: string } | null;
 export default function DaySchedule({
   appointments: initial,
   date,
+  stickyTop = 96,
 }: {
   appointments: Appointment[];
   date: string;
+  stickyTop?: number;
 }) {
   const router = useRouter();
   const gridRef = useRef<HTMLDivElement>(null);
@@ -275,7 +277,7 @@ export default function DaySchedule({
       {/* ── staff column headers ──────────────────────────────────────────── */}
       <div style={{
         display: 'flex', paddingLeft: TW,
-        position: 'sticky', top: 96, zIndex: 6,
+        position: 'sticky', top: stickyTop, zIndex: 6,
         background: '#0d0c0a', borderBottom: '1px solid #1e1d1a',
       }}>
         {STAFF.map((s) => (

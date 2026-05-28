@@ -38,7 +38,7 @@ export default async function DayPage({ params }: { params: Promise<{ date: stri
         position: 'sticky', top: 52, background: '#0d0c0a', zIndex: 8,
       }}>
         {/* Back to week */}
-        <Link href="/admin?tab=week" style={{
+        <Link href="/admin?tab=overview&mode=week" style={{
           color: '#4a4844', textDecoration: 'none',
           fontFamily: 'var(--font-body)', fontSize: 13,
           display: 'flex', alignItems: 'center', gap: 4,

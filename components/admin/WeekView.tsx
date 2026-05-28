@@ -98,7 +98,7 @@ export default function WeekView({ appointments, weekStart }: { appointments: Ap
             {/* Jump to today — only shown when browsing a different week */}
             {!isThisWeek && (
               <Link
-                href="/admin?tab=week"
+                href="/admin?tab=overview&mode=week"
                 style={{
                   fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500,
                   color: '#b5824a', textDecoration: 'none',
@@ -111,8 +111,8 @@ export default function WeekView({ appointments, weekStart }: { appointments: Ap
                 Today
               </Link>
             )}
-            <Link href={`/admin?tab=week&week=${localDateStr(prevWeek)}`} style={navArrow}>‹</Link>
-            <Link href={`/admin?tab=week&week=${localDateStr(nextWeek)}`} style={navArrow}>›</Link>
+            <Link href={`/admin?tab=overview&mode=week&week=${localDateStr(prevWeek)}`} style={navArrow}>‹</Link>
+            <Link href={`/admin?tab=overview&mode=week&week=${localDateStr(nextWeek)}`} style={navArrow}>›</Link>
           </div>
         </div>
       </div>
