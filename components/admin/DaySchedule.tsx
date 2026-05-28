@@ -392,12 +392,21 @@ export default function DaySchedule({
                       <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: '#4a4844', fontStyle: 'italic' }}>Blocked</div>
                     ) : (
                       <>
-                        <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500, color: '#ece9e2', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500, color: '#ece9e2', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: apt.notes ? 14 : 0 }}>
                           {apt.clientName}
                         </div>
                         {hPx > 38 && (
                           <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: '#6b6760', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 1 }}>
                             {apt.service}
+                          </div>
+                        )}
+                        {apt.notes && (
+                          <div style={{
+                            position: 'absolute', top: 3, right: 5,
+                            fontSize: 9, color: '#b5824a', lineHeight: 1,
+                            fontFamily: 'var(--font-body)',
+                          }}>
+                            ≡
                           </div>
                         )}
                       </>
