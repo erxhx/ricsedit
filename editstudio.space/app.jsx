@@ -423,54 +423,6 @@ function Hero({ data, animComp, progress, speed, service }) {
 
 }
 
-function BookFab({ visible, service, onClick }) {
-  // Hide the FAB once the booking widget itself is in view — the CTA's
-  // job is done at that point and it was overlapping menu/gallery content.
-  const [bookingVisible, setBookingVisible] = useState(false);
-
-  useEffect(() => {
-    setBookingVisible(false);
-    if (!visible) return;
-    // Re-bind on service change + after a tick so the active panel's
-    // .acuity-frame has mounted.
-    const id = setTimeout(() => {
-      const frames = document.querySelectorAll('.booking-embed');
-      if (!frames.length) return;
-      const io = new IntersectionObserver(
-        (entries) => {
-          // any visible booking frame → hide FAB
-          const anyVisible = entries.some((e) => e.isIntersecting);
-          if (anyVisible) setBookingVisible(true);else
-          setBookingVisible(false);
-        },
-        { threshold: 0.15 }
-      );
-      frames.forEach((f) => io.observe(f));
-      window.__bookFabIO = io;
-    }, 50);
-    return () => {
-      clearTimeout(id);
-      if (window.__bookFabIO) { window.__bookFabIO.disconnect(); window.__bookFabIO = null; }
-    };
-  }, [visible, service]);
-
-  const show = visible && !bookingVisible;
-  return (
-    <button
-      type="button"
-      className={`book-fab ${show ? 'show' : ''}`}
-      onClick={onClick}
-      aria-label="Jump to booking">
-      <span className="book-fab-label">Book now</span>
-      <span className="book-fab-arr" aria-hidden="true">
-        <svg viewBox="0 0 20 10" width="20" height="10" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M2 2 L10 8 L18 2" />
-        </svg>
-      </span>
-    </button>);
-
-}
-
 function ServiceColumn({ service, isActive, hProgress, animSpeed, density, headlines, onVIdxChange }) {
   const stripRef = useRef(null);
   const [vIdx, setVIdx] = useState(0);
@@ -1031,11 +983,6 @@ function App() {
 
       <SideArrow side="left" service={prevSvc} onClick={() => setIdx(wrap(idx - 1))} />
       <SideArrow side="right" service={nextSvc} onClick={() => setIdx(wrap(idx + 1))} />
-
-      <BookFab
-        visible={['barber', 'tan', 'wax'].includes(services[idx]) && (t.acuityMode || 'embed') === 'embed'}
-        service={services[idx]}
-        onClick={() => window.dispatchEvent(new CustomEvent('edit-studio:goto-booking'))} />
 
       <window.TweaksPanel title="Edit Studio · Tweaks">
         <window.TweakSection label="Palette" />
