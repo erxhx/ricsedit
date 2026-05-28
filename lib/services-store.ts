@@ -30,6 +30,23 @@ export function getServicesStore(): ServicesData {
 }
 
 /**
+ * Ensures all tan and wax services (non-addon) have requiresWaiver: true.
+ * Runs on load to migrate any stale persisted data.
+ */
+function applyWaiverMigration(store: ServicesData): boolean {
+  let changed = false;
+  for (const svc of store.tanServices) {
+    if (!svc.requiresWaiver) { svc.requiresWaiver = true; changed = true; }
+  }
+  for (const group of store.waxGroups) {
+    for (const svc of group.services) {
+      if (!svc.requiresWaiver) { svc.requiresWaiver = true; changed = true; }
+    }
+  }
+  return changed;
+}
+
+/**
  * Async read — checks Supabase first so persisted edits survive server restarts.
  * Falls back to static defaults if the settings table doesn't exist yet.
  */
@@ -43,6 +60,8 @@ export async function getServicesStoreAsync(): Promise<ServicesData> {
       .single();
     if (!error && data?.value) {
       global.__servicesStore = data.value as ServicesData;
+      const migrated = applyWaiverMigration(global.__servicesStore);
+      if (migrated) saveServicesStore().catch(() => {});
       return global.__servicesStore;
     }
   } catch {
@@ -80,7 +99,7 @@ export function getAllServices(): Service[] {
 
 export function updateService(
   id: string,
-  patch: Partial<Pick<Service, 'name' | 'price' | 'durationMinutes' | 'description'>>,
+  patch: Partial<Pick<Service, 'name' | 'price' | 'durationMinutes' | 'description' | 'requiresWaiver'>>,
 ): Service | null {
   const svc = getAllServices().find((s) => s.id === id);
   if (!svc) return null;

@@ -13,7 +13,7 @@ export async function PATCH(
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;
-  const body = await req.json() as Partial<Pick<Service, 'name' | 'price' | 'durationMinutes' | 'description'>>;
+  const body = await req.json() as Partial<Pick<Service, 'name' | 'price' | 'durationMinutes' | 'description' | 'requiresWaiver'>>;
 
   if (body.name !== undefined && !body.name.trim()) {
     return Response.json({ error: 'Name cannot be empty' }, { status: 400 });

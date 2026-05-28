@@ -126,10 +126,11 @@ export default function ServicesEditor({ initial }: { initial: ServicesData }) {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            name: sheet.name.trim(),
-            description: sheet.description.trim(),
+            name:           sheet.name.trim(),
+            description:    sheet.description.trim(),
             price,
             durationMinutes: duration,
+            requiresWaiver: sheet.requiresWaiver,
           }),
         });
         const body = await res.json();
@@ -279,20 +280,18 @@ export default function ServicesEditor({ initial }: { initial: ServicesData }) {
                 )}
               </div>
 
-              {/* Requires waiver — only shown when adding a new service */}
-              {isNew && (
-                <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={sheet.requiresWaiver}
-                    onChange={(e) => setSheet((s) => s && ({ ...s, requiresWaiver: e.target.checked }))}
-                    style={{ width: 16, height: 16, cursor: 'pointer' }}
-                  />
-                  <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)' }}>
-                    Requires intake form
-                  </span>
-                </label>
-              )}
+              {/* Requires waiver — shown for all services */}
+              <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={sheet.requiresWaiver}
+                  onChange={(e) => setSheet((s) => s && ({ ...s, requiresWaiver: e.target.checked }))}
+                  style={{ width: 16, height: 16, cursor: 'pointer' }}
+                />
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)' }}>
+                  Requires intake form
+                </span>
+              </label>
             </div>
 
             {error && (
