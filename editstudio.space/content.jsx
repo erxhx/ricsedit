@@ -98,19 +98,10 @@ function BarberingContent({ headline }) {
     <div className="cpanel">
       <Eyebrow left="01 / Barbering" right="Sharp · Consistent · Detailed" />
       <h2>{headline || <span>Every cut, <em>edited</em>.</span>}</h2>
-      <p className="body">Precision cuts, blended to perfection. A personalized experience in a one chair, one barber studio. Scroll down to book.
-
-      </p>
+      <p className="body">Precision cuts, blended to perfection. A personalized experience in a one chair, one barber studio.</p>
 
       <div className="rule" />
-      <Eyebrow left="Menu" right="" />
-      <div className="menu">
-        <MenuRow name="Haircut" desc="Signature cut and style." price="$40" />
-        <MenuRow name="Beard Trim" desc="Trim, shape, line, oil." price="$25" />
-        <MenuRow name="Haircut + Beard" desc="The whole package." price="$60" />
-        <MenuRow name="Freshen Up" desc="Stay crispy. Must be within 2 weeks of last service." price="$25/$40" />
-        <MenuRow name="Kids + Senior Cuts" desc="Ages 10 under and 65+." price="$30" />
-      </div>
+      <window.BookingEmbed category="barber" />
 
       <div className="rule" />
       <Eyebrow left="Gallery" right="Recent work" />
@@ -141,9 +132,6 @@ function BarberingContent({ headline }) {
           </div>
         </div>
       </div>
-
-      <div className="rule" />
-      <AcuityEmbed category={window.__acuity && window.__acuity.barberCategory || 'Barbering'} label="a cut" mode={window.__acuity && window.__acuity.mode || 'embed'} />
     </div>);
 
 }
@@ -158,19 +146,7 @@ function TanContent({ headline }) {
       </p>
 
       <div className="rule" />
-      <Eyebrow left="Menu" right="" />
-      <div className="menu">
-        <MenuRow name="Classic <em>Full Body</em>" desc="Includes a personalized colour analysis, skin/hair/nail barriers, and a shimmering finishing powder. Develops in 8–12 hours." price="$60" />
-        <MenuRow name="Rapid <em>Full Body</em>" desc="Develops in 1–5 hours — perfect on the go." price="$70" />
-        <MenuRow name="Face Tan" desc="Face and neck. Skincare-grade glow." price="$15" />
-      </div>
-
-      <div className="menu-group">Add-ons</div>
-      <div className="menu">
-        <MenuRow name="Disposable Bra" desc="Bandeau style." price="+$5" />
-        <MenuRow name="Disposable Undies" desc="" price="+$5" />
-        <MenuRow name="Prep + Lock" desc="Two-step longevity treatment — Skin pH-balance prep + post-tan barrier lock. Extends your glow." price="+$20" />
-      </div>
+      <window.BookingEmbed category="tan" />
 
       <div className="rule" />
       <Eyebrow left="Gallery" right="Real bodies · real glow" />
@@ -243,9 +219,6 @@ function TanContent({ headline }) {
           </div>
         </div>
       </div>
-
-      <div className="rule" />
-      <AcuityEmbed category={window.__acuity && window.__acuity.tanCategory || 'Sunless'} label="a tan" mode={window.__acuity && window.__acuity.mode || 'embed'} />
     </div>);
 
 }
@@ -260,39 +233,7 @@ function WaxContent({ headline }) {
       </p>
 
       <div className="rule" />
-      <Eyebrow left="Menu" right="" />
-
-      <div className="menu-group">Brows + Face</div>
-      <div className="menu">
-        <MenuRow name="Brow Wax &amp; Shape" desc="Map, wax, tweeze, finish." price="$25" />
-        <MenuRow name="Brow Tint" desc="Define and deepen." price="$15" />
-        <MenuRow name="Lash Tint" desc="No mascara required." price="$25" />
-        <MenuRow name="Upper Lip" desc="" price="$10" />
-        <MenuRow name="Chin" desc="" price="$15" />
-        <MenuRow name="Cheek" desc="An ultra-smooth base for makeup + skincare absorption." price="$15" />
-      </div>
-
-      <div className="menu-group">Body</div>
-      <div className="menu">
-        <MenuRow name="Underarm" desc="Five minutes. Two weeks smooth." price="$20" />
-        <MenuRow name="Half Arm" desc="Upper or lower." price="$25" />
-        <MenuRow name="Full Arm" desc="" price="$45" />
-        <MenuRow name="Stomach" desc="" price="$25" />
-        <MenuRow name="Chest" desc="" price="$35" />
-        <MenuRow name="Shoulder" desc="" price="$25" />
-        <MenuRow name="Half Back" desc="Upper or lower." price="$30" />
-        <MenuRow name="Full Back" desc="" price="$50" />
-        <MenuRow name="Half Leg" desc="Upper or lower." price="$35" />
-        <MenuRow name="Full Leg" desc="" price="$70" />
-      </div>
-
-      <div className="menu-group">Bikini <span className="menu-group-note">· female genitalia services only (V)</span></div>
-      <div className="menu">
-        <MenuRow name="Bikini" desc="Removes hair that is visible outside of underwear or bikini area. " price="$35" />
-        <MenuRow name="French" desc="Perfect in between a Brazilian and a Bikini wax. Includes Bikini area, between the cheeks and excludes labia area." price="$45" />
-        <MenuRow name="Brazilian" desc="All hair removed, including between the cheeks! (Unless otherwise specified)" price="$50" />
-        <MenuRow name="Bum Cheeks" desc="Does not include between the cheeks. " price="$30" />
-      </div>
+      <window.BookingEmbed category="wax" />
 
       <div className="rule" />
       <Eyebrow left="Gallery" right="Studio &amp; brow work" />
@@ -323,9 +264,6 @@ function WaxContent({ headline }) {
           </div>
         </div>
       </div>
-
-      <div className="rule" />
-      <AcuityEmbed category={window.__acuity && window.__acuity.waxCategory || 'Waxing'} label="a wax" mode={window.__acuity && window.__acuity.mode || 'embed'} />
     </div>);
 
 }
@@ -365,9 +303,6 @@ function VisitContent() {
         <div className="row"><div>BEFORE/AFTER HOURS</div><div style={{ textAlign: "right" }}>By request</div></div>
       </div>
 
-      <div style={{ height: 32 }} />
-      <AcuityEmbed label="an appointment" mode={window.__acuity && window.__acuity.mode || 'embed'} />
-
       <div className="rule" />
       <Eyebrow left="FAQ" right="Read me first" />
       <div className="faq">
@@ -406,6 +341,9 @@ function VisitContent() {
         </p>
         <div className="row"><span>Visit in person</span><span>→</span></div>
       </div>
+
+      <div style={{ height: 32 }} />
+      <window.BookingEmbed />
 
       <div className="rule" />
       <p style={{ fontSize: 12, color: 'var(--ink-faint)', textAlign: 'center', lineHeight: 1.6 }}>

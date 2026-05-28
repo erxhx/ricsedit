@@ -1,0 +1,19 @@
+{
+  "name": "Edit Studio Admin",
+  "short_name": "ES Admin",
+  "description": "Edit Studio booking management",
+  "start_url": "/admin",
+  "scope": "/admin",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d0c0a",
+  "theme_color": "#0d0c0a",
+  "icons": [
+    {
+      "src": "/assets/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -27,7 +27,10 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
   position: fixed; inset: 0;
   background: var(--bg);
   color: var(--ink);
-  overflow: hidden;
+  /* overflow: clip instead of hidden — clip does not create a scroll container,
+     so scrollIntoView() inside an off-screen panel can never set app.scrollLeft
+     and shift the visible panel out of view. */
+  overflow: clip;
   isolation: isolate;
 }
 
@@ -446,6 +449,9 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
   overflow-y: auto;
   scrollbar-width: none;
   transition: padding-top 0.3s ease;
+  /* Keep scrollIntoView({ block:'end' }) clear of the chrome-bot overlay (~52px)
+     plus breathing room. scroll-padding-bottom is honoured by scrollIntoView. */
+  scroll-padding-bottom: 80px;
 }
 .cpanel::-webkit-scrollbar { display: none; }
 .cpanel .eyebrow {
@@ -592,7 +598,53 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
 .book:hover { gap: 18px; background: var(--accent, var(--ink)); }
 .book .arr { font-family: var(--display); font-style: italic; font-size: 16px; }
 
-/* Acuity inline embed */
+/* ── Custom booking embed ────────────────────────────────── */
+.booking-embed {
+  margin: 8px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.booking-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.booking-eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.booking-progress {
+  flex: 1;
+  max-width: 160px;
+  height: 2px;
+  background: var(--rule);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.booking-progress-fill {
+  height: 100%;
+  background: var(--ink);
+  border-radius: 2px;
+  transition: width 0.45s cubic-bezier(0.65, 0, 0.35, 1);
+}
+.booking-body {
+  /* Inputs inside the booking flow */
+}
+.bk-input::placeholder {
+  color: var(--ink-faint);
+}
+.bk-input:focus {
+  outline: none;
+  border-bottom-color: var(--ink) !important;
+}
+
+/* Acuity inline embed (kept for fallback — replaced by .booking-embed) */
 .acuity-embed {
   margin: 8px 0 0;
   display: flex; flex-direction: column; gap: 12px;
