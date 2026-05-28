@@ -49,11 +49,11 @@ function addMinutes(t: string, mins: number): string {
   return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
 }
 
+// Using CSS vars — works as inline style values
 const inputStyle: React.CSSProperties = {
   background: 'none', border: 'none', outline: 'none',
-  fontFamily: 'var(--font-body)', fontSize: 14, color: '#141210',
+  fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)',
   textAlign: 'right', width: '100%', padding: 0,
-  colorScheme: 'light',
 };
 
 const selectStyle: React.CSSProperties = {
@@ -61,6 +61,12 @@ const selectStyle: React.CSSProperties = {
   cursor: 'pointer',
   WebkitAppearance: 'none',
   appearance: 'none',
+};
+
+const sectionBox: React.CSSProperties = {
+  background: 'var(--admin-card)', border: '1px solid var(--admin-border)',
+  borderRadius: 10, overflow: 'hidden',
+  padding: '4px 16px', marginBottom: 24,
 };
 
 export default function NewBookingForm({
@@ -169,13 +175,13 @@ export default function NewBookingForm({
       <div style={{
         display: 'flex', alignItems: 'center', gap: 12,
         padding: '0 20px', height: 52,
-        borderBottom: '1px solid #d4cfc6',
-        position: 'sticky', top: 52, background: '#efeae0', zIndex: 8,
+        borderBottom: '1px solid var(--admin-border)',
+        position: 'sticky', top: 52, background: 'var(--admin-bg)', zIndex: 8,
       }}>
-        <Link href="/admin" style={{ color: '#4a4540', textDecoration: 'none', fontSize: 20, lineHeight: 1 }}>
+        <Link href="/admin" style={{ color: 'var(--admin-text2)', textDecoration: 'none', fontSize: 20, lineHeight: 1 }}>
           ‹
         </Link>
-        <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: '#6a6560' }}>
+        <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-text3)' }}>
           New booking
         </span>
       </div>
@@ -192,11 +198,11 @@ export default function NewBookingForm({
                 onClick={() => setStaff(s)}
                 style={{
                   flex: 1, padding: '12px 0', borderRadius: 10,
-                  border: active ? `1.5px solid ${c}` : '1px solid #d4cfc6',
+                  border: active ? `1.5px solid ${c}` : '1px solid var(--admin-border)',
                   background: active ? `${c}18` : 'none',
                   fontFamily: 'var(--font-body)', fontSize: 14,
                   fontWeight: active ? 500 : 400,
-                  color: active ? c : '#9a9590',
+                  color: active ? c : 'var(--admin-muted)',
                   cursor: 'pointer',
                 }}
               >
@@ -211,7 +217,7 @@ export default function NewBookingForm({
         <div style={sectionBox}>
           <FormRow label="Date">
             <div style={{ position: 'relative', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', flex: 1, minHeight: 24 }}>
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#141210', pointerEvents: 'none', userSelect: 'none' }}>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)', pointerEvents: 'none', userSelect: 'none' }}>
                 {fmtDateDisplay(date)}
               </span>
               <input
@@ -219,9 +225,9 @@ export default function NewBookingForm({
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
                 style={{
-                  position: 'absolute', inset: '-11px -16px', // extend to fill the full FormRow tap area
+                  position: 'absolute', inset: '-11px -16px',
                   opacity: 0.01, cursor: 'pointer',
-                  fontSize: 16, // prevent iOS auto-zoom on focus
+                  fontSize: 16,
                 }}
               />
             </div>
@@ -233,7 +239,7 @@ export default function NewBookingForm({
               style={selectStyle}
             >
               {TIME_SLOTS.map((t) => (
-                <option key={t} value={t} style={{ background: '#f7f3eb', color: '#141210' }}>
+                <option key={t} value={t} style={{ background: 'var(--admin-card)', color: 'var(--admin-text)' }}>
                   {fmtTime(t)}
                 </option>
               ))}
@@ -252,23 +258,23 @@ export default function NewBookingForm({
             >
               {staff === 'eric' ? (
                 (servicesData?.barberServices ?? BARBER_SERVICES).map((s) => (
-                  <option key={s.id} value={s.name} style={{ background: '#f7f3eb', color: '#141210' }}>
+                  <option key={s.id} value={s.name} style={{ background: 'var(--admin-card)', color: 'var(--admin-text)' }}>
                     {s.name}
                   </option>
                 ))
               ) : (
                 <>
-                  <optgroup label="Sunless Tan" style={{ background: '#f7f3eb' }}>
+                  <optgroup label="Sunless Tan" style={{ background: 'var(--admin-card)' }}>
                     {(servicesData?.tanServices ?? TAN_SERVICES).map((s) => (
-                      <option key={s.id} value={s.name} style={{ background: '#f7f3eb', color: '#141210' }}>
+                      <option key={s.id} value={s.name} style={{ background: 'var(--admin-card)', color: 'var(--admin-text)' }}>
                         {s.name}
                       </option>
                     ))}
                   </optgroup>
                   {(servicesData?.waxGroups ?? WAX_GROUPS).map((g) => (
-                    <optgroup key={g.name} label={g.name} style={{ background: '#f7f3eb' }}>
+                    <optgroup key={g.name} label={g.name} style={{ background: 'var(--admin-card)' }}>
                       {g.services.map((s) => (
-                        <option key={s.id} value={s.name} style={{ background: '#f7f3eb', color: '#141210' }}>
+                        <option key={s.id} value={s.name} style={{ background: 'var(--admin-card)', color: 'var(--admin-text)' }}>
                           {s.name}
                         </option>
                       ))}
@@ -276,7 +282,7 @@ export default function NewBookingForm({
                   ))}
                 </>
               )}
-              <option value="__custom__" style={{ background: '#f7f3eb', color: '#9a9590' }}>
+              <option value="__custom__" style={{ background: 'var(--admin-card)', color: 'var(--admin-muted)' }}>
                 Custom…
               </option>
             </select>
@@ -288,7 +294,7 @@ export default function NewBookingForm({
                 value={customService}
                 onChange={(e) => setCustomService(e.target.value)}
                 placeholder="Service name"
-                style={{ ...inputStyle, color: customService ? '#141210' : '#b0aaa0' }}
+                style={{ ...inputStyle, color: customService ? 'var(--admin-text)' : 'var(--admin-muted)' }}
               />
             </FormRow>
           )}
@@ -303,14 +309,14 @@ export default function NewBookingForm({
                 onChange={(e) => setDuration(Number(e.target.value))}
                 style={{ ...inputStyle, width: 48 }}
               />
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: '#9a9590', flexShrink: 0 }}>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-muted)', flexShrink: 0 }}>
                 min
               </span>
             </div>
           </FormRow>
           <FormRow label="Price" last>
             <div style={{ display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'flex-end' }}>
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#9a9590', flexShrink: 0 }}>$</span>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-muted)', flexShrink: 0 }}>$</span>
               <input
                 type="number"
                 value={price}
@@ -334,29 +340,29 @@ export default function NewBookingForm({
               onBlur={() => setTimeout(() => setSuggestions([]), 150)}
               placeholder="Full name"
               autoCapitalize="words"
-              style={{ ...inputStyle, color: clientName ? '#141210' : '#b0aaa0' }}
+              style={{ ...inputStyle, color: clientName ? 'var(--admin-text)' : 'var(--admin-muted)' }}
             />
           </FormRow>
 
           {/* Autocomplete suggestions */}
           {suggestions.length > 0 && (
-            <div style={{ margin: '0 -16px', borderBottom: '1px solid #e0dbd2' }}>
+            <div style={{ margin: '0 -16px', borderBottom: '1px solid var(--admin-border-sub)' }}>
               {suggestions.map((c) => (
                 <button
                   key={c.name}
                   onPointerDown={(e) => { e.preventDefault(); selectClient(c); }}
                   style={{
                     width: '100%', textAlign: 'left', background: 'none',
-                    border: 'none', borderBottom: '1px solid #e0dbd2',
+                    border: 'none', borderBottom: '1px solid var(--admin-border-sub)',
                     padding: '10px 16px', cursor: 'pointer',
                     display: 'flex', flexDirection: 'column', gap: 2,
                     WebkitTapHighlightColor: 'transparent',
                   }}
                 >
-                  <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#141210' }}>
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)' }}>
                     {c.name}
                   </span>
-                  <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#9a9590' }}>
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)' }}>
                     {c.email}{c.phone ? ` · ${c.phone}` : ''}
                   </span>
                 </button>
@@ -372,7 +378,7 @@ export default function NewBookingForm({
               onChange={(e) => setClientEmail(e.target.value)}
               placeholder="Optional"
               autoCapitalize="none"
-              style={{ ...inputStyle, color: clientEmail ? '#141210' : '#b0aaa0' }}
+              style={{ ...inputStyle, color: clientEmail ? 'var(--admin-text)' : 'var(--admin-muted)' }}
             />
           </FormRow>
           <FormRow label="Phone" last>
@@ -382,7 +388,7 @@ export default function NewBookingForm({
               value={clientPhone}
               onChange={(e) => setClientPhone(e.target.value)}
               placeholder="Optional"
-              style={{ ...inputStyle, color: clientPhone ? '#141210' : '#b0aaa0' }}
+              style={{ ...inputStyle, color: clientPhone ? 'var(--admin-text)' : 'var(--admin-muted)' }}
             />
           </FormRow>
         </div>
@@ -399,9 +405,8 @@ export default function NewBookingForm({
               width: '100%', boxSizing: 'border-box',
               background: 'none', border: 'none', outline: 'none',
               fontFamily: 'var(--font-body)', fontSize: 14,
-              color: notes ? '#141210' : '#b0aaa0',
+              color: notes ? 'var(--admin-text)' : 'var(--admin-muted)',
               resize: 'none', lineHeight: 1.5,
-              colorScheme: 'light',
             }}
           />
         </div>
@@ -411,7 +416,7 @@ export default function NewBookingForm({
           <div style={{
             marginTop: 16,
             fontFamily: 'var(--font-body)', fontSize: 13,
-            color: '#a04040', textAlign: 'center',
+            color: 'var(--admin-error)', textAlign: 'center',
           }}>
             {error}
           </div>
@@ -424,9 +429,9 @@ export default function NewBookingForm({
           style={{
             width: '100%', marginTop: 24, padding: '14px',
             borderRadius: 10, border: 'none',
-            background: submitting ? '#e0dbd2' : staffColor,
+            background: submitting ? 'var(--admin-btn)' : staffColor,
             fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 500,
-            color: submitting ? '#9a9590' : '#141210',
+            color: submitting ? 'var(--admin-muted)' : '#141210',
             cursor: submitting ? 'default' : 'pointer',
             transition: 'background 0.15s',
           }}
@@ -437,7 +442,7 @@ export default function NewBookingForm({
         {/* End time preview */}
         <div style={{
           marginTop: 10, textAlign: 'center',
-          fontFamily: 'var(--font-body)', fontSize: 12, color: '#9a9590',
+          fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)',
         }}>
           {fmtTime(startTime)} – {fmtTime(addMinutes(startTime, Math.max(duration, 5)))}
         </div>
@@ -446,17 +451,11 @@ export default function NewBookingForm({
   );
 }
 
-const sectionBox: React.CSSProperties = {
-  background: '#f7f3eb', border: '1px solid #d4cfc6',
-  borderRadius: 10, overflow: 'hidden',
-  padding: '4px 16px', marginBottom: 24,
-};
-
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
       fontFamily: 'var(--font-body)', fontSize: 10, letterSpacing: '0.12em',
-      textTransform: 'uppercase', color: '#9a9590', marginBottom: 8,
+      textTransform: 'uppercase', color: 'var(--admin-muted)', marginBottom: 8,
     }}>
       {children}
     </div>
@@ -468,9 +467,9 @@ function FormRow({ label, children, last = false }: { label: string; children: R
     <div style={{
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       padding: '11px 0',
-      borderBottom: last ? 'none' : '1px solid #e0dbd2',
+      borderBottom: last ? 'none' : '1px solid var(--admin-border-sub)',
     }}>
-      <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: '#6a6560', flexShrink: 0, marginRight: 16 }}>
+      <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-text3)', flexShrink: 0, marginRight: 16 }}>
         {label}
       </span>
       <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', minWidth: 0 }}>

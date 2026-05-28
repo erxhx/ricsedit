@@ -228,8 +228,8 @@ export default function WeekGridView({
   const navArrow: React.CSSProperties = {
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     width: 32, height: 32, borderRadius: 7,
-    border: '1px solid #d4cfc6', background: 'none',
-    color: '#4a4540', fontSize: 16, lineHeight: 1,
+    border: '1px solid var(--admin-border)', background: 'none',
+    color: 'var(--admin-text2)', fontSize: 16, lineHeight: 1,
     textDecoration: 'none', flexShrink: 0,
     WebkitTapHighlightColor: 'transparent',
   };
@@ -237,10 +237,10 @@ export default function WeekGridView({
   return (
     <div>
       {/* ── week nav ──────────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px 10px 10px', borderBottom: '1px solid #e0dbd2' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px 10px 10px', borderBottom: '1px solid var(--admin-border-sub)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {!isThisWeek && (
-            <Link href="/admin?tab=calendar&mode=week" style={{ fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500, color: '#b5824a', textDecoration: 'none', padding: '4px 9px', borderRadius: 6, border: '1px solid #d4cfc6', WebkitTapHighlightColor: 'transparent' }}>
+            <Link href="/admin?tab=calendar&mode=week" style={{ fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500, color: '#b5824a', textDecoration: 'none', padding: '4px 9px', borderRadius: 6, border: '1px solid var(--admin-border)', WebkitTapHighlightColor: 'transparent' }}>
               Today
             </Link>
           )}
@@ -251,25 +251,25 @@ export default function WeekGridView({
           {(['eric', 'livi'] as const).map((s) => (
             <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               <div style={{ width: 6, height: 6, borderRadius: '50%', background: s === 'eric' ? SERVICE_COLORS.ericBarber : SERVICE_COLORS.liviWax }} />
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: '#6a6560' }}>{s === 'eric' ? 'Eric' : 'Livi'}</span>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-text3)' }}>{s === 'eric' ? 'Eric' : 'Livi'}</span>
             </div>
           ))}
         </div>
       </div>
 
       {/* ── day headers ── sticky ─────────────────────────────────────────── */}
-      <div style={{ display: 'flex', paddingLeft: TW, position: 'sticky', top: stickyTop, zIndex: 6, background: '#efeae0', borderBottom: '1px solid #e0dbd2' }}>
+      <div style={{ display: 'flex', paddingLeft: TW, position: 'sticky', top: stickyTop, zIndex: 6, background: 'var(--admin-bg)', borderBottom: '1px solid var(--admin-border-sub)' }}>
         {days.map((day) => (
           <div key={day.dateStr} style={{ flex: 1, textAlign: 'center', padding: '6px 2px', opacity: day.isOpen ? 1 : 0.3 }}>
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: '#9a9590', letterSpacing: '0.06em', textTransform: 'uppercase', lineHeight: 1 }}>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: 'var(--admin-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', lineHeight: 1 }}>
               {DAY_ABBR[day.dow]}
             </div>
             {day.isToday ? (
-              <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#141210', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '2px auto 0' }}>
-                <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600, color: '#efeae0', lineHeight: 1 }}>{day.dateObj.getDate()}</span>
+              <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--admin-btn-primary-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '2px auto 0' }}>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600, color: 'var(--admin-btn-primary-fg)', lineHeight: 1 }}>{day.dateObj.getDate()}</span>
               </div>
             ) : (
-              <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 400, color: '#6a6560', lineHeight: 1.2, marginTop: 2 }}>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 400, color: 'var(--admin-text3)', lineHeight: 1.2, marginTop: 2 }}>
                 {day.dateObj.getDate()}
               </div>
             )}
@@ -283,7 +283,7 @@ export default function WeekGridView({
         {/* Hour labels */}
         <div style={{ width: TW, flexShrink: 0, position: 'relative', height: TOTAL_PX }}>
           {HOURS.map((h) => (
-            <div key={h} style={{ position: 'absolute', top: (h - H0) * 60 * PPM - 5, right: 4, fontFamily: 'var(--font-body)', fontSize: 9, color: '#9a9590', userSelect: 'none', lineHeight: 1 }}>
+            <div key={h} style={{ position: 'absolute', top: (h - H0) * 60 * PPM - 5, right: 4, fontFamily: 'var(--font-body)', fontSize: 9, color: 'var(--admin-muted)', userSelect: 'none', lineHeight: 1 }}>
               {fmtHour(h)}
             </div>
           ))}
@@ -304,16 +304,16 @@ export default function WeekGridView({
           return (
             <div
               key={day.dateStr}
-              style={{ flex: 1, position: 'relative', height: TOTAL_PX, borderLeft: '1px solid #e0dbd2', opacity: day.isOpen ? 1 : 0.6, background: day.isToday ? '#f0f7e8' : 'transparent' }}
+              style={{ flex: 1, position: 'relative', height: TOTAL_PX, borderLeft: '1px solid var(--admin-border-sub)', opacity: day.isOpen ? 1 : 0.6, background: day.isToday ? 'var(--admin-today)' : 'transparent' }}
             >
               {/* Hour gridlines */}
               {HOURS.map((h) => (
-                <div key={h} style={{ position: 'absolute', top: (h - H0) * 60 * PPM, left: 0, right: 0, borderTop: h === H0 ? 'none' : '1px solid #e0dbd2', pointerEvents: 'none' }} />
+                <div key={h} style={{ position: 'absolute', top: (h - H0) * 60 * PPM, left: 0, right: 0, borderTop: h === H0 ? 'none' : '1px solid var(--admin-border-sub)', pointerEvents: 'none' }} />
               ))}
 
               {/* Half-hour gridlines */}
               {HOURS.slice(0, -1).map((h) => (
-                <div key={`${h}h`} style={{ position: 'absolute', top: (h - H0) * 60 * PPM + 30 * PPM, left: 0, right: 0, borderTop: '1px solid #ebe6dd', pointerEvents: 'none' }} />
+                <div key={`${h}h`} style={{ position: 'absolute', top: (h - H0) * 60 * PPM + 30 * PPM, left: 0, right: 0, borderTop: '1px solid var(--admin-border-faint)', pointerEvents: 'none' }} />
               ))}
 
               {/* Tap-to-book slots */}
@@ -363,11 +363,11 @@ export default function WeekGridView({
                       boxSizing: 'border-box',
                     }}
                   >
-                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: '#141210', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: apt.notes ? 8 : 0 }}>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: 'var(--admin-text)', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: apt.notes ? 8 : 0 }}>
                       {apt.clientName.split(' ')[0]}
                     </div>
                     {hPx > 26 && (
-                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 8, color: '#6a6560', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 1 }}>
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 8, color: 'var(--admin-text3)', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 1 }}>
                         {apt.service}
                       </div>
                     )}
@@ -409,11 +409,11 @@ export default function WeekGridView({
       {/* ── drag confirm sheet ────────────────────────────────────────────── */}
       {dragConfirm && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 60 }} onClick={() => setDragConfirm(null)}>
-          <div onClick={(e) => e.stopPropagation()} style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: '#f5f0e8', borderRadius: '16px 16px 0 0', padding: '24px 20px 44px' }}>
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 500, color: '#141210', marginBottom: 4 }}>Reschedule</div>
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#6a6560', marginBottom: 20 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'var(--admin-sheet)', borderRadius: '16px 16px 0 0', padding: '24px 20px 44px' }}>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 500, color: 'var(--admin-text)', marginBottom: 4 }}>Reschedule</div>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text3)', marginBottom: 20 }}>
               Move {dragConfirm.apt.clientName} to{' '}
-              <span style={{ color: '#141210' }}>{fmtDateShort(dragConfirm.apt.date)} · {fmt(dragConfirm.newStartTime)} – {fmt(dragConfirm.newEndTime)}</span>?
+              <span style={{ color: 'var(--admin-text)' }}>{fmtDateShort(dragConfirm.apt.date)} · {fmt(dragConfirm.newStartTime)} – {fmt(dragConfirm.newEndTime)}</span>?
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <SlotBtn label={`Move to ${fmt(dragConfirm.newStartTime)}`} variant="primary" onClick={confirmReschedule} />
@@ -426,8 +426,8 @@ export default function WeekGridView({
       {/* ── slot action sheet ─────────────────────────────────────────────── */}
       {slotAction && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50 }} onClick={() => setSlotAction(null)}>
-          <div onClick={(e) => e.stopPropagation()} style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: '#f5f0e8', borderRadius: '16px 16px 0 0', padding: '20px 20px 44px' }}>
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: '#9a9590', marginBottom: 16, textAlign: 'center' }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'var(--admin-sheet)', borderRadius: '16px 16px 0 0', padding: '20px 20px 44px' }}>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-muted)', marginBottom: 16, textAlign: 'center' }}>
               {fmtDateShort(slotAction.date)} · {fmt(slotAction.time)}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -443,9 +443,9 @@ export default function WeekGridView({
 }
 
 function SlotBtn({ label, variant, onClick }: { label: string; variant: 'primary' | 'ghost'; onClick: () => void }) {
-  const bg     = variant === 'primary' ? '#141210' : 'none';
-  const fg     = variant === 'primary' ? '#efeae0' : '#4a4540';
-  const border = variant === 'ghost'   ? '1px solid #d4cfc6' : 'none';
+  const bg     = variant === 'primary' ? 'var(--admin-btn-primary-bg)' : 'none';
+  const fg     = variant === 'primary' ? 'var(--admin-btn-primary-fg)' : 'var(--admin-text2)';
+  const border = variant === 'ghost'   ? '1px solid var(--admin-border)' : 'none';
   return (
     <button onClick={onClick} style={{ width: '100%', padding: '14px', borderRadius: 10, border, background: bg, color: fg, fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: variant === 'primary' ? 500 : 400, cursor: 'pointer' }}>
       {label}

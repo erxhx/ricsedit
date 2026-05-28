@@ -18,13 +18,13 @@ export default async function ClientsPage() {
       <AdminHeader name={session.name} />
       <div style={{
         padding: '0 0 8px',
-        borderBottom: '1px solid #d4cfc6',
-        position: 'sticky', top: 52, background: '#efeae0', zIndex: 8,
+        borderBottom: '1px solid var(--admin-border)',
+        position: 'sticky', top: 52, background: 'var(--admin-bg)', zIndex: 8,
       }}>
         <div style={{
           padding: '14px 16px 0',
           fontFamily: 'var(--font-body)', fontSize: 18, fontWeight: 500,
-          color: '#141210',
+          color: 'var(--admin-text)',
         }}>
           Clients
         </div>

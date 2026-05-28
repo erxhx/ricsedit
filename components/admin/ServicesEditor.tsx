@@ -26,9 +26,9 @@ function updateServiceInData(d: ServicesData, updated: Service): ServicesData {
 
 const inputStyle: React.CSSProperties = {
   width: '100%', boxSizing: 'border-box',
-  background: '#f7f3eb', border: '1px solid #d4cfc6',
+  background: 'var(--admin-card)', border: '1px solid var(--admin-border)',
   borderRadius: 8, padding: '10px 12px',
-  fontFamily: 'var(--font-body)', fontSize: 14, color: '#141210',
+  fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)',
   outline: 'none',
 };
 
@@ -109,7 +109,7 @@ export default function ServicesEditor({ initial }: { initial: ServicesData }) {
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
-              width: '100%', background: '#f5f0e8',
+              width: '100%', background: 'var(--admin-sheet)',
               borderRadius: '16px 16px 0 0',
               padding: '24px 20px 48px',
               maxHeight: '85vh', overflowY: 'auto',
@@ -117,7 +117,7 @@ export default function ServicesEditor({ initial }: { initial: ServicesData }) {
           >
             <div style={{
               fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 500,
-              color: '#141210', marginBottom: 20,
+              color: 'var(--admin-text)', marginBottom: 20,
             }}>
               Edit service
             </div>
@@ -180,7 +180,7 @@ export default function ServicesEditor({ initial }: { initial: ServicesData }) {
             {error && (
               <div style={{
                 marginTop: 14, fontFamily: 'var(--font-body)',
-                fontSize: 13, color: '#a04040',
+                fontSize: 13, color: 'var(--admin-error)',
               }}>
                 {error}
               </div>
@@ -192,9 +192,9 @@ export default function ServicesEditor({ initial }: { initial: ServicesData }) {
                 disabled={saving}
                 style={{
                   width: '100%', padding: 14, borderRadius: 10, border: 'none',
-                  background: saving ? '#e0dbd2' : '#141210',
+                  background: saving ? 'var(--admin-btn)' : 'var(--admin-btn-primary-bg)',
                   fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 500,
-                  color: saving ? '#9a9590' : '#efeae0',
+                  color: saving ? 'var(--admin-muted)' : 'var(--admin-btn-primary-fg)',
                   cursor: saving ? 'default' : 'pointer',
                 }}
               >
@@ -204,8 +204,8 @@ export default function ServicesEditor({ initial }: { initial: ServicesData }) {
                 onClick={() => setEditing(null)}
                 style={{
                   width: '100%', padding: 14, borderRadius: 10,
-                  border: '1px solid #d4cfc6', background: 'none',
-                  fontFamily: 'var(--font-body)', fontSize: 14, color: '#4a4540',
+                  border: '1px solid var(--admin-border)', background: 'none',
+                  fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text2)',
                   cursor: 'pointer',
                 }}
               >
@@ -224,11 +224,11 @@ function SectionHeader({ label, staff }: { label: string; staff: string }) {
     <div style={{ padding: '28px 20px 10px' }}>
       <div style={{
         fontFamily: 'var(--font-body)', fontSize: 10, letterSpacing: '0.12em',
-        textTransform: 'uppercase', color: '#9a9590', marginBottom: 2,
+        textTransform: 'uppercase', color: 'var(--admin-muted)', marginBottom: 2,
       }}>
         {label}
       </div>
-      <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#9a9590' }}>
+      <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)' }}>
         with {staff}
       </div>
     </div>
@@ -243,12 +243,12 @@ function GroupLabel({ label, note }: { label: string; note?: string }) {
     }}>
       <span style={{
         fontFamily: 'var(--font-body)', fontSize: 11,
-        letterSpacing: '0.08em', color: '#9a9590',
+        letterSpacing: '0.08em', color: 'var(--admin-muted)',
       }}>
         {label}
       </span>
       {note && (
-        <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: '#9a9590' }}>
+        <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-muted)' }}>
           · {note}
         </span>
       )}
@@ -260,7 +260,7 @@ function ServiceList({ services, onEdit }: { services: Service[]; onEdit: (s: Se
   return (
     <div style={{
       margin: '0 20px',
-      background: '#f7f3eb', border: '1px solid #d4cfc6',
+      background: 'var(--admin-card)', border: '1px solid var(--admin-border)',
       borderRadius: 10, overflow: 'hidden',
     }}>
       {services.map((svc, i) => (
@@ -274,21 +274,21 @@ function ServiceList({ services, onEdit }: { services: Service[]; onEdit: (s: Se
             background: 'none', border: 'none',
             borderBottomWidth: i < services.length - 1 ? 1 : 0,
             borderBottomStyle: 'solid',
-            borderBottomColor: '#e0dbd2',
+            borderBottomColor: 'var(--admin-border-sub)',
             cursor: 'pointer',
             WebkitTapHighlightColor: 'transparent',
           }}
         >
           <div style={{ flex: 1, minWidth: 0, marginRight: 12 }}>
             <div style={{
-              fontFamily: 'var(--font-body)', fontSize: 14, color: '#141210',
+              fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)',
               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
             }}>
               {svc.name}
             </div>
             {svc.description && (
               <div style={{
-                fontFamily: 'var(--font-body)', fontSize: 11, color: '#9a9590',
+                fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-muted)',
                 marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
               }}>
                 {svc.description}
@@ -297,16 +297,16 @@ function ServiceList({ services, onEdit }: { services: Service[]; onEdit: (s: Se
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#141210' }}>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)' }}>
                 ${svc.price}
               </div>
               {svc.durationMinutes > 0 && (
-                <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: '#9a9590' }}>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-muted)' }}>
                   {svc.durationMinutes} min
                 </div>
               )}
             </div>
-            <span style={{ fontSize: 14, color: '#9a9590' }}>›</span>
+            <span style={{ fontSize: 14, color: 'var(--admin-muted)' }}>›</span>
           </div>
         </button>
       ))}
@@ -318,7 +318,7 @@ function Label({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
       fontFamily: 'var(--font-body)', fontSize: 11,
-      letterSpacing: '0.06em', color: '#6a6560',
+      letterSpacing: '0.06em', color: 'var(--admin-text3)',
       marginBottom: 6, textTransform: 'uppercase',
     }}>
       {children}

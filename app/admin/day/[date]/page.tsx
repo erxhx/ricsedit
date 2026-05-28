@@ -34,12 +34,12 @@ export default async function DayPage({ params }: { params: Promise<{ date: stri
       <div style={{
         display: 'flex', alignItems: 'center',
         padding: '0 16px', height: 44,
-        borderBottom: '1px solid #d4cfc6',
-        position: 'sticky', top: 52, background: '#efeae0', zIndex: 8,
+        borderBottom: '1px solid var(--admin-border)',
+        position: 'sticky', top: 52, background: 'var(--admin-bg)', zIndex: 8,
       }}>
         {/* Back to week */}
         <Link href="/admin?tab=overview&mode=week" style={{
-          color: '#6a6560', textDecoration: 'none',
+          color: 'var(--admin-text3)', textDecoration: 'none',
           fontFamily: 'var(--font-body)', fontSize: 13,
           display: 'flex', alignItems: 'center', gap: 4,
           paddingRight: 12,
@@ -51,16 +51,16 @@ export default async function DayPage({ params }: { params: Promise<{ date: stri
         {/* Date + prev/next arrows — centred in remaining space */}
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
           <Link href={`/admin/day/${shiftDay(date, -1)}`} style={{
-            color: '#6a6560', textDecoration: 'none', fontSize: 20, lineHeight: 1,
+            color: 'var(--admin-text3)', textDecoration: 'none', fontSize: 20, lineHeight: 1,
             WebkitTapHighlightColor: 'transparent',
           }}>‹</Link>
 
-          <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: '#141210', whiteSpace: 'nowrap' }}>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-text)', whiteSpace: 'nowrap' }}>
             {fmtDate(date)}
           </span>
 
           <Link href={`/admin/day/${shiftDay(date, 1)}`} style={{
-            color: '#6a6560', textDecoration: 'none', fontSize: 20, lineHeight: 1,
+            color: 'var(--admin-text3)', textDecoration: 'none', fontSize: 20, lineHeight: 1,
             WebkitTapHighlightColor: 'transparent',
           }}>›</Link>
         </div>

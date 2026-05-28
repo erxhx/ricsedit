@@ -67,9 +67,9 @@ export default function DashboardTabs({
       {/* ── main tab bar ──────────────────────────────────────────────────── */}
       <div style={{
         display: 'flex', alignItems: 'center',
-        borderBottom: '1px solid #d4cfc6',
+        borderBottom: '1px solid var(--admin-border)',
         padding: '0 16px',
-        background: '#efeae0',
+        background: 'var(--admin-bg)',
         position: 'sticky', top: 52, zIndex: 9,
         height: 44,
       }}>
@@ -80,9 +80,9 @@ export default function DashboardTabs({
             style={{
               fontFamily: 'var(--font-body)', fontSize: 13,
               fontWeight: activeTab === t ? 500 : 400,
-              color: activeTab === t ? '#141210' : '#9a9590',
+              color: activeTab === t ? 'var(--admin-text)' : 'var(--admin-muted)',
               background: 'none', border: 'none',
-              borderBottom: activeTab === t ? '2px solid #141210' : '2px solid transparent',
+              borderBottom: activeTab === t ? '2px solid var(--admin-text)' : '2px solid transparent',
               padding: '0 14px',
               height: '100%',
               cursor: 'pointer',
@@ -102,8 +102,8 @@ export default function DashboardTabs({
             marginLeft: 'auto',
             display: 'flex', alignItems: 'center',
             fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 500,
-            color: '#141210',
-            background: '#e0dbd2',
+            color: 'var(--admin-text)',
+            background: 'var(--admin-btn)',
             border: 'none', borderRadius: 6,
             padding: '5px 12px',
             textDecoration: 'none',
@@ -118,8 +118,8 @@ export default function DashboardTabs({
       <div style={{
         display: 'flex', alignItems: 'center',
         padding: '0 16px',
-        background: '#efeae0',
-        borderBottom: '1px solid #e0dbd2',
+        background: 'var(--admin-bg)',
+        borderBottom: '1px solid var(--admin-border-sub)',
         position: 'sticky', top: 96, zIndex: 8,
         height: 36,
         gap: 4,
@@ -131,9 +131,9 @@ export default function DashboardTabs({
             style={{
               fontFamily: 'var(--font-body)', fontSize: 12,
               fontWeight: dayMode === m ? 500 : 400,
-              color: dayMode === m ? '#141210' : '#9a9590',
-              background: dayMode === m ? '#e0dbd2' : 'none',
-              border: dayMode === m ? '1px solid #c4bdb4' : '1px solid transparent',
+              color: dayMode === m ? 'var(--admin-text)' : 'var(--admin-muted)',
+              background: dayMode === m ? 'var(--admin-btn)' : 'none',
+              border: dayMode === m ? '1px solid var(--admin-btn-border)' : '1px solid transparent',
               borderRadius: 6,
               padding: '3px 12px',
               cursor: 'pointer',
@@ -149,7 +149,7 @@ export default function DashboardTabs({
         <span style={{
           marginLeft: 'auto',
           fontFamily: 'var(--font-body)', fontSize: 11,
-          color: '#9a9590', letterSpacing: '0.03em',
+          color: 'var(--admin-muted)', letterSpacing: '0.03em',
         }}>
           {dayMode === 'day'
             ? today.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' })

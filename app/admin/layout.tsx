@@ -1,4 +1,7 @@
-import type { Metadata, Viewport } from 'next';
+import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
+import type { AdminTheme } from '@/lib/admin-theme';
+import AdminThemeProvider from '@/components/admin/AdminThemeProvider';
 
 export const metadata: Metadata = {
   title: 'Edit Studio Admin',
@@ -11,24 +14,23 @@ export const metadata: Metadata = {
   },
 };
 
-export const viewport: Viewport = {
-  width: 'device-width',
-  initialScale: 1,
-  viewportFit: 'cover',
-  themeColor: '#efeae0',
-};
+export async function generateViewport() {
+  const cookieStore = await cookies();
+  const theme = (cookieStore.get('admin-theme')?.value ?? 'light') as AdminTheme;
+  return {
+    width: 'device-width',
+    initialScale: 1,
+    viewportFit: 'cover',
+    themeColor: theme === 'dark' ? '#0d0c0a' : '#efeae0',
+  };
+}
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const cookieStore = await cookies();
+  const initialTheme = (cookieStore.get('admin-theme')?.value ?? 'light') as AdminTheme;
   return (
-    <div style={{
-      minHeight: '100dvh',
-      background: '#efeae0',
-      color: '#141210',
-      // Safe area insets for iPhone notch / home indicator
-      paddingTop: 'env(safe-area-inset-top)',
-      paddingBottom: 'env(safe-area-inset-bottom)',
-    }}>
+    <AdminThemeProvider initialTheme={initialTheme}>
       {children}
-    </div>
+    </AdminThemeProvider>
   );
 }
