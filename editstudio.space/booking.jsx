@@ -98,8 +98,13 @@
   }
 
   // Available start times for a given date, service duration, category, and already-booked ranges.
-  // Walks the open hours in 15-min steps; when a booking blocks the current cursor it jumps
-  // straight to that booking's end time — so appointments chain exactly off each other.
+  //
+  // Barber  — 45-min steps through free time (maximises haircut slots); allows slots that end
+  //           up to 15 min past close so e.g. a 5:30 pm haircut ending at 6:15 pm is offered.
+  // Livi    — 15-min steps through free time, no end-of-day flex.
+  //
+  // When a booking ends at an off-cadence time the cursor jumps to that exact end time and
+  // continues stepping from there — appointments always chain off real end times.
   function bkAvailableSlots(date, durationMins, category, bookedRanges) {
     var dow = date.getDay();
     var hrs = BK_HOURS[dow];
@@ -108,11 +113,15 @@
     var close = hrs[1] * 60;
     if (category === 'barber' && dow === 4) close = BK_BARBER_THU_CLOSE * 60;
 
+    var isBarber = category === 'barber';
+    var step     = isBarber ? 45 : 15;
+    var deadline = close + (isBarber ? 15 : 0); // latest minute a slot may end
+
     var sorted = (bookedRanges || []).slice().sort(function(a, b) { return a.startMinutes - b.startMinutes; });
     var slots  = [];
     var cursor = open;
 
-    while (cursor + durationMins <= close) {
+    while (cursor + durationMins <= deadline) {
       // If cursor lands inside a booked range, jump to its end
       var jumped = false;
       for (var i = 0; i < sorted.length; i++) {
@@ -139,7 +148,7 @@
         cursor = overlapEnd; // jump past blocking range
       } else {
         slots.push({ h: Math.floor(cursor / 60), m: cursor % 60 });
-        cursor += 15; // 15-min steps through free time
+        cursor += step;
       }
     }
 
