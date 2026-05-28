@@ -51,9 +51,9 @@ function addMinutes(t: string, mins: number): string {
 
 const inputStyle: React.CSSProperties = {
   background: 'none', border: 'none', outline: 'none',
-  fontFamily: 'var(--font-body)', fontSize: 14, color: '#ece9e2',
+  fontFamily: 'var(--font-body)', fontSize: 14, color: '#141210',
   textAlign: 'right', width: '100%', padding: 0,
-  colorScheme: 'dark',
+  colorScheme: 'light',
 };
 
 const selectStyle: React.CSSProperties = {
@@ -169,13 +169,13 @@ export default function NewBookingForm({
       <div style={{
         display: 'flex', alignItems: 'center', gap: 12,
         padding: '0 20px', height: 52,
-        borderBottom: '1px solid #252320',
-        position: 'sticky', top: 52, background: '#0d0c0a', zIndex: 8,
+        borderBottom: '1px solid #d4cfc6',
+        position: 'sticky', top: 52, background: '#efeae0', zIndex: 8,
       }}>
-        <Link href="/admin" style={{ color: '#6b6760', textDecoration: 'none', fontSize: 20, lineHeight: 1 }}>
+        <Link href="/admin" style={{ color: '#4a4540', textDecoration: 'none', fontSize: 20, lineHeight: 1 }}>
           ‹
         </Link>
-        <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: '#6b6760' }}>
+        <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: '#6a6560' }}>
           New booking
         </span>
       </div>
@@ -192,11 +192,11 @@ export default function NewBookingForm({
                 onClick={() => setStaff(s)}
                 style={{
                   flex: 1, padding: '12px 0', borderRadius: 10,
-                  border: active ? `1.5px solid ${c}` : '1px solid #252320',
+                  border: active ? `1.5px solid ${c}` : '1px solid #d4cfc6',
                   background: active ? `${c}18` : 'none',
                   fontFamily: 'var(--font-body)', fontSize: 14,
                   fontWeight: active ? 500 : 400,
-                  color: active ? c : '#4a4844',
+                  color: active ? c : '#9a9590',
                   cursor: 'pointer',
                 }}
               >
@@ -211,7 +211,7 @@ export default function NewBookingForm({
         <div style={sectionBox}>
           <FormRow label="Date">
             <div style={{ position: 'relative', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', flex: 1, minHeight: 24 }}>
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#ece9e2', pointerEvents: 'none', userSelect: 'none' }}>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#141210', pointerEvents: 'none', userSelect: 'none' }}>
                 {fmtDateDisplay(date)}
               </span>
               <input
@@ -233,7 +233,7 @@ export default function NewBookingForm({
               style={selectStyle}
             >
               {TIME_SLOTS.map((t) => (
-                <option key={t} value={t} style={{ background: '#1c1b18', color: '#ece9e2' }}>
+                <option key={t} value={t} style={{ background: '#f7f3eb', color: '#141210' }}>
                   {fmtTime(t)}
                 </option>
               ))}
@@ -252,23 +252,23 @@ export default function NewBookingForm({
             >
               {staff === 'eric' ? (
                 (servicesData?.barberServices ?? BARBER_SERVICES).map((s) => (
-                  <option key={s.id} value={s.name} style={{ background: '#1c1b18', color: '#ece9e2' }}>
+                  <option key={s.id} value={s.name} style={{ background: '#f7f3eb', color: '#141210' }}>
                     {s.name}
                   </option>
                 ))
               ) : (
                 <>
-                  <optgroup label="Sunless Tan" style={{ background: '#1c1b18' }}>
+                  <optgroup label="Sunless Tan" style={{ background: '#f7f3eb' }}>
                     {(servicesData?.tanServices ?? TAN_SERVICES).map((s) => (
-                      <option key={s.id} value={s.name} style={{ background: '#1c1b18', color: '#ece9e2' }}>
+                      <option key={s.id} value={s.name} style={{ background: '#f7f3eb', color: '#141210' }}>
                         {s.name}
                       </option>
                     ))}
                   </optgroup>
                   {(servicesData?.waxGroups ?? WAX_GROUPS).map((g) => (
-                    <optgroup key={g.name} label={g.name} style={{ background: '#1c1b18' }}>
+                    <optgroup key={g.name} label={g.name} style={{ background: '#f7f3eb' }}>
                       {g.services.map((s) => (
-                        <option key={s.id} value={s.name} style={{ background: '#1c1b18', color: '#ece9e2' }}>
+                        <option key={s.id} value={s.name} style={{ background: '#f7f3eb', color: '#141210' }}>
                           {s.name}
                         </option>
                       ))}
@@ -276,7 +276,7 @@ export default function NewBookingForm({
                   ))}
                 </>
               )}
-              <option value="__custom__" style={{ background: '#1c1b18', color: '#6b6760' }}>
+              <option value="__custom__" style={{ background: '#f7f3eb', color: '#9a9590' }}>
                 Custom…
               </option>
             </select>
@@ -288,7 +288,7 @@ export default function NewBookingForm({
                 value={customService}
                 onChange={(e) => setCustomService(e.target.value)}
                 placeholder="Service name"
-                style={{ ...inputStyle, color: customService ? '#ece9e2' : '#3a3835' }}
+                style={{ ...inputStyle, color: customService ? '#141210' : '#b0aaa0' }}
               />
             </FormRow>
           )}
@@ -303,14 +303,14 @@ export default function NewBookingForm({
                 onChange={(e) => setDuration(Number(e.target.value))}
                 style={{ ...inputStyle, width: 48 }}
               />
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: '#6b6760', flexShrink: 0 }}>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: '#9a9590', flexShrink: 0 }}>
                 min
               </span>
             </div>
           </FormRow>
           <FormRow label="Price" last>
             <div style={{ display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'flex-end' }}>
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#6b6760', flexShrink: 0 }}>$</span>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#9a9590', flexShrink: 0 }}>$</span>
               <input
                 type="number"
                 value={price}
@@ -334,29 +334,29 @@ export default function NewBookingForm({
               onBlur={() => setTimeout(() => setSuggestions([]), 150)}
               placeholder="Full name"
               autoCapitalize="words"
-              style={{ ...inputStyle, color: clientName ? '#ece9e2' : '#3a3835' }}
+              style={{ ...inputStyle, color: clientName ? '#141210' : '#b0aaa0' }}
             />
           </FormRow>
 
           {/* Autocomplete suggestions */}
           {suggestions.length > 0 && (
-            <div style={{ margin: '0 -16px', borderBottom: '1px solid #1e1d1a' }}>
+            <div style={{ margin: '0 -16px', borderBottom: '1px solid #e0dbd2' }}>
               {suggestions.map((c) => (
                 <button
                   key={c.name}
                   onPointerDown={(e) => { e.preventDefault(); selectClient(c); }}
                   style={{
                     width: '100%', textAlign: 'left', background: 'none',
-                    border: 'none', borderBottom: '1px solid #1a1917',
+                    border: 'none', borderBottom: '1px solid #e0dbd2',
                     padding: '10px 16px', cursor: 'pointer',
                     display: 'flex', flexDirection: 'column', gap: 2,
                     WebkitTapHighlightColor: 'transparent',
                   }}
                 >
-                  <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#ece9e2' }}>
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#141210' }}>
                     {c.name}
                   </span>
-                  <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#4a4844' }}>
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#9a9590' }}>
                     {c.email}{c.phone ? ` · ${c.phone}` : ''}
                   </span>
                 </button>
@@ -372,7 +372,7 @@ export default function NewBookingForm({
               onChange={(e) => setClientEmail(e.target.value)}
               placeholder="Optional"
               autoCapitalize="none"
-              style={{ ...inputStyle, color: clientEmail ? '#ece9e2' : '#3a3835' }}
+              style={{ ...inputStyle, color: clientEmail ? '#141210' : '#b0aaa0' }}
             />
           </FormRow>
           <FormRow label="Phone" last>
@@ -382,7 +382,7 @@ export default function NewBookingForm({
               value={clientPhone}
               onChange={(e) => setClientPhone(e.target.value)}
               placeholder="Optional"
-              style={{ ...inputStyle, color: clientPhone ? '#ece9e2' : '#3a3835' }}
+              style={{ ...inputStyle, color: clientPhone ? '#141210' : '#b0aaa0' }}
             />
           </FormRow>
         </div>
@@ -399,9 +399,9 @@ export default function NewBookingForm({
               width: '100%', boxSizing: 'border-box',
               background: 'none', border: 'none', outline: 'none',
               fontFamily: 'var(--font-body)', fontSize: 14,
-              color: notes ? '#ece9e2' : '#3a3835',
+              color: notes ? '#141210' : '#b0aaa0',
               resize: 'none', lineHeight: 1.5,
-              colorScheme: 'dark',
+              colorScheme: 'light',
             }}
           />
         </div>
@@ -411,7 +411,7 @@ export default function NewBookingForm({
           <div style={{
             marginTop: 16,
             fontFamily: 'var(--font-body)', fontSize: 13,
-            color: '#c47a7a', textAlign: 'center',
+            color: '#a04040', textAlign: 'center',
           }}>
             {error}
           </div>
@@ -424,9 +424,9 @@ export default function NewBookingForm({
           style={{
             width: '100%', marginTop: 24, padding: '14px',
             borderRadius: 10, border: 'none',
-            background: submitting ? '#252320' : staffColor,
+            background: submitting ? '#e0dbd2' : staffColor,
             fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 500,
-            color: submitting ? '#4a4844' : '#0d0c0a',
+            color: submitting ? '#9a9590' : '#141210',
             cursor: submitting ? 'default' : 'pointer',
             transition: 'background 0.15s',
           }}
@@ -437,7 +437,7 @@ export default function NewBookingForm({
         {/* End time preview */}
         <div style={{
           marginTop: 10, textAlign: 'center',
-          fontFamily: 'var(--font-body)', fontSize: 12, color: '#4a4844',
+          fontFamily: 'var(--font-body)', fontSize: 12, color: '#9a9590',
         }}>
           {fmtTime(startTime)} – {fmtTime(addMinutes(startTime, Math.max(duration, 5)))}
         </div>
@@ -447,7 +447,7 @@ export default function NewBookingForm({
 }
 
 const sectionBox: React.CSSProperties = {
-  background: '#161513', border: '1px solid #252320',
+  background: '#f7f3eb', border: '1px solid #d4cfc6',
   borderRadius: 10, overflow: 'hidden',
   padding: '4px 16px', marginBottom: 24,
 };
@@ -456,7 +456,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
       fontFamily: 'var(--font-body)', fontSize: 10, letterSpacing: '0.12em',
-      textTransform: 'uppercase', color: '#4a4844', marginBottom: 8,
+      textTransform: 'uppercase', color: '#9a9590', marginBottom: 8,
     }}>
       {children}
     </div>
@@ -468,9 +468,9 @@ function FormRow({ label, children, last = false }: { label: string; children: R
     <div style={{
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       padding: '11px 0',
-      borderBottom: last ? 'none' : '1px solid #1e1d1a',
+      borderBottom: last ? 'none' : '1px solid #e0dbd2',
     }}>
-      <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: '#6b6760', flexShrink: 0, marginRight: 16 }}>
+      <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: '#6a6560', flexShrink: 0, marginRight: 16 }}>
         {label}
       </span>
       <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', minWidth: 0 }}>

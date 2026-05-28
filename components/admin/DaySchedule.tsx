@@ -169,7 +169,7 @@ export default function DaySchedule({
       const el = aptEls.current.get(apt.id);
       if (el) {
         el.style.transform = 'scale(1.04)';
-        el.style.boxShadow = `0 4px 16px rgba(0,0,0,0.5), 0 0 0 1.5px ${col}`;
+        el.style.boxShadow = `0 4px 16px rgba(20,18,16,0.2), 0 0 0 1.5px ${col}`;
         el.style.zIndex = '5';
         el.style.transition = 'transform 0.12s ease, box-shadow 0.12s ease';
       }
@@ -278,12 +278,12 @@ export default function DaySchedule({
       <div style={{
         display: 'flex', paddingLeft: TW,
         position: 'sticky', top: stickyTop, zIndex: 6,
-        background: '#0d0c0a', borderBottom: '1px solid #1e1d1a',
+        background: '#efeae0', borderBottom: '1px solid #d4cfc6',
       }}>
         {STAFF.map((s) => (
           <div key={s} style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, padding: '9px 12px' }}>
             <span style={{ width: 7, height: 7, borderRadius: '50%', background: STAFF_DOT[s], flexShrink: 0, display: 'inline-block' }} />
-            <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: '#ece9e2' }}>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: '#141210' }}>
               {s === 'eric' ? 'Eric' : 'Livi'}
             </span>
           </div>
@@ -301,7 +301,7 @@ export default function DaySchedule({
               top: (h - H0) * 60 * PPM - 6,
               right: 8,
               fontFamily: 'var(--font-body)', fontSize: 10,
-              color: '#3a3835', userSelect: 'none',
+              color: '#9a9590', userSelect: 'none',
             }}>
               {h === 12 ? '12pm' : h > 12 ? `${h - 12}pm` : `${h}am`}
             </div>
@@ -325,14 +325,14 @@ export default function DaySchedule({
           const staffApts = visible.filter((a) => a.staff === staff);
 
           return (
-            <div key={staff} style={{ flex: 1, position: 'relative', height: TOTAL_PX, borderLeft: '1px solid #1e1d1a' }}>
+            <div key={staff} style={{ flex: 1, position: 'relative', height: TOTAL_PX, borderLeft: '1px solid #e0dbd2' }}>
 
               {/* hour gridlines */}
               {HOURS.map((h) => (
                 <div key={h} style={{
                   position: 'absolute', top: (h - H0) * 60 * PPM,
                   left: 0, right: 0,
-                  borderTop: h === H0 ? 'none' : '1px solid #1a1917',
+                  borderTop: h === H0 ? 'none' : '1px solid #e0dbd2',
                   pointerEvents: 'none',
                 }} />
               ))}
@@ -341,7 +341,7 @@ export default function DaySchedule({
               {HOURS.slice(0, -1).map((h) => (
                 <div key={`${h}h`} style={{
                   position: 'absolute', top: (h - H0) * 60 * PPM + 30 * PPM,
-                  left: 0, right: 0, borderTop: '1px solid #161513',
+                  left: 0, right: 0, borderTop: '1px solid #ebe6dd',
                   pointerEvents: 'none',
                 }} />
               ))}
@@ -381,24 +381,24 @@ export default function DaySchedule({
                     onClick={() => router.push(`/admin/appointments/${apt.id}`)}
                     style={{
                       position: 'absolute', top: topPx, left: 3, right: 3, height: hPx,
-                      background: blocked ? '#1c1b18' : completed ? `${col}10` : `${col}1c`,
-                      border: `1px solid ${blocked ? '#2a2825' : completed ? `${col}30` : `${col}55`}`,
-                      borderLeft: `2.5px solid ${blocked ? '#3a3835' : completed ? `${col}55` : col}`,
+                      background: blocked ? '#ebebeb' : completed ? `${col}18` : `${col}22`,
+                      border: `1px solid ${blocked ? '#d0ccc5' : completed ? `${col}40` : `${col}60`}`,
+                      borderLeft: `2.5px solid ${blocked ? '#c0bbb4' : completed ? `${col}70` : col}`,
                       borderRadius: 5, padding: '3px 6px',
                       cursor: 'pointer', touchAction: 'pan-y', zIndex: 2,
                       overflow: 'hidden',
-                      opacity: completed ? 0.6 : 1,
+                      opacity: completed ? 0.65 : 1,
                     }}
                   >
                     {blocked ? (
-                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: '#4a4844', fontStyle: 'italic' }}>Blocked</div>
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: '#9a9590', fontStyle: 'italic' }}>Blocked</div>
                     ) : (
                       <>
-                        <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500, color: '#ece9e2', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: apt.notes ? 14 : 0 }}>
+                        <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500, color: '#141210', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: apt.notes ? 14 : 0 }}>
                           {apt.clientName}
                         </div>
                         {hPx > 38 && (
-                          <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: '#6b6760', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 1 }}>
+                          <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: '#4a4540', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 1 }}>
                             {apt.service}
                           </div>
                         )}
@@ -443,23 +443,23 @@ export default function DaySchedule({
       {/* ── drag confirm sheet ───────────────────────────────────────────── */}
       {dragConfirm && (
         <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 60 }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 60 }}
           onClick={() => setDragConfirm(null)}
         >
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
               position: 'fixed', bottom: 0, left: 0, right: 0,
-              background: '#1c1b18', borderRadius: '16px 16px 0 0',
+              background: '#f5f0e8', borderRadius: '16px 16px 0 0',
               padding: '24px 20px 44px',
             }}
           >
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 500, color: '#ece9e2', marginBottom: 6 }}>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 500, color: '#141210', marginBottom: 6 }}>
               Reschedule
             </div>
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#6b6760', marginBottom: 20 }}>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#6a6560', marginBottom: 20 }}>
               Move {dragConfirm.apt.clientName} to{' '}
-              <span style={{ color: '#ece9e2' }}>
+              <span style={{ color: '#141210' }}>
                 {fmt(dragConfirm.newStartTime)} – {fmt(dragConfirm.newEndTime)}
               </span>
               ?
@@ -490,11 +490,11 @@ export default function DaySchedule({
             onClick={(e) => e.stopPropagation()}
             style={{
               position: 'fixed', bottom: 0, left: 0, right: 0,
-              background: '#1c1b18', borderRadius: '16px 16px 0 0',
+              background: '#f5f0e8', borderRadius: '16px 16px 0 0',
               padding: '20px 20px 44px',
             }}
           >
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: '#4a4844', marginBottom: 16, textAlign: 'center' }}>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: '#9a9590', marginBottom: 16, textAlign: 'center' }}>
               {fmt(slotAction.time)} · {slotAction.staff === 'eric' ? 'Eric' : 'Livi'}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -524,21 +524,21 @@ export default function DaySchedule({
       {/* ── block-time sheet ─────────────────────────────────────────────── */}
       {blockSheet && (
         <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 60 }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 60 }}
           onClick={() => setBlockSheet(null)}
         >
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
               position: 'fixed', bottom: 0, left: 0, right: 0,
-              background: '#1c1b18', borderRadius: '16px 16px 0 0',
+              background: '#f5f0e8', borderRadius: '16px 16px 0 0',
               padding: '24px 20px 44px',
             }}
           >
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 500, color: '#ece9e2', marginBottom: 4 }}>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 500, color: '#141210', marginBottom: 4 }}>
               Block time off
             </div>
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#6b6760', marginBottom: 20 }}>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#6a6560', marginBottom: 20 }}>
               {blockSheet.staff === 'eric' ? 'Eric' : 'Livi'} · {fmt(blockSheet.time)} – {fmt(addMin(blockSheet.time, blockDur))}
             </div>
             <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
@@ -548,10 +548,10 @@ export default function DaySchedule({
                   onClick={() => setBlockDur(d)}
                   style={{
                     flex: 1, padding: '10px 0', borderRadius: 8,
-                    border: blockDur === d ? `1.5px solid #ece9e2` : '1px solid #252320',
-                    background: blockDur === d ? '#ece9e215' : 'none',
+                    border: blockDur === d ? `1.5px solid #141210` : '1px solid #d4cfc6',
+                    background: blockDur === d ? '#14121012' : 'none',
                     fontFamily: 'var(--font-body)', fontSize: 13,
-                    color: blockDur === d ? '#ece9e2' : '#6b6760',
+                    color: blockDur === d ? '#141210' : '#4a4540',
                     cursor: 'pointer',
                   }}
                 >
@@ -571,9 +571,9 @@ export default function DaySchedule({
 }
 
 function SlotBtn({ label, variant, onClick }: { label: string; variant: 'primary' | 'ghost' | 'muted'; onClick: () => void }) {
-  const bg = variant === 'primary' ? '#ece9e2' : variant === 'muted' ? '#2a2825' : 'none';
-  const fg = variant === 'primary' ? '#0d0c0a' : variant === 'muted' ? '#ece9e2' : '#6b6760';
-  const border = variant === 'ghost' ? '1px solid #252320' : 'none';
+  const bg = variant === 'primary' ? '#141210' : variant === 'muted' ? '#e0dbd2' : 'none';
+  const fg = variant === 'primary' ? '#efeae0' : variant === 'muted' ? '#141210' : '#4a4540';
+  const border = variant === 'ghost' ? '1px solid #d4cfc6' : 'none';
   return (
     <button
       onClick={onClick}

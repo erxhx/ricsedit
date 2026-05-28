@@ -30,8 +30,8 @@ export default function ClientList({ clients }: { clients: ClientSummary[] }) {
       {/* Search bar */}
       <div style={{
         padding: '12px 16px',
-        borderBottom: '1px solid #252320',
-        position: 'sticky', top: 52, background: '#0d0c0a', zIndex: 7,
+        borderBottom: '1px solid #d4cfc6',
+        position: 'sticky', top: 52, background: '#efeae0', zIndex: 7,
       }}>
         <input
           type="search"
@@ -40,10 +40,10 @@ export default function ClientList({ clients }: { clients: ClientSummary[] }) {
           placeholder="Search clients…"
           style={{
             width: '100%', boxSizing: 'border-box',
-            background: '#161513', border: '1px solid #252320',
+            background: '#f7f3eb', border: '1px solid #d4cfc6',
             borderRadius: 8, padding: '9px 14px',
-            fontFamily: 'var(--font-body)', fontSize: 14, color: '#ece9e2',
-            outline: 'none', colorScheme: 'dark',
+            fontFamily: 'var(--font-body)', fontSize: 14, color: '#141210',
+            outline: 'none', colorScheme: 'light',
           }}
         />
       </div>
@@ -53,7 +53,7 @@ export default function ClientList({ clients }: { clients: ClientSummary[] }) {
         padding: '10px 16px',
         fontFamily: 'var(--font-body)', fontSize: 11,
         letterSpacing: '0.08em', textTransform: 'uppercase',
-        color: '#4a4844',
+        color: '#9a9590',
       }}>
         {filtered.length} {filtered.length === 1 ? 'client' : 'clients'}
       </div>
@@ -62,7 +62,7 @@ export default function ClientList({ clients }: { clients: ClientSummary[] }) {
       {filtered.length === 0 ? (
         <div style={{
           padding: '48px 16px', textAlign: 'center',
-          fontFamily: 'var(--font-body)', fontSize: 13, color: '#4a4844',
+          fontFamily: 'var(--font-body)', fontSize: 13, color: '#9a9590',
         }}>
           {query ? 'No clients match that search.' : 'No clients yet.'}
         </div>
@@ -76,7 +76,7 @@ export default function ClientList({ clients }: { clients: ClientSummary[] }) {
             >
               <div style={{
                 padding: '14px 16px',
-                borderBottom: '1px solid #1a1917',
+                borderBottom: '1px solid #e0dbd2',
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 gap: 12,
               }}>
@@ -84,14 +84,14 @@ export default function ClientList({ clients }: { clients: ClientSummary[] }) {
                 <div style={{ minWidth: 0 }}>
                   <div style={{
                     fontFamily: 'var(--font-body)', fontSize: 14,
-                    color: '#ece9e2', fontWeight: 500,
+                    color: '#141210', fontWeight: 500,
                     whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                   }}>
                     {c.name}
                   </div>
                   <div style={{
                     fontFamily: 'var(--font-body)', fontSize: 12,
-                    color: '#4a4844', marginTop: 2,
+                    color: '#9a9590', marginTop: 2,
                     whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                   }}>
                     {c.lastService}
@@ -101,13 +101,13 @@ export default function ClientList({ clients }: { clients: ClientSummary[] }) {
                 {/* Right: visit count + last date */}
                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
                   <div style={{
-                    fontFamily: 'var(--font-body)', fontSize: 12, color: '#6b6760',
+                    fontFamily: 'var(--font-body)', fontSize: 12, color: '#6a6560',
                   }}>
                     {fmtDate(c.lastVisit)}
                   </div>
                   <div style={{
                     fontFamily: 'var(--font-body)', fontSize: 11,
-                    color: '#3a3835', marginTop: 2,
+                    color: '#9a9590', marginTop: 2,
                     letterSpacing: '0.04em',
                   }}>
                     {c.visitCount} visit{c.visitCount !== 1 ? 's' : ''}

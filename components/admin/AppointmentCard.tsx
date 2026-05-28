@@ -14,8 +14,8 @@ export default function AppointmentCard({ apt }: { apt: Appointment }) {
   return (
     <Link href={`/admin/appointments/${apt.id}`} style={{
       display: 'flex',
-      background: '#161513',
-      border: '1px solid #252320',
+      background: '#f7f3eb',
+      border: '1px solid #d4cfc6',
       borderRadius: 10,
       padding: '14px 16px',
       gap: 12,
@@ -24,10 +24,10 @@ export default function AppointmentCard({ apt }: { apt: Appointment }) {
     }}>
       {/* Time column */}
       <div style={{ minWidth: 52, paddingTop: 1 }}>
-        <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 500, color: '#ece9e2', letterSpacing: '0.01em', whiteSpace: 'nowrap' }}>
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 500, color: '#141210', letterSpacing: '0.01em', whiteSpace: 'nowrap' }}>
           {fmtTime(apt.startTime)}
         </div>
-        <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: '#4a4844', marginTop: 3 }}>
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: '#9a9590', marginTop: 3 }}>
           {apt.durationMinutes} min
         </div>
       </div>
@@ -35,26 +35,26 @@ export default function AppointmentCard({ apt }: { apt: Appointment }) {
       {/* Content */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 3 }}>
-          <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 400, color: '#ece9e2', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 400, color: '#141210', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {apt.clientName}
           </span>
-          <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#6b6760', whiteSpace: 'nowrap' }}>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#6a6560', whiteSpace: 'nowrap' }}>
             ${apt.price}
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-          <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#7a7570', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#6a6560', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
             {apt.service}
           </div>
           {apt.notes && (
             <div style={{
               flexShrink: 0,
               display: 'flex', alignItems: 'center', gap: 3,
-              background: '#2a2318', border: '1px solid #3a3020',
+              background: '#fdf3e8', border: '1px solid #e8d4b0',
               borderRadius: 4, padding: '1px 5px',
             }}>
               <span style={{ fontSize: 9, color: '#b5824a', lineHeight: 1 }}>≡</span>
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: '#8a6a3a', letterSpacing: '0.04em' }}>note</span>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: '#7a5a2a', letterSpacing: '0.04em' }}>note</span>
             </div>
           )}
         </div>
@@ -63,7 +63,7 @@ export default function AppointmentCard({ apt }: { apt: Appointment }) {
       {/* Staff dot + chevron */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flexShrink: 0 }}>
         <div style={{ width: 6, height: 6, borderRadius: '50%', background: color, marginTop: 4 }} />
-        <span style={{ fontSize: 10, color: '#3a3835', lineHeight: 1 }}>›</span>
+        <span style={{ fontSize: 10, color: '#9a9590', lineHeight: 1 }}>›</span>
       </div>
     </Link>
   );

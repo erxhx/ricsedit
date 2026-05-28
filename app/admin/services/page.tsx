@@ -22,10 +22,10 @@ export default async function ServicesPage() {
       <div style={{
         display: 'flex', alignItems: 'center', gap: 12,
         padding: '0 20px', height: 52,
-        borderBottom: '1px solid #252320',
-        position: 'sticky', top: 52, background: '#0d0c0a', zIndex: 8,
+        borderBottom: '1px solid #d4cfc6',
+        position: 'sticky', top: 52, background: '#efeae0', zIndex: 8,
       }}>
-        <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: '#6b6760' }}>
+        <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: '#6a6560' }}>
           Services & Pricing
         </span>
       </div>

@@ -48,13 +48,13 @@ export default function AdminHeader({ name }: { name: string }) {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 20px',
         height: 52,
-        background: '#0d0c0a',
-        borderBottom: '1px solid #252320',
+        background: '#efeae0',
+        borderBottom: '1px solid #d4cfc6',
         position: 'sticky', top: 0, zIndex: 10,
       }}>
         <span style={{
           fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 500,
-          letterSpacing: '0.06em', color: '#ece9e2',
+          letterSpacing: '0.06em', color: '#141210',
         }}>
           Edit Studio
         </span>
@@ -73,7 +73,7 @@ export default function AdminHeader({ name }: { name: string }) {
           {[0, 1, 2].map((i) => (
             <span key={i} style={{
               display: 'block', width: 20, height: 1.5,
-              background: '#ece9e2', borderRadius: 2,
+              background: '#141210', borderRadius: 2,
             }} />
           ))}
         </button>
@@ -84,7 +84,7 @@ export default function AdminHeader({ name }: { name: string }) {
         onClick={() => setOpen(false)}
         style={{
           position: 'fixed', inset: 0,
-          background: 'rgba(0,0,0,0.65)',
+          background: 'rgba(0,0,0,0.45)',
           zIndex: 40,
           opacity: open ? 1 : 0,
           pointerEvents: open ? 'auto' : 'none',
@@ -96,8 +96,8 @@ export default function AdminHeader({ name }: { name: string }) {
       <div style={{
         position: 'fixed', top: 0, right: 0, bottom: 0,
         width: 270,
-        background: '#131210',
-        borderLeft: '1px solid #252320',
+        background: '#f7f3eb',
+        borderLeft: '1px solid #d4cfc6',
         zIndex: 41,
         transform: open ? 'translateX(0)' : 'translateX(100%)',
         transition: 'transform 0.25s cubic-bezier(0.4,0,0.2,1)',
@@ -108,11 +108,11 @@ export default function AdminHeader({ name }: { name: string }) {
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '0 20px', height: 52,
-          borderBottom: '1px solid #252320', flexShrink: 0,
+          borderBottom: '1px solid #d4cfc6', flexShrink: 0,
         }}>
           <span style={{
             fontFamily: 'var(--font-body)', fontSize: 11,
-            letterSpacing: '0.12em', textTransform: 'uppercase', color: '#4a4844',
+            letterSpacing: '0.12em', textTransform: 'uppercase', color: '#9a9590',
           }}>
             Menu
           </span>
@@ -121,7 +121,7 @@ export default function AdminHeader({ name }: { name: string }) {
             aria-label="Close menu"
             style={{
               background: 'none', border: 'none', cursor: 'pointer',
-              color: '#6b6760', fontSize: 18, lineHeight: 1,
+              color: '#4a4540', fontSize: 18, lineHeight: 1,
               padding: '4px', WebkitTapHighlightColor: 'transparent',
             }}
           >
@@ -146,11 +146,11 @@ export default function AdminHeader({ name }: { name: string }) {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <span style={{ fontSize: 14, color: '#6b6760', width: 16, textAlign: 'center' }}>
+                    <span style={{ fontSize: 14, color: '#9a9590', width: 16, textAlign: 'center' }}>
                       {item.icon}
                     </span>
                     <span style={{
-                      fontFamily: 'var(--font-body)', fontSize: 15, color: '#6b6760',
+                      fontFamily: 'var(--font-body)', fontSize: 15, color: '#9a9590',
                     }}>
                       {item.label}
                     </span>
@@ -158,7 +158,7 @@ export default function AdminHeader({ name }: { name: string }) {
                   <span style={{
                     fontFamily: 'var(--font-body)', fontSize: 9,
                     letterSpacing: '0.1em', textTransform: 'uppercase',
-                    color: '#4a4844', border: '1px solid #2a2826',
+                    color: '#9a9590', border: '1px solid #d4cfc6',
                     padding: '2px 7px', borderRadius: 10,
                   }}>
                     soon
@@ -176,20 +176,20 @@ export default function AdminHeader({ name }: { name: string }) {
                   display: 'flex', alignItems: 'center', gap: 12,
                   padding: '0 20px', height: 52,
                   borderLeft: `2px solid ${active ? '#7db83e' : 'transparent'}`,
-                  background: active ? '#1a1f14' : 'transparent',
+                  background: active ? '#edf6e4' : 'transparent',
                   textDecoration: 'none',
                   WebkitTapHighlightColor: 'transparent',
                 }}
               >
                 <span style={{
-                  fontSize: 14, color: active ? '#7db83e' : '#6b6760',
+                  fontSize: 14, color: active ? '#7db83e' : '#9a9590',
                   width: 16, textAlign: 'center',
                 }}>
                   {item.icon}
                 </span>
                 <span style={{
                   fontFamily: 'var(--font-body)', fontSize: 15,
-                  color: active ? '#ece9e2' : '#9a9590',
+                  color: active ? '#141210' : '#6a6560',
                   fontWeight: active ? 500 : 400,
                 }}>
                   {item.label}
@@ -202,20 +202,20 @@ export default function AdminHeader({ name }: { name: string }) {
         {/* Footer */}
         <div style={{
           padding: '16px 20px 32px',
-          borderTop: '1px solid #1e1d1a',
+          borderTop: '1px solid #e0dbd2',
           flexShrink: 0,
         }}>
           <div style={{
-            fontFamily: 'var(--font-body)', fontSize: 12, color: '#4a4844',
+            fontFamily: 'var(--font-body)', fontSize: 12, color: '#9a9590',
             marginBottom: 14, letterSpacing: '0.02em',
           }}>
-            Signed in as <span style={{ color: '#6b6760' }}>{name}</span>
+            Signed in as <span style={{ color: '#6a6560' }}>{name}</span>
           </div>
           <button
             onClick={logout}
             style={{
-              fontFamily: 'var(--font-body)', fontSize: 13, color: '#6b6760',
-              background: 'none', border: '1px solid #252320',
+              fontFamily: 'var(--font-body)', fontSize: 13, color: '#4a4540',
+              background: 'none', border: '1px solid #d4cfc6',
               borderRadius: 8, cursor: 'pointer',
               padding: '10px 16px', width: '100%', textAlign: 'left',
               WebkitTapHighlightColor: 'transparent',

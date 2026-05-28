@@ -72,8 +72,8 @@ export default function WeekView({ appointments, weekStart }: { appointments: Ap
   const navArrow: React.CSSProperties = {
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     width: 36, height: 36, borderRadius: 8,
-    border: '1px solid #252320', background: 'none',
-    color: '#6b6760', fontSize: 18, lineHeight: 1,
+    border: '1px solid #d4cfc6', background: 'none',
+    color: '#4a4540', fontSize: 18, lineHeight: 1,
     textDecoration: 'none', flexShrink: 0,
     WebkitTapHighlightColor: 'transparent',
   };
@@ -84,11 +84,11 @@ export default function WeekView({ appointments, weekStart }: { appointments: Ap
       <div style={{ paddingTop: 24, paddingBottom: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           <div style={{ minWidth: 0 }}>
-            <h1 style={{ fontFamily: 'var(--font-body)', fontSize: 22, fontWeight: 400, color: '#ece9e2', margin: 0, lineHeight: 1.2 }}>
+            <h1 style={{ fontFamily: 'var(--font-body)', fontSize: 22, fontWeight: 400, color: '#141210', margin: 0, lineHeight: 1.2 }}>
               {fmtWeekRange(weekStart)}
             </h1>
             {isThisWeek && (
-              <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: '#4a4844', marginTop: 3, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: '#9a9590', marginTop: 3, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                 This week
               </div>
             )}
@@ -103,7 +103,7 @@ export default function WeekView({ appointments, weekStart }: { appointments: Ap
                   fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500,
                   color: '#b5824a', textDecoration: 'none',
                   padding: '5px 10px', borderRadius: 6,
-                  border: '1px solid #3a3530',
+                  border: '1px solid #d4cfc6',
                   WebkitTapHighlightColor: 'transparent',
                   marginRight: 2,
                 }}
@@ -121,10 +121,10 @@ export default function WeekView({ appointments, weekStart }: { appointments: Ap
       <div style={{
         display: 'flex', gap: 16, marginBottom: 24,
         padding: '12px 16px',
-        background: '#161513', border: '1px solid #252320', borderRadius: 10,
+        background: '#f7f3eb', border: '1px solid #d4cfc6', borderRadius: 10,
       }}>
         <WeekStat label="Revenue" value={`$${weekRevenue}`} />
-        <div style={{ width: 1, background: '#252320' }} />
+        <div style={{ width: 1, background: '#d4cfc6' }} />
         <WeekStat label="Bookings" value={String(weekApts)} />
       </div>
 
@@ -145,8 +145,8 @@ function DayCard({ day }: { day: DaySummary }) {
       display: 'flex',
       alignItems: 'center',
       gap: 12,
-      background: day.isToday ? '#1a1916' : '#161513',
-      border: `1px solid ${day.isToday ? '#3a3530' : '#252320'}`,
+      background: day.isToday ? '#eef7e8' : '#f7f3eb',
+      border: `1px solid ${day.isToday ? '#b5d4b0' : '#d4cfc6'}`,
       borderRadius: 10,
       padding: '12px 16px',
       opacity: day.isOpen ? 1 : 0.6,
@@ -155,10 +155,10 @@ function DayCard({ day }: { day: DaySummary }) {
     }}>
       {/* Day label */}
       <div style={{ width: 36 }}>
-        <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: '#4a4844', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: '#9a9590', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
           {DAY_ABBR[dow]}
         </div>
-        <div style={{ fontFamily: 'var(--font-body)', fontSize: 18, fontWeight: 400, color: day.isToday ? '#ece9e2' : '#7a7570', lineHeight: 1.1 }}>
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: 18, fontWeight: 400, color: day.isToday ? '#141210' : '#6a6560', lineHeight: 1.1 }}>
           {day.dateObj.getDate()}
         </div>
       </div>
@@ -167,7 +167,7 @@ function DayCard({ day }: { day: DaySummary }) {
         {/* Booking dots */}
         <div style={{ flex: 1 }}>
           {day.total === 0 ? (
-            <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#3a3835' }}>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#9a9590' }}>
               {day.isOpen ? 'No bookings' : 'Closed'}
             </span>
           ) : (
@@ -182,7 +182,7 @@ function DayCard({ day }: { day: DaySummary }) {
                 <div key={`lt${i}`} style={{ width: 7, height: 7, borderRadius: '50%', background: SERVICE_COLORS.liviTan }} />
               ))}
               {!day.isOpen && (
-                <span style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: '#4a4844', letterSpacing: '0.06em', marginLeft: 2 }}>closed</span>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: '#9a9590', letterSpacing: '0.06em', marginLeft: 2 }}>closed</span>
               )}
             </div>
           )}
@@ -192,24 +192,24 @@ function DayCard({ day }: { day: DaySummary }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {day.total > 0 && (
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 500, color: '#ece9e2' }}>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 500, color: '#141210' }}>
                 ${day.revenue}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 5, marginTop: 2 }}>
-                <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: '#4a4844' }}>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: '#9a9590' }}>
                   {day.total} apt{day.total !== 1 ? 's' : ''}
                 </span>
                 {day.hasNotes && (
                   <span style={{
                     fontSize: 10, color: '#b5824a',
-                    background: '#2a2318', border: '1px solid #3a3020',
+                    background: '#fdf3e8', border: '1px solid #e8d4b0',
                     borderRadius: 3, padding: '0px 4px', lineHeight: '16px',
                   }}>≡</span>
                 )}
               </div>
             </div>
           )}
-          <span style={{ fontSize: 16, color: '#3a3835' }}>›</span>
+          <span style={{ fontSize: 16, color: '#9a9590' }}>›</span>
         </div>
       </>
     </Link>
@@ -219,10 +219,10 @@ function DayCard({ day }: { day: DaySummary }) {
 function WeekStat({ label, value }: { label: string; value: string }) {
   return (
     <div style={{ flex: 1 }}>
-      <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: '#4a4844', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>
+      <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: '#9a9590', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>
         {label}
       </div>
-      <div style={{ fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 500, color: '#ece9e2' }}>
+      <div style={{ fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 500, color: '#141210' }}>
         {value}
       </div>
     </div>

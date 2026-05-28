@@ -39,7 +39,7 @@ const STATUS_COLOR: Record<AppointmentStatus, string> = {
   confirmed: '#4a9b6f',
   completed: '#5a7a9b',
   cancelled: '#8b3a3a',
-  blocked: '#4a4844',
+  blocked: '#9a9590',
 };
 
 function fmtTime(t: string): string {
@@ -113,13 +113,13 @@ export default function AppointmentDetail({
       <div style={{
         display: 'flex', alignItems: 'center', gap: 12,
         padding: '0 20px', height: 52,
-        borderBottom: '1px solid #252320',
-        position: 'sticky', top: 52, background: '#0d0c0a', zIndex: 8,
+        borderBottom: '1px solid #d4cfc6',
+        position: 'sticky', top: 52, background: '#efeae0', zIndex: 8,
       }}>
-        <Link href="/admin" style={{ color: '#6b6760', textDecoration: 'none', fontSize: 20, lineHeight: 1 }}>
+        <Link href="/admin" style={{ color: '#4a4540', textDecoration: 'none', fontSize: 20, lineHeight: 1 }}>
           ‹
         </Link>
-        <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: '#6b6760' }}>
+        <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: '#6a6560' }}>
           {fmtDate(apt.date)}
         </span>
       </div>
@@ -129,7 +129,7 @@ export default function AppointmentDetail({
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
           <h1 style={{
             fontFamily: 'var(--font-body)', fontSize: 26, fontWeight: 400,
-            color: '#ece9e2', margin: 0, letterSpacing: '-0.01em',
+            color: '#141210', margin: 0, letterSpacing: '-0.01em',
           }}>
             {apt.clientName}
           </h1>
@@ -154,7 +154,7 @@ export default function AppointmentDetail({
           <Row label="Staff">
             <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ width: 7, height: 7, borderRadius: '50%', background: color, display: 'inline-block' }} />
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#ece9e2' }}>{STAFF_NAME[apt.staff]}</span>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#141210' }}>{STAFF_NAME[apt.staff]}</span>
             </span>
           </Row>
         </Section>
@@ -162,12 +162,12 @@ export default function AppointmentDetail({
         {/* Contact */}
         <Section label="Contact">
           <Row label="Email">
-            <a href={`mailto:${apt.clientEmail}`} style={{ color: '#7a9bbf', fontFamily: 'var(--font-body)', fontSize: 14, textDecoration: 'none' }}>
+            <a href={`mailto:${apt.clientEmail}`} style={{ color: '#4a7a9b', fontFamily: 'var(--font-body)', fontSize: 14, textDecoration: 'none' }}>
               {apt.clientEmail}
             </a>
           </Row>
           <Row label="Phone" last>
-            <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#ece9e2' }}>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#141210' }}>
               {apt.clientPhone}
             </span>
           </Row>
@@ -181,9 +181,9 @@ export default function AppointmentDetail({
               style={{
                 flex: 1, textAlign: 'center',
                 padding: '13px 0', borderRadius: 10,
-                border: '1px solid #2a4a32',
-                background: '#192b1e',
-                color: '#6ab87a',
+                border: '1px solid #b5d4c0',
+                background: '#e8f4ec',
+                color: '#2a6a48',
                 fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 500,
                 textDecoration: 'none',
                 WebkitTapHighlightColor: 'transparent',
@@ -196,9 +196,9 @@ export default function AppointmentDetail({
               style={{
                 flex: 1, textAlign: 'center',
                 padding: '13px 0', borderRadius: 10,
-                border: '1px solid #2a3a4e',
-                background: '#192535',
-                color: '#7a9bbf',
+                border: '1px solid #b0c4d8',
+                background: '#e8f0f8',
+                color: '#2a5a80',
                 fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 500,
                 textDecoration: 'none',
                 WebkitTapHighlightColor: 'transparent',
@@ -215,10 +215,10 @@ export default function AppointmentDetail({
             onClick={copyManageLink}
             style={{
               width: '100%', marginTop: 8, padding: '13px 0',
-              borderRadius: 10, border: '1px solid #252320',
+              borderRadius: 10, border: '1px solid #d4cfc6',
               background: 'none', cursor: 'pointer',
               fontFamily: 'var(--font-body)', fontSize: 14,
-              color: linkCopied ? '#4a9b6f' : '#6b6760',
+              color: linkCopied ? '#4a9b6f' : '#4a4540',
               WebkitTapHighlightColor: 'transparent',
               transition: 'color 0.2s',
             }}
@@ -239,9 +239,9 @@ export default function AppointmentDetail({
                 rows={4}
                 style={{
                   width: '100%', boxSizing: 'border-box',
-                  background: '#1c1b18', border: '1px solid #3a3835',
+                  background: '#f0ece4', border: '1px solid #d4cfc6',
                   borderRadius: 8, padding: '10px 12px',
-                  fontFamily: 'var(--font-body)', fontSize: 14, color: '#ece9e2',
+                  fontFamily: 'var(--font-body)', fontSize: 14, color: '#141210',
                   resize: 'none', outline: 'none',
                 }}
               />
@@ -259,11 +259,11 @@ export default function AppointmentDetail({
               }}
             >
               {apt.notes ? (
-                <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#ece9e2', lineHeight: 1.5 }}>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#141210', lineHeight: 1.5 }}>
                   {apt.notes}
                 </span>
               ) : (
-                <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#3a3835', fontStyle: 'italic' }}>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#b0aaa0', fontStyle: 'italic' }}>
                   Tap to add a note…
                 </span>
               )}
@@ -276,7 +276,7 @@ export default function AppointmentDetail({
           <div style={{ marginTop: 24 }}>
             <div style={{
               fontFamily: 'var(--font-body)', fontSize: 10, letterSpacing: '0.12em',
-              textTransform: 'uppercase', color: '#4a4844', marginBottom: 10,
+              textTransform: 'uppercase', color: '#9a9590', marginBottom: 10,
             }}>
               History
             </div>
@@ -295,32 +295,32 @@ export default function AppointmentDetail({
                     href={`/admin/appointments/${h.id}`}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 12,
-                      background: '#161513', border: '1px solid #252320',
-                      borderLeft: `2.5px solid ${h.status === 'cancelled' ? '#3a3835' : col}`,
+                      background: '#f7f3eb', border: '1px solid #d4cfc6',
+                      borderLeft: `2.5px solid ${h.status === 'cancelled' ? '#d4cfc6' : col}`,
                       borderRadius: 10, padding: '12px 14px',
                       textDecoration: 'none',
-                      opacity: h.status === 'cancelled' ? 0.5 : 1,
+                      opacity: h.status === 'cancelled' ? 0.55 : 1,
                       WebkitTapHighlightColor: 'transparent',
                     }}
                   >
                     {/* Date */}
                     <div style={{ minWidth: 72 }}>
-                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: isUpcoming ? '#ece9e2' : '#6b6760', fontWeight: isUpcoming ? 500 : 400 }}>
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: isUpcoming ? '#141210' : '#6a6560', fontWeight: isUpcoming ? 500 : 400 }}>
                         {dateLabel}
                       </div>
-                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: '#3a3835', marginTop: 2 }}>
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: '#9a9590', marginTop: 2 }}>
                         {fmtTime(h.startTime)}
                       </div>
                     </div>
 
                     {/* Service + staff */}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: '#ece9e2', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: '#141210', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {h.service}
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
                         <span style={{ width: 5, height: 5, borderRadius: '50%', background: col, display: 'inline-block', flexShrink: 0 }} />
-                        <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: '#4a4844' }}>
+                        <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: '#9a9590' }}>
                           {STAFF_NAME[h.staff]}
                         </span>
                       </div>
@@ -328,7 +328,7 @@ export default function AppointmentDetail({
 
                     {/* Price + status */}
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: '#ece9e2' }}>
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: '#141210' }}>
                         ${h.price}
                       </div>
                       <div style={{
@@ -340,7 +340,7 @@ export default function AppointmentDetail({
                       </div>
                     </div>
 
-                    <span style={{ fontSize: 14, color: '#3a3835', flexShrink: 0 }}>›</span>
+                    <span style={{ fontSize: 14, color: '#9a9590', flexShrink: 0 }}>›</span>
                   </Link>
                 );
               })}
@@ -367,40 +367,40 @@ export default function AppointmentDetail({
       {/* Reschedule sheet */}
       {showReschedule && (
         <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
           display: 'flex', alignItems: 'flex-end', zIndex: 100,
         }} onClick={() => setShowReschedule(false)}>
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
-              width: '100%', background: '#1c1b18',
+              width: '100%', background: '#f5f0e8',
               borderRadius: '16px 16px 0 0',
               padding: '24px 20px 48px',
             }}
           >
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 500, color: '#ece9e2', marginBottom: 4 }}>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 500, color: '#141210', marginBottom: 4 }}>
               Reschedule
             </div>
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: '#4a4844', marginBottom: 20 }}>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: '#9a9590', marginBottom: 20 }}>
               Currently {fmtDate(apt.date)} at {fmtTime(apt.startTime)}
             </div>
 
             {/* Date + time pickers */}
             <div style={{
-              background: '#161513', border: '1px solid #252320',
+              background: '#f7f3eb', border: '1px solid #d4cfc6',
               borderRadius: 10, overflow: 'hidden',
               padding: '4px 16px', marginBottom: 20,
             }}>
               {/* Date row */}
               <div style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '11px 0', borderBottom: '1px solid #1e1d1a',
+                padding: '11px 0', borderBottom: '1px solid #e0dbd2',
               }}>
-                <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: '#6b6760', flexShrink: 0, marginRight: 16 }}>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: '#6a6560', flexShrink: 0, marginRight: 16 }}>
                   Date
                 </span>
                 <div style={{ position: 'relative', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', flex: 1, minHeight: 24 }}>
-                  <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#ece9e2', pointerEvents: 'none', userSelect: 'none' }}>
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#141210', pointerEvents: 'none', userSelect: 'none' }}>
                     {fmtDateDisplay(reschedDate)}
                   </span>
                   <input
@@ -421,7 +421,7 @@ export default function AppointmentDetail({
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 padding: '11px 0',
               }}>
-                <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: '#6b6760', flexShrink: 0, marginRight: 16 }}>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: '#6a6560', flexShrink: 0, marginRight: 16 }}>
                   Time
                 </span>
                 <select
@@ -429,13 +429,13 @@ export default function AppointmentDetail({
                   onChange={(e) => setReschedTime(e.target.value)}
                   style={{
                     background: 'none', border: 'none', outline: 'none',
-                    fontFamily: 'var(--font-body)', fontSize: 14, color: '#ece9e2',
+                    fontFamily: 'var(--font-body)', fontSize: 14, color: '#141210',
                     cursor: 'pointer', WebkitAppearance: 'none', appearance: 'none',
-                    colorScheme: 'dark',
+                    colorScheme: 'light',
                   }}
                 >
                   {TIME_SLOTS.map((t) => (
-                    <option key={t} value={t} style={{ background: '#1c1b18', color: '#ece9e2' }}>
+                    <option key={t} value={t} style={{ background: '#f5f0e8', color: '#141210' }}>
                       {fmtTime(t)}
                     </option>
                   ))}
@@ -445,7 +445,7 @@ export default function AppointmentDetail({
 
             {/* Duration reminder */}
             <div style={{
-              fontFamily: 'var(--font-body)', fontSize: 12, color: '#4a4844',
+              fontFamily: 'var(--font-body)', fontSize: 12, color: '#9a9590',
               textAlign: 'center', marginBottom: 20,
             }}>
               {fmtTime(reschedTime)} – {fmtTime(addMinutes(reschedTime, apt.durationMinutes))} · {apt.durationMinutes} min
@@ -464,21 +464,21 @@ export default function AppointmentDetail({
       {/* Cancel confirmation sheet */}
       {showCancelConfirm && (
         <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
           display: 'flex', alignItems: 'flex-end', zIndex: 100,
         }} onClick={() => setShowCancelConfirm(false)}>
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
-              width: '100%', background: '#1c1b18',
+              width: '100%', background: '#f5f0e8',
               borderRadius: '16px 16px 0 0',
               padding: '24px 20px 40px',
             }}
           >
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 500, color: '#ece9e2', marginBottom: 8 }}>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 500, color: '#141210', marginBottom: 8 }}>
               Cancel appointment?
             </div>
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#6b6760', marginBottom: 24, lineHeight: 1.5 }}>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#6a6560', marginBottom: 24, lineHeight: 1.5 }}>
               {apt.clientName}'s {apt.service} on {fmtDate(apt.date)} at {fmtTime(apt.startTime)} will be cancelled.
               {' '}A cancellation notification will be sent when the database is connected.
             </div>
@@ -499,12 +499,12 @@ function Section({ label, children }: { label?: string; children: React.ReactNod
       {label && (
         <div style={{
           fontFamily: 'var(--font-body)', fontSize: 10, letterSpacing: '0.12em',
-          textTransform: 'uppercase', color: '#4a4844', marginBottom: 10,
+          textTransform: 'uppercase', color: '#9a9590', marginBottom: 10,
         }}>
           {label}
         </div>
       )}
-      <div style={{ background: '#161513', border: '1px solid #252320', borderRadius: 10, overflow: 'hidden', padding: '4px 16px' }}>
+      <div style={{ background: '#f7f3eb', border: '1px solid #d4cfc6', borderRadius: 10, overflow: 'hidden', padding: '4px 16px' }}>
         {children}
       </div>
     </div>
@@ -515,13 +515,13 @@ function Row({ label, value, children, last = false }: { label: string; value?: 
   return (
     <div style={{
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      padding: '11px 0', borderBottom: last ? 'none' : '1px solid #1e1d1a',
+      padding: '11px 0', borderBottom: last ? 'none' : '1px solid #e0dbd2',
     }}>
-      <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: '#6b6760', flexShrink: 0, marginRight: 16 }}>
+      <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: '#6a6560', flexShrink: 0, marginRight: 16 }}>
         {label}
       </span>
       {children ?? (
-        <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#ece9e2', textAlign: 'right' }}>
+        <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#141210', textAlign: 'right' }}>
           {value}
         </span>
       )}
@@ -537,9 +537,9 @@ function ActionButton({
   children: React.ReactNode;
 }) {
   const styles: Record<string, React.CSSProperties> = {
-    primary: { background: '#ece9e2', color: '#0d0c0a' },
-    danger:  { background: '#3a1a1a', color: '#c47a7a', border: '1px solid #5a2a2a' },
-    ghost:   { background: 'none', color: '#6b6760', border: '1px solid #252320' },
+    primary: { background: '#141210', color: '#efeae0' },
+    danger:  { background: '#faeaea', color: '#a04040', border: '1px solid #e0b0b0' },
+    ghost:   { background: 'none', color: '#4a4540', border: '1px solid #d4cfc6' },
   };
   return (
     <button

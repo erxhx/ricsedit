@@ -42,16 +42,16 @@ export default function LoginPage() {
       minHeight: '100dvh',
       display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
-      background: '#0d0c0a',
+      background: '#efeae0',
       padding: '0 24px',
     }}>
       <div style={{ width: '100%', maxWidth: 320 }}>
         {/* Logo / wordmark */}
         <div style={{ marginBottom: 40, textAlign: 'center' }}>
-          <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, letterSpacing: '0.12em', color: '#ece9e2', fontWeight: 500 }}>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, letterSpacing: '0.12em', color: '#141210', fontWeight: 500 }}>
             EDIT STUDIO
           </div>
-          <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, letterSpacing: '0.08em', color: '#3a3835', marginTop: 4 }}>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, letterSpacing: '0.08em', color: '#9a9590', marginTop: 4 }}>
             ADMIN
           </div>
         </div>
@@ -68,18 +68,18 @@ export default function LoginPage() {
             required
             style={{
               width: '100%', boxSizing: 'border-box',
-              background: '#161513',
-              border: `1px solid ${error ? '#8b3a3a' : '#252320'}`,
+              background: '#f7f3eb',
+              border: `1px solid ${error ? '#c04040' : '#d4cfc6'}`,
               borderRadius: 10,
               padding: '14px 16px',
-              fontFamily: 'var(--font-body)', fontSize: 15, color: '#ece9e2',
+              fontFamily: 'var(--font-body)', fontSize: 15, color: '#141210',
               outline: 'none',
               marginBottom: error ? 8 : 12,
             }}
           />
 
           {error && (
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#8b5a5a', marginBottom: 12 }}>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#a04040', marginBottom: 12 }}>
               {error}
             </div>
           )}
@@ -89,8 +89,8 @@ export default function LoginPage() {
             disabled={loading}
             style={{
               width: '100%',
-              background: !loading ? '#ece9e2' : '#252320',
-              color: !loading ? '#0d0c0a' : '#3a3835',
+              background: !loading ? '#141210' : '#e0dbd2',
+              color: !loading ? '#efeae0' : '#9a9590',
               border: 'none', borderRadius: 10,
               padding: '14px',
               fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 500,

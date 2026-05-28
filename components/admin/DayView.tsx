@@ -27,20 +27,20 @@ export default function DayView({ appointments, date }: { appointments: Appointm
       <div style={{ paddingTop: 24, paddingBottom: 20 }}>
         <h1 style={{
           fontFamily: 'var(--font-body)', fontSize: 22, fontWeight: 400,
-          color: '#ece9e2', margin: 0, letterSpacing: '-0.01em',
+          color: '#141210', margin: 0, letterSpacing: '-0.01em',
         }}>
           {fmtDate(date)}
         </h1>
       </div>
 
       {!open ? (
-        <div style={{ paddingTop: 32, textAlign: 'center', color: '#3a3835' }}>
+        <div style={{ paddingTop: 32, textAlign: 'center', color: '#9a9590' }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>—</div>
-          <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#4a4844' }}>Studio closed</div>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#6a6560' }}>Studio closed</div>
         </div>
       ) : appointments.length === 0 ? (
         <div style={{ paddingTop: 32, textAlign: 'center' }}>
-          <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#4a4844' }}>No bookings today</div>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#6a6560' }}>No bookings today</div>
         </div>
       ) : (
         <>
@@ -48,12 +48,12 @@ export default function DayView({ appointments, date }: { appointments: Appointm
           <div style={{
             display: 'flex', gap: 16, marginBottom: 24,
             padding: '12px 16px',
-            background: '#161513', border: '1px solid #252320', borderRadius: 10,
+            background: '#f7f3eb', border: '1px solid #d4cfc6', borderRadius: 10,
           }}>
             <Stat label="Total" value={`$${total}`} />
-            <div style={{ width: 1, background: '#252320' }} />
+            <div style={{ width: 1, background: '#d4cfc6' }} />
             <Stat label="Eric" value={`${ericApts.length} apt${ericApts.length !== 1 ? 's' : ''}`} color={SERVICE_COLORS.ericBarber} />
-            <div style={{ width: 1, background: '#252320' }} />
+            <div style={{ width: 1, background: '#d4cfc6' }} />
             <Stat label="Livi" value={`${liviApts.length} apt${liviApts.length !== 1 ? 's' : ''}`} color={SERVICE_COLORS.liviWax} />
           </div>
 
@@ -72,10 +72,10 @@ export default function DayView({ appointments, date }: { appointments: Appointm
 function Stat({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <div style={{ flex: 1 }}>
-      <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: '#4a4844', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>
+      <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: '#9a9590', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>
         {label}
       </div>
-      <div style={{ fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 500, color: color ?? '#ece9e2' }}>
+      <div style={{ fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 500, color: color ?? '#141210' }}>
         {value}
       </div>
     </div>
