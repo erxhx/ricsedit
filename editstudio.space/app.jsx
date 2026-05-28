@@ -208,8 +208,11 @@ const STUDIO_HOURS = {
   6: [10, 18]  // Sat
 };
 
-// Fetch current hours and update STUDIO_HOURS in place so Open/Closed status
-// and NextAvailableBarber reflect any admin changes.
+// Per-staff hours for NextAvailableBarber — starts as shared hours, updated async.
+const ERIC_HOURS = { ...STUDIO_HOURS };
+
+// Fetch current hours and update STUDIO_HOURS (Open/Closed) and ERIC_HOURS
+// (NextAvailableBarber) in place so they reflect any admin changes after page load.
 (function () {
   const endpoint = (window.__booking || {}).endpoint || '';
   const base = endpoint.replace(/\/api\/booking\/create$/, '');
@@ -217,10 +220,21 @@ const STUDIO_HOURS = {
   fetch(base + '/api/booking/hours')
     .then(r => r.ok ? r.json() : null)
     .then(cfg => {
-      if (!cfg?.days) return;
-      for (let d = 0; d <= 6; d++) {
-        const v = cfg.days[d] ?? cfg.days[String(d)];
-        STUDIO_HOURS[d] = Array.isArray(v) ? v : null;
+      if (!cfg) return;
+      // Update store hours for Open/Closed indicator
+      if (cfg.days) {
+        for (let d = 0; d <= 6; d++) {
+          const v = cfg.days[d] ?? cfg.days[String(d)];
+          STUDIO_HOURS[d] = Array.isArray(v) ? v : null;
+        }
+      }
+      // Update Eric's schedule for NextAvailableBarber
+      const ericDays = cfg.staff?.eric?.days;
+      if (ericDays) {
+        for (let d = 0; d <= 6; d++) {
+          const v = ericDays[d] ?? ericDays[String(d)];
+          ERIC_HOURS[d] = Array.isArray(v) ? v : null;
+        }
       }
     })
     .catch(() => {});
@@ -346,7 +360,7 @@ function NextAvailableBarber() {
       for (let i = 0; i < 8; i++) {
         if (cancelled) return;
         const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
-        if (!STUDIO_HOURS[d.getDay()]) continue; // closed
+        if (!ERIC_HOURS[d.getDay()]) continue; // Eric not working
 
         const dateStr = d.getFullYear() + '-' +
           String(d.getMonth() + 1).padStart(2, '0') + '-' +

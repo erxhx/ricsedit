@@ -10,6 +10,14 @@ import {
   getTotalDuration,
   Service,
 } from '@/lib/services';
+import type { AvailabilityConfig } from '@/lib/availability-store';
+
+/** Which staff member handles each booking category. */
+const CATEGORY_STAFF: Record<ServiceCategory, 'eric' | 'livi'> = {
+  barber: 'eric',
+  tan:    'livi',
+  wax:    'livi',
+};
 
 interface Props {
   category: ServiceCategory;
@@ -20,8 +28,7 @@ interface Props {
   onTimeChange: (slot: string) => void;
   onNext: () => void;
   onBack: () => void;
-  weekHours?: Record<number, [number, number] | null>;
-  barberThuClose?: number;
+  availability?: AvailabilityConfig;
 }
 
 const DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
@@ -39,8 +46,7 @@ export default function StepDateTime({
   onTimeChange,
   onNext,
   onBack,
-  weekHours,
-  barberThuClose,
+  availability,
 }: Props) {
   const accent = CATEGORY_META[category].accent;
   const today = new Date();
@@ -49,7 +55,12 @@ export default function StepDateTime({
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
 
-  const effectiveHours = weekHours ?? STUDIO_HOURS;
+  // Use the relevant staff member's schedule for this category.
+  // Falls back to store hours → hardcoded constants if not set.
+  const staffId = CATEGORY_STAFF[category];
+  const staffDays = availability?.staff?.[staffId]?.days;
+  const effectiveHours = staffDays ?? availability?.days ?? STUDIO_HOURS;
+  const barberThuClose = availability?.barberThuClose;
 
   const totalDuration = getTotalDuration(selectedServices);
   const timeSlots = date

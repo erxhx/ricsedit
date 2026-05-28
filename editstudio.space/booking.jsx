@@ -72,6 +72,19 @@
   // Mutable vars — updated async from admin config so the calendar stays in sync.
   var BK_HOURS = { 0: [10, 18], 1: null, 2: null, 3: [10, 18], 4: [10, 18], 5: [10, 18], 6: [10, 18] };
   var BK_BARBER_THU_CLOSE = 21;
+  // Per-staff hours — keyed by staff id ('eric'|'livi'). Falls back to BK_HOURS if not set.
+  var BK_STAFF_HOURS = { eric: null, livi: null };
+
+  // Maps booking category → staff id (matches the admin assignment)
+  function bkCategoryStaff(category) {
+    return category === 'barber' ? 'eric' : 'livi';
+  }
+
+  // Returns the hours object for a given category (staff-specific if available)
+  function bkHoursForCategory(category) {
+    var staffId = bkCategoryStaff(category);
+    return BK_STAFF_HOURS[staffId] || BK_HOURS;
+  }
 
   // Fetch current hours from the admin app and update in place.
   (function () {
@@ -82,6 +95,7 @@
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (cfg) {
         if (!cfg) return;
+        // Update shared store hours
         if (cfg.days) {
           var h = {};
           Object.keys(cfg.days).forEach(function (k) {
@@ -92,6 +106,20 @@
         }
         if (typeof cfg.barberThuClose === 'number') {
           BK_BARBER_THU_CLOSE = cfg.barberThuClose;
+        }
+        // Update per-staff hours
+        if (cfg.staff) {
+          ['eric', 'livi'].forEach(function (id) {
+            var sd = cfg.staff[id] && cfg.staff[id].days;
+            if (sd) {
+              var sh = {};
+              Object.keys(sd).forEach(function (k) {
+                var v = sd[k];
+                sh[Number(k)] = Array.isArray(v) ? v : null;
+              });
+              BK_STAFF_HOURS[id] = sh;
+            }
+          });
         }
       })
       .catch(function () {});
@@ -132,7 +160,7 @@
   // continues stepping from there — appointments always chain off real end times.
   function bkAvailableSlots(date, durationMins, category, bookedRanges) {
     var dow = date.getDay();
-    var hrs = BK_HOURS[dow];
+    var hrs = bkHoursForCategory(category)[dow];
     if (!hrs) return [];
     var open  = hrs[0] * 60;
     var close = hrs[1] * 60;
@@ -474,9 +502,10 @@
 
     // First available day: today if open, otherwise the next open day
     function firstAvailable() {
+      var hrs = bkHoursForCategory(category);
       for (var i = 0; i <= 60; i++) {
         var d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
-        if (BK_HOURS[d.getDay()]) return d;
+        if (hrs[d.getDay()]) return d;
       }
       return today;
     }
@@ -610,7 +639,7 @@
             var dMs      = d.getTime();
             var isPast   = dMs < todayMs;
             var isFar    = dMs > maxMs;
-            var isClosed = !BK_HOURS[d.getDay()];
+            var isClosed = !bkHoursForCategory(category)[d.getDay()];
             var isOff    = isPast || isFar || isClosed;
             var isSel    = selectedDate && d.toDateString() === selectedDate.toDateString();
             var isToday  = d.toDateString() === today.toDateString();

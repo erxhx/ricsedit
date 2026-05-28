@@ -160,8 +160,7 @@ export default function BookingFlow({
             onTimeChange={handleTimeChange}
             onNext={nextStep}
             onBack={prevStep}
-            weekHours={availability?.days}
-            barberThuClose={availability?.barberThuClose}
+            availability={availability}
           />
         )}
 

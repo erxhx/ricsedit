@@ -17,24 +17,40 @@ import { db } from './supabase';
 /** [openHour, closeHour] in 24-hour integers, or null = closed that day. */
 export type DayHours = [number, number] | null;
 
+/** Working days/hours for one staff member. */
+export interface StaffSchedule {
+  days: Record<number, DayHours>; // 0 (Sun) … 6 (Sat)
+}
+
 export interface AvailabilityConfig {
-  /** Keyed 0 (Sun) … 6 (Sat). */
+  /** General store hours — drives the Open/Closed indicator on the live site. */
   days: Record<number, DayHours>;
   /** Special late-night close hour for barber on Thursday (day 4). */
   barberThuClose: number;
+  /** Per-staff working schedules — drives which dates/slots are bookable. */
+  staff: {
+    eric: StaffSchedule;
+    livi: StaffSchedule;
+  };
 }
 
+const DEFAULT_DAYS: Record<number, DayHours> = {
+  0: [10, 18],
+  1: null,
+  2: null,
+  3: [10, 18],
+  4: [10, 18],
+  5: [10, 18],
+  6: [10, 18],
+};
+
 export const DEFAULT_AVAILABILITY: AvailabilityConfig = {
-  days: {
-    0: [10, 18],
-    1: null,
-    2: null,
-    3: [10, 18],
-    4: [10, 18],
-    5: [10, 18],
-    6: [10, 18],
-  },
+  days: { ...DEFAULT_DAYS },
   barberThuClose: 21,
+  staff: {
+    eric: { days: { ...DEFAULT_DAYS } },
+    livi: { days: { ...DEFAULT_DAYS } },
+  },
 };
 
 declare global {
@@ -42,23 +58,39 @@ declare global {
   var __availabilityCache: AvailabilityConfig | undefined;
 }
 
-function normalise(raw: unknown): AvailabilityConfig {
-  if (!raw || typeof raw !== 'object') return structuredClone(DEFAULT_AVAILABILITY);
-  const r = raw as Record<string, unknown>;
-  const rawDays = (r.days ?? {}) as Record<string, unknown>;
+function normaliseDays(raw: unknown): Record<number, DayHours> {
+  const src = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
   const days: Record<number, DayHours> = {};
   for (let d = 0; d <= 6; d++) {
-    const v = rawDays[String(d)] ?? rawDays[d];
+    const v = src[String(d)] ?? src[d];
     days[d] = Array.isArray(v) && v.length === 2
       ? [Number(v[0]), Number(v[1])]
       : null;
   }
+  return days;
+}
+
+function normalise(raw: unknown): AvailabilityConfig {
+  if (!raw || typeof raw !== 'object') return structuredClone(DEFAULT_AVAILABILITY);
+  const r = raw as Record<string, unknown>;
+
+  const days = normaliseDays(r.days);
+
+  // Staff — fall back to store hours if staff block is missing (old config format)
+  const rawStaff = (r.staff ?? {}) as Record<string, unknown>;
+  const ericRaw  = (rawStaff.eric ?? {}) as Record<string, unknown>;
+  const liviRaw  = (rawStaff.livi ?? {}) as Record<string, unknown>;
+
   return {
     days,
     barberThuClose:
       typeof r.barberThuClose === 'number'
         ? r.barberThuClose
         : DEFAULT_AVAILABILITY.barberThuClose,
+    staff: {
+      eric: { days: Object.keys(ericRaw.days ?? {}).length ? normaliseDays(ericRaw.days) : { ...days } },
+      livi: { days: Object.keys(liviRaw.days ?? {}).length ? normaliseDays(liviRaw.days) : { ...days } },
+    },
   };
 }
 
@@ -91,7 +123,6 @@ export async function saveAvailabilityConfig(config: AvailabilityConfig): Promis
     });
     return !error;
   } catch {
-    // Table doesn't exist — changes live in memory until restart.
     return false;
   }
 }
