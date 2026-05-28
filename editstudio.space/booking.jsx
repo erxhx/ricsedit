@@ -126,10 +126,15 @@
     return result;
   }
 
-  // Pseudo-random "taken" slots — deterministic per date+slot so UI is consistent on re-render
-  function bkSlotTaken(date, h, m) {
-    var seed = date.getDate() * 31 + date.getMonth() * 7 + h * 3 + Math.floor(m / 30);
-    return ((seed * 1103515245 + 12345) & 0x7fffffff) % 4 === 0;
+  // Check if a proposed slot (startH:startM, durationMins) overlaps any booked range.
+  // bookedRanges: Array<{startMinutes, durationMinutes}>
+  function bkSlotTaken(bookedRanges, startH, startM, durationMins) {
+    var slotStart = startH * 60 + startM;
+    var slotEnd   = slotStart + durationMins;
+    return bookedRanges.some(function(r) {
+      return slotStart < r.startMinutes + r.durationMinutes &&
+             slotEnd   > r.startMinutes;
+    });
   }
 
   // ── Shared micro-components ────────────────────────────────────────────────
@@ -386,10 +391,41 @@
     }
 
     var defDate = firstAvailable();
-    var [selectedDate, setSelectedDate] = useState(defDate);
-    var [selectedTime, setSelectedTime] = useState(null);
-    var [viewMonth,    setViewMonth]    = useState(defDate.getMonth());
-    var [viewYear,     setViewYear]     = useState(defDate.getFullYear());
+    var [selectedDate,  setSelectedDate]  = useState(defDate);
+    var [selectedTime,  setSelectedTime]  = useState(null);
+    var [viewMonth,     setViewMonth]     = useState(defDate.getMonth());
+    var [viewYear,      setViewYear]      = useState(defDate.getFullYear());
+    var [bookedRanges,  setBookedRanges]  = useState([]);
+    var [loadingSlots,  setLoadingSlots]  = useState(false);
+
+    // Fetch real availability whenever the selected date or category changes
+    useEffect(function() {
+      var staff    = category === 'barber' ? 'eric' : 'livi';
+      var endpoint = window.__booking && window.__booking.endpoint;
+      if (!endpoint) return; // dev / no backend wired — leave empty (all slots open)
+
+      var dateStr = selectedDate.getFullYear() + '-' +
+                    String(selectedDate.getMonth() + 1).padStart(2, '0') + '-' +
+                    String(selectedDate.getDate()).padStart(2, '0');
+
+      var url = endpoint.replace(/\/booking\/create$/, '') +
+                '/booking/availability?date=' + dateStr + '&staff=' + staff;
+
+      var cancelled = false;
+      setLoadingSlots(true);
+      fetch(url)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (!cancelled) setBookedRanges(data.bookedRanges || []);
+        })
+        .catch(function() {
+          if (!cancelled) setBookedRanges([]); // on error, show all slots as open
+        })
+        .finally(function() {
+          if (!cancelled) setLoadingSlots(false);
+        });
+      return function() { cancelled = true; };
+    }, [selectedDate.toDateString(), category]);
 
     var slots   = bkSlots(selectedDate, duration, category);
     var todayMs = today.getTime();
@@ -418,7 +454,7 @@
     var MONTH_NAMES = ['January','February','March','April','May','June',
                        'July','August','September','October','November','December'];
 
-    function pickDate(d) { setSelectedDate(d); setSelectedTime(null); }
+    function pickDate(d) { setSelectedDate(d); setSelectedTime(null); setBookedRanges([]); }
 
     function goPrev() {
       if (viewMonth === 0) { setViewMonth(11); setViewYear(viewYear - 1); }
@@ -514,27 +550,30 @@
         </div>
 
         {/* Time slots — pre-populated since a date is always selected */}
-        <BkEyebrow left={'Available · ' + bkFmtDate(selectedDate)} />
+        <BkEyebrow
+          left={'Available · ' + bkFmtDate(selectedDate)}
+          right={loadingSlots ? 'Checking…' : null}
+        />
         {slots.length === 0
           ? <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--ink-faint)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 20 }}>No slots available.</p>
           : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6, marginBottom: 28 }}>
               {slots.map(function(slot, i) {
-                var taken = bkSlotTaken(selectedDate, slot.h, slot.m);
+                var taken = bkSlotTaken(bookedRanges, slot.h, slot.m, duration);
                 var isSel = selectedTime && selectedTime.h === slot.h && selectedTime.m === slot.m;
                 return (
                   <button key={i}
                     onClick={function() { if (!taken) setSelectedTime(slot); }}
-                    disabled={taken}
+                    disabled={taken || loadingSlots}
                     style={{
                       padding: '11px 4px',
                       background: isSel ? 'var(--ink)' : 'var(--bg)',
                       color:      isSel ? 'var(--bg)' : taken ? 'var(--ink-faint)' : 'var(--ink)',
                       border:     isSel ? '1px solid transparent' : '1px solid var(--rule)',
-                      borderRadius: 2, cursor: taken ? 'default' : 'pointer',
+                      borderRadius: 2, cursor: (taken || loadingSlots) ? 'default' : 'pointer',
                       fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: '0.04em',
-                      opacity: taken ? 0.28 : 1,
-                      transition: 'background 0.15s ease',
+                      opacity: taken ? 0.28 : loadingSlots ? 0.5 : 1,
+                      transition: 'background 0.15s ease, opacity 0.2s ease',
                     }}
                   >
                     {bkFmtTime(slot.h, slot.m)}
