@@ -363,6 +363,18 @@
             <span style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: '0.08em', color: 'var(--ink)' }}>
               {bkFmtTime(prefill.time.h, prefill.time.m)}
             </span>
+            <span style={{ width: 1, height: 12, background: 'var(--rule)', flexShrink: 0, marginLeft: 2 }} />
+            <button
+              onClick={props.onClearPrefill}
+              style={{
+                appearance: 'none', border: 'none', background: 'none', padding: 0,
+                fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: '0.1em',
+                textTransform: 'uppercase', color: 'var(--ink-faint)',
+                cursor: 'pointer', lineHeight: 1,
+              }}
+            >
+              Change
+            </button>
           </div>
         )}
 
@@ -955,6 +967,7 @@
             <StepService
               category={category}
               prefillSlot={prefillActive && date && time ? { date: date, time: time } : null}
+              onClearPrefill={function() { setPrefillActive(false); setDate(null); setTime(null); }}
               onNext={function(svcs, adds) {
                 setServices(svcs); setAddons(adds);
                 // Skip date/time picker when a slot was pre-selected via the CTA
