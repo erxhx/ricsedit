@@ -647,8 +647,12 @@ function ServiceColumn({ service, isActive, hProgress, animSpeed, density, headl
         const embed = el.querySelector('.booking-embed');
         const scroller = embed && embed.closest('.cpanel');
         if (embed && scroller) {
-          const top = embed.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop - 24;
-          scroller.scrollTo({ top, behavior: 'smooth' });
+          // Offset by the chrome-top's actual bottom so the embed lands
+          // clear of the logo/header overlay, plus a small breathing gap.
+          const chromeEl = document.querySelector('.chrome-top');
+          const clearance = chromeEl ? chromeEl.getBoundingClientRect().bottom + 16 : 120;
+          const top = embed.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop - clearance;
+          scroller.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
         }
       }, 720);
     };

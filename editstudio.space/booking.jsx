@@ -302,10 +302,12 @@
         var scroller = embed && embed.closest('.cpanel');
         setTimeout(function() {
           if (embed && scroller) {
+            var chromeEl  = document.querySelector('.chrome-top');
+            var clearance = chromeEl ? chromeEl.getBoundingClientRect().bottom + 16 : 120;
             var top = embed.getBoundingClientRect().top
                       - scroller.getBoundingClientRect().top
                       + scroller.scrollTop
-                      - 24;
+                      - clearance;
             scroller.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
           }
         }, 60);
@@ -500,10 +502,12 @@
       var scroller = embed && embed.closest('.cpanel');
       setTimeout(function() {
         if (embed && scroller) {
+          var chromeEl  = document.querySelector('.chrome-top');
+          var clearance = chromeEl ? chromeEl.getBoundingClientRect().bottom + 16 : 120;
           var top = embed.getBoundingClientRect().top
                     - scroller.getBoundingClientRect().top
                     + scroller.scrollTop
-                    - 24;
+                    - clearance;
           scroller.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
         }
       }, 60);
