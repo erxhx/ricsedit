@@ -347,7 +347,7 @@ function NextAvailableBarber() {
 
           if (slots.length > 0) {
             if (!cancelled) {
-              setSlot({ isToday: i === 0, isTomorrow: i === 1, dow: d.getDay(), ...slots[0] });
+              setSlot({ dateStr, isToday: i === 0, isTomorrow: i === 1, dow: d.getDay(), ...slots[0] });
               setState('ready');
             }
             return;
@@ -377,7 +377,9 @@ function NextAvailableBarber() {
     <button
       type="button"
       className="next-avail"
-      onClick={() => window.dispatchEvent(new CustomEvent('edit-studio:goto-booking'))}
+      onClick={() => window.dispatchEvent(new CustomEvent('edit-studio:goto-booking', {
+        detail: { prefill: { dateStr: slot.dateStr, h: slot.h, m: slot.m } }
+      }))}
       aria-label={`Next available barber slot: ${when} — jump to booking`}
     >
       <span className="avail-dot" aria-hidden="true" />

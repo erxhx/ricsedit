@@ -340,10 +340,31 @@
 
     var catLabel = category === 'barber' ? '01 / Barbering' : category === 'tan' ? '02 / Sunless' : '03 / Waxing';
 
+    // Pre-selected slot (from "Next available" CTA)
+    var prefill = props.prefillSlot;
+
     return (
       <div>
         <BkBack onClick={props.onBack} />
         <BkEyebrow left={catLabel} right={isMulti ? 'Select all that apply' : 'Select a service'} />
+
+        {/* Pre-selected time chip */}
+        {prefill && (
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            border: '1px solid var(--rule)', borderRadius: 999,
+            padding: '7px 14px', marginBottom: 20,
+          }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'oklch(0.58 0.13 150)', flexShrink: 0 }} />
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--ink-soft)' }}>
+              {bkFmtDate(prefill.date)}
+            </span>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--ink-faint)' }}>·</span>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: '0.08em', color: 'var(--ink)' }}>
+              {bkFmtTime(prefill.time.h, prefill.time.m)}
+            </span>
+          </div>
+        )}
 
         {/* Barber */}
         {category === 'barber' && (
@@ -827,15 +848,17 @@
     var { useState, useRef, useEffect } = React;
     var categoryProp = props.category || null;
 
-    var [step,       setStep]       = useState(categoryProp ? 'service' : 'category');
-    var [category,   setCategory]   = useState(categoryProp);
-    var [services,   setServices]   = useState([]);
-    var [addons,     setAddons]     = useState([]);
-    var [date,       setDate]       = useState(null);
-    var [time,       setTime]       = useState(null);
-    var [client,     setClient]     = useState(null);
-    var [submitting, setSubmitting] = useState(false);
-    var [error,      setError]      = useState(null);
+    var [step,         setStep]         = useState(categoryProp ? 'service' : 'category');
+    var [category,     setCategory]     = useState(categoryProp);
+    var [services,     setServices]     = useState([]);
+    var [addons,       setAddons]       = useState([]);
+    var [date,         setDate]         = useState(null);
+    var [time,         setTime]         = useState(null);
+    var [client,       setClient]       = useState(null);
+    var [submitting,   setSubmitting]   = useState(false);
+    var [error,        setError]        = useState(null);
+    // prefillActive: true when a "Next available" CTA pre-selected the date+time
+    var [prefillActive, setPrefillActive] = useState(false);
 
     // Approximate progress for the thin bar
     var PROGRESS = { category: 0, service: 0.15, datetime: 0.38, client: 0.58, waiver: 0.75, confirm: 0.88, done: 1 };
@@ -874,11 +897,31 @@
       setCategory(categoryProp);
       setServices([]); setAddons([]);
       setDate(null); setTime(null); setClient(null);
-      setError(null);
+      setError(null); setPrefillActive(false);
     }
 
     var embedRef   = useRef(null);
     var mountedRef = useRef(false);
+
+    // Listen for goto-booking events with prefill data from the "Next available" CTA.
+    // Sets date + time in state and jumps to service selection, skipping the date picker.
+    useEffect(function() {
+      function onGoto(e) {
+        var p = e && e.detail && e.detail.prefill;
+        if (!p || !p.dateStr || p.h == null) return;
+        // Only apply to barber embeds (the CTA is barber-only)
+        if (categoryProp && categoryProp !== 'barber') return;
+        var parts = p.dateStr.split('-').map(Number);
+        var d = new Date(parts[0], parts[1] - 1, parts[2]);
+        if (!categoryProp) setCategory('barber');
+        setDate(d);
+        setTime({ h: p.h, m: p.m || 0 });
+        setPrefillActive(true);
+        setStep('service');
+      }
+      window.addEventListener('edit-studio:goto-booking', onGoto);
+      return function() { window.removeEventListener('edit-studio:goto-booking', onGoto); };
+    }, [categoryProp]);
 
     // Scroll the embed's top into view when the step changes (not on initial mount).
     // Skipping mount prevents the 3 simultaneously-rendered panels from all
@@ -911,7 +954,12 @@
           {step === 'service' && (
             <StepService
               category={category}
-              onNext={function(svcs, adds) { setServices(svcs); setAddons(adds); setStep('datetime'); }}
+              prefillSlot={prefillActive && date && time ? { date: date, time: time } : null}
+              onNext={function(svcs, adds) {
+                setServices(svcs); setAddons(adds);
+                // Skip date/time picker when a slot was pre-selected via the CTA
+                setStep(prefillActive ? 'client' : 'datetime');
+              }}
               onBack={categoryProp ? null : function() { setStep('category'); }}
             />
           )}
@@ -926,7 +974,7 @@
           {step === 'client' && (
             <StepClient
               onNext={function(info) { setClient(info); setStep(needsWaiver(category) ? 'waiver' : 'confirm'); }}
-              onBack={function() { setStep('datetime'); }}
+              onBack={function() { setStep(prefillActive ? 'service' : 'datetime'); }}
             />
           )}
           {step === 'waiver' && (

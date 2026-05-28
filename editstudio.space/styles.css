@@ -469,8 +469,8 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
   color: var(--ink-soft);
 }
 .next-avail-time {
-  font-family: var(--display); font-style: italic;
-  font-size: 17px; letter-spacing: -0.01em; line-height: 1;
+  font-family: var(--mono);
+  font-size: 12px; letter-spacing: 0.06em; line-height: 1;
   color: var(--ink);
 }
 .next-avail-arr {
