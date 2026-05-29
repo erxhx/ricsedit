@@ -12,7 +12,30 @@ function fmtDate(date: Date): string {
   return date.toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric' });
 }
 
-export default function DayView({ appointments, date }: { appointments: Appointment[]; date: Date }) {
+const navArrow: React.CSSProperties = {
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  width: 36, height: 36, borderRadius: 8,
+  border: '1px solid var(--admin-border)', background: 'none',
+  color: 'var(--admin-text2)', fontSize: 18, lineHeight: 1,
+  cursor: 'pointer', flexShrink: 0,
+  WebkitTapHighlightColor: 'transparent',
+};
+
+export default function DayView({
+  appointments,
+  date,
+  isToday,
+  onPrev,
+  onNext,
+  onGoToday,
+}: {
+  appointments: Appointment[];
+  date: Date;
+  isToday?: boolean;
+  onPrev?: () => void;
+  onNext?: () => void;
+  onGoToday?: () => void;
+}) {
   const open = isOpen(date);
 
   // Revenue summary
@@ -23,14 +46,45 @@ export default function DayView({ appointments, date }: { appointments: Appointm
 
   return (
     <div style={{ padding: '0 20px 40px' }}>
-      {/* Date heading */}
+      {/* Date heading + nav */}
       <div style={{ paddingTop: 24, paddingBottom: 20 }}>
-        <h1 style={{
-          fontFamily: 'var(--font-body)', fontSize: 22, fontWeight: 400,
-          color: 'var(--admin-text)', margin: 0, letterSpacing: '-0.01em',
-        }}>
-          {fmtDate(date)}
-        </h1>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <div style={{ minWidth: 0 }}>
+            <h1 style={{
+              fontFamily: 'var(--font-body)', fontSize: 22, fontWeight: 400,
+              color: 'var(--admin-text)', margin: 0, letterSpacing: '-0.01em', lineHeight: 1.2,
+            }}>
+              {fmtDate(date)}
+            </h1>
+            {isToday && (
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-muted)', marginTop: 3, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                Today
+              </div>
+            )}
+          </div>
+
+          {(onPrev || onNext) && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+              {!isToday && onGoToday && (
+                <button
+                  onClick={onGoToday}
+                  style={{
+                    fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500,
+                    color: '#b5824a', background: 'none', cursor: 'pointer',
+                    padding: '5px 10px', borderRadius: 6,
+                    border: '1px solid var(--admin-border)',
+                    WebkitTapHighlightColor: 'transparent',
+                    marginRight: 2,
+                  }}
+                >
+                  Today
+                </button>
+              )}
+              <button onClick={onPrev} style={navArrow}>‹</button>
+              <button onClick={onNext} style={navArrow}>›</button>
+            </div>
+          )}
+        </div>
       </div>
 
       {!open ? (

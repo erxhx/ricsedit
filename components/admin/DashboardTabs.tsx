@@ -77,6 +77,7 @@ export default function DashboardTabs({
 
   function prevDay() { setViewDate((d) => addDays(d, -1)); }
   function nextDay() { setViewDate((d) => addDays(d, 1)); }
+  function goToToday() { setViewDate(today); }
 
   useEffect(() => {
     const t = searchParams.get('tab');
@@ -173,45 +174,10 @@ export default function DashboardTabs({
           </button>
         ))}
 
-        {/* Date navigation — only in day mode */}
-        {dayMode === 'day' ? (
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
-            <button
-              onClick={prevDay}
-              style={{
-                fontFamily: 'var(--font-body)', fontSize: 14,
-                color: 'var(--admin-muted)', background: 'none', border: 'none',
-                padding: '2px 6px', cursor: 'pointer', lineHeight: 1,
-                WebkitTapHighlightColor: 'transparent',
-              }}
-            >
-              ←
-            </button>
-            <span style={{
-              fontFamily: 'var(--font-body)', fontSize: 11,
-              color: loadingApts ? 'var(--admin-muted)' : 'var(--admin-muted)',
-              letterSpacing: '0.03em',
-              minWidth: 80, textAlign: 'center',
-            }}>
-              {viewDate.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' })}
-            </span>
-            <button
-              onClick={nextDay}
-              style={{
-                fontFamily: 'var(--font-body)', fontSize: 14,
-                color: 'var(--admin-muted)', background: 'none', border: 'none',
-                padding: '2px 6px', cursor: 'pointer', lineHeight: 1,
-                WebkitTapHighlightColor: 'transparent',
-              }}
-            >
-              →
-            </button>
-          </div>
-        ) : null}
       </div>
 
       {/* ── content ───────────────────────────────────────────────────────── */}
-      {activeTab === 'overview' && overviewMode === 'day'  && <DayView appointments={viewApts} date={viewDate} />}
+      {activeTab === 'overview' && overviewMode === 'day'  && <DayView appointments={viewApts} date={viewDate} isToday={localDateStr(viewDate) === localDateStr(today)} onPrev={prevDay} onNext={nextDay} onGoToday={goToToday} />}
       {activeTab === 'overview' && overviewMode === 'week' && <WeekView appointments={weekApts} weekStart={weekStart} />}
       {activeTab === 'calendar' && calendarMode === 'day'  && <DaySchedule appointments={viewApts} date={localDateStr(viewDate)} stickyTop={SUB_STICKY} />}
       {activeTab === 'calendar' && calendarMode === 'week' && <WeekGridView appointments={weekApts} weekStart={weekStart} stickyTop={SUB_STICKY} />}
