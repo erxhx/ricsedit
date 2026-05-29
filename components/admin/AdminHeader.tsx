@@ -1,7 +1,9 @@
 'use client';
 import { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import Image from 'next/image';
 import Link from 'next/link';
+import { useAdminTheme } from './AdminThemeProvider';
 
 interface NavItem {
   label: string;
@@ -33,6 +35,7 @@ export default function AdminHeader({ name }: { name: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const { theme } = useAdminTheme();
 
   async function logout() {
     await fetch('/api/admin/logout', { method: 'POST' });
@@ -52,12 +55,14 @@ export default function AdminHeader({ name }: { name: string }) {
         borderBottom: '1px solid var(--admin-border)',
         position: 'sticky', top: 0, zIndex: 10,
       }}>
-        <span style={{
-          fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 500,
-          letterSpacing: '0.06em', color: 'var(--admin-text)',
-        }}>
-          Edit Studio
-        </span>
+        <Image
+          src={theme === 'dark' ? '/assets/logo-white.png' : '/assets/logo-black.png'}
+          alt="Edit Studio"
+          width={88}
+          height={28}
+          style={{ objectFit: 'contain', objectPosition: 'left center' }}
+          priority
+        />
 
         {/* Hamburger button */}
         <button
