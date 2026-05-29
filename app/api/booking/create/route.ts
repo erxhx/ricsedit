@@ -96,8 +96,8 @@ export async function POST(req: NextRequest) {
       notes: client.notes?.trim() || undefined,
     });
 
-    // Fire-and-forget — don't block the response on notification latency
-    sendBookingConfirmation(apt).catch(() => {});
+    // Await so Vercel doesn't terminate the function before the sends complete
+    await sendBookingConfirmation(apt).catch(() => {});
 
     return Response.json(
       { ok: true, id: apt.id, manageToken: apt.manageToken },
