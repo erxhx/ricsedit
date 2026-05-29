@@ -43,8 +43,6 @@ export default function DashboardTabs({
     return 'overview';
   }
   function initOverviewMode(): 'day' | 'week' {
-    if (searchParams.get('tab') === 'overview' && searchParams.get('mode') === 'week') return 'week';
-    if (searchParams.get('tab') === 'week') return 'week'; // legacy
     return 'day';
   }
   function initCalendarMode(): 'day' | 'week' {
