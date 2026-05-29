@@ -56,9 +56,9 @@ export default function AdminHeader({ name }: { name: string }) {
       }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={theme === 'dark' ? '/assets/logo-white.png' : '/assets/logo-black.png'}
+          src={theme === 'dark' ? '/assets/ES-LogoHori-White.png' : '/assets/ES-LogoHorizontal-Blk.png'}
           alt="Edit Studio"
-          style={{ height: 24, width: 'auto', display: 'block' }}
+          style={{ height: 19, width: 'auto', display: 'block' }}
         />
 
         {/* Hamburger button */}
