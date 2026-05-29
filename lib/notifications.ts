@@ -124,7 +124,7 @@ function emailLayout(bodyHtml: string): string {
         <tr>
           <td style="padding-top:24px;text-align:center;">
             <p style="font-family:'Inter Tight',Helvetica,sans-serif;font-size:11px;color:#9a9085;margin:0 0 4px;">
-              Edit Studio · Oak Bay Avenue, Victoria BC
+              Edit Studio · 1846 Oak Bay Avenue, Victoria BC
             </p>
             <p style="font-family:'Inter Tight',Helvetica,sans-serif;font-size:11px;color:#9a9085;margin:0;">
               <a href="tel:+17785353348" style="color:#9a9085;text-decoration:none;">778 535 3348</a>
