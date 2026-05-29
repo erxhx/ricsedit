@@ -112,8 +112,8 @@ function emailLayout(bodyHtml: string): string {
     <tr><td align="center">
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;">
         <tr>
-          <td style="padding-bottom:28px;">
-            <span style="font-family:'Inter Tight',Helvetica,sans-serif;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#9a9085;">Edit Studio</span>
+          <td style="padding-bottom:24px;">
+            <img src="https://www.editstudio.space/assets/logo-black.png" alt="Edit Studio" width="100" style="display:block;height:auto;opacity:0.85;" />
           </td>
         </tr>
         <tr>
