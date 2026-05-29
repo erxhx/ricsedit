@@ -284,12 +284,25 @@ export function generateTimeSlots(
       : baseClose;
 
   const slots: string[] = [];
-  for (let h = open; h < close; h++) {
-    for (const m of [0, 30]) {
-      const slotMinutes = h * 60 + m;
-      const endMinutes = slotMinutes + durationMinutes;
-      if (endMinutes <= close * 60) {
-        slots.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+  const closeMins = close * 60;
+  // Barber: 45-min steps starting from open — maximises bookings (10:00, 10:45, 11:30, …).
+  // Allows slots that end up to 15 min past close so the last slot of the day isn't cut short.
+  // All other categories: 30-min steps (:00 and :30).
+  if (category === 'barber') {
+    const deadline = closeMins + 15;
+    for (let cursor = open * 60; cursor + durationMinutes <= deadline; cursor += 45) {
+      slots.push(
+        `${String(Math.floor(cursor / 60)).padStart(2, '0')}:${String(cursor % 60).padStart(2, '0')}`,
+      );
+    }
+  } else {
+    for (let h = open; h < close; h++) {
+      for (const m of [0, 30]) {
+        const slotMinutes = h * 60 + m;
+        const endMinutes = slotMinutes + durationMinutes;
+        if (endMinutes <= closeMins) {
+          slots.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+        }
       }
     }
   }
