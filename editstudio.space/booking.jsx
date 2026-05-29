@@ -578,6 +578,17 @@
 
     var slots   = loadingSlots ? [] : bkAvailableSlots(selectedDate, duration, category, bookedRanges);
     var todayMs = today.getTime();
+
+    // Filter out past time slots when viewing today (Pacific time)
+    if (selectedDate.toDateString() === today.toDateString()) {
+      var pacParts = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/Vancouver', hour: 'numeric', minute: 'numeric', hour12: false
+      }).formatToParts(new Date());
+      var nowMins = (parseInt(pacParts.find(function(p) { return p.type === 'hour'; }).value, 10) % 24) * 60
+                 + parseInt(pacParts.find(function(p) { return p.type === 'minute'; }).value, 10);
+      slots = slots.filter(function(s) { return s.h * 60 + s.m > nowMins; });
+    }
+
     // Limit bookable window to 60 days out
     var maxMs   = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 60).getTime();
 

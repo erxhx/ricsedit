@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   CATEGORY_META,
   ServiceCategory,
@@ -54,6 +54,7 @@ export default function StepDateTime({
 
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
+  const [bookedRanges, setBookedRanges] = useState<{ startMinutes: number; durationMinutes: number }[]>([]);
 
   // Use the relevant staff member's schedule for this category.
   // Falls back to store hours → hardcoded constants if not set.
@@ -63,9 +64,51 @@ export default function StepDateTime({
   const barberThuClose = availability?.barberThuClose;
 
   const totalDuration = getTotalDuration(selectedServices);
-  const timeSlots = date
+
+  // Fetch booked ranges whenever the selected date changes
+  useEffect(() => {
+    if (!date) return;
+    const dateStr = date.getFullYear() + '-' +
+      String(date.getMonth() + 1).padStart(2, '0') + '-' +
+      String(date.getDate()).padStart(2, '0');
+    fetch(`/api/booking/availability?date=${dateStr}&staff=${staffId}`)
+      .then((r) => r.json())
+      .then((data) => setBookedRanges(data.bookedRanges ?? []))
+      .catch(() => setBookedRanges([]));
+  }, [date?.toDateString(), staffId]);
+
+  // Generate all slots then filter out:
+  //   1. Past times (when date is today, using Pacific time)
+  //   2. Slots that overlap a confirmed booking
+  const rawSlots = date
     ? generateTimeSlots(date, category, totalDuration, effectiveHours, barberThuClose)
     : [];
+
+  const timeSlots = rawSlots.filter((slot) => {
+    const [h, m] = slot.split(':').map(Number);
+    const slotMins = h * 60 + m;
+
+    // 1. Filter past times for today (Pacific time)
+    if (date && date.toDateString() === today.toDateString()) {
+      const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/Vancouver', hour: 'numeric', minute: 'numeric', hour12: false,
+      }).formatToParts(new Date());
+      const nowMins =
+        (parseInt(parts.find((p) => p.type === 'hour')!.value, 10) % 24) * 60 +
+        parseInt(parts.find((p) => p.type === 'minute')!.value, 10);
+      if (slotMins <= nowMins) return false;
+    }
+
+    // 2. Filter slots that overlap a booked range
+    const slotEnd = slotMins + totalDuration;
+    for (const range of bookedRanges) {
+      if (slotMins < range.startMinutes + range.durationMinutes && slotEnd > range.startMinutes) {
+        return false;
+      }
+    }
+
+    return true;
+  });
 
   function prevMonth() {
     if (viewMonth === 0) {
