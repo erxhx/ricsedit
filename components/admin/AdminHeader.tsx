@@ -1,7 +1,6 @@
 'use client';
 import { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useAdminTheme } from './AdminThemeProvider';
 
@@ -55,13 +54,11 @@ export default function AdminHeader({ name }: { name: string }) {
         borderBottom: '1px solid var(--admin-border)',
         position: 'sticky', top: 0, zIndex: 10,
       }}>
-        <Image
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
           src={theme === 'dark' ? '/assets/logo-white.png' : '/assets/logo-black.png'}
           alt="Edit Studio"
-          width={88}
-          height={28}
-          style={{ objectFit: 'contain', objectPosition: 'left center' }}
-          priority
+          style={{ height: 24, width: 'auto', display: 'block' }}
         />
 
         {/* Hamburger button */}
