@@ -47,6 +47,49 @@ function applyWaiverMigration(store: ServicesData): boolean {
 }
 
 /**
+ * Patches known barber service durations that were updated, and splits the
+ * combined Kids + Senior Cut into two separate services.
+ */
+function applyDurationMigration(store: ServicesData): boolean {
+  let changed = false;
+
+  // Duration patches keyed by service id
+  const patches: Record<string, number> = {
+    'beard-trim':              30,
+    'freshen-up-haircut':      45,
+    'freshen-up-haircut-beard': 60,
+  };
+
+  for (const svc of store.barberServices) {
+    if (patches[svc.id] !== undefined && svc.durationMinutes !== patches[svc.id]) {
+      svc.durationMinutes = patches[svc.id];
+      changed = true;
+    }
+  }
+
+  // Split kids-senior-cut → kids-cut + senior-cut
+  const combinedIdx = store.barberServices.findIndex((s) => s.id === 'kids-senior-cut');
+  if (combinedIdx !== -1) {
+    const replacement: Service[] = [
+      {
+        id: 'kids-cut', name: 'Kids Cut', category: 'barber',
+        durationMinutes: 45, price: 30, description: 'Ages 10 and under.',
+        requiresWaiver: false,
+      },
+      {
+        id: 'senior-cut', name: 'Senior Cut', category: 'barber',
+        durationMinutes: 45, price: 30, description: 'Ages 65+.',
+        requiresWaiver: false,
+      },
+    ];
+    store.barberServices.splice(combinedIdx, 1, ...replacement);
+    changed = true;
+  }
+
+  return changed;
+}
+
+/**
  * Async read — checks Supabase first so persisted edits survive server restarts.
  * Falls back to static defaults if the settings table doesn't exist yet.
  */
@@ -60,8 +103,9 @@ export async function getServicesStoreAsync(): Promise<ServicesData> {
       .single();
     if (!error && data?.value) {
       global.__servicesStore = data.value as ServicesData;
-      const migrated = applyWaiverMigration(global.__servicesStore);
-      if (migrated) saveServicesStore().catch(() => {});
+      const m1 = applyWaiverMigration(global.__servicesStore);
+      const m2 = applyDurationMigration(global.__servicesStore);
+      if (m1 || m2) saveServicesStore().catch(() => {});
       return global.__servicesStore;
     }
   } catch {
