@@ -58,7 +58,7 @@ export default function AdminHeader({ name }: { name: string }) {
         <img
           src={theme === 'dark' ? '/assets/ES-LogoHori-White.png' : '/assets/ES-LogoHorizontal-Blk.png'}
           alt="Edit Studio"
-          style={{ height: 19, width: 'auto', display: 'block' }}
+          style={{ height: 24, width: 'auto', display: 'block' }}
         />
 
         {/* Hamburger button */}
