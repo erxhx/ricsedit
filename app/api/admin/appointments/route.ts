@@ -1,7 +1,27 @@
 import { cookies } from 'next/headers';
 import { verifySession, SESSION_COOKIE } from '@/lib/admin-auth';
-import { dbCreateAppointment } from '@/lib/db';
+import { dbCreateAppointment, dbGetAppointmentsForDate } from '@/lib/db';
 import type { Appointment } from '@/lib/admin-mock';
+
+export async function GET(request: Request) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE)?.value;
+  const session = token ? await verifySession(token) : null;
+  if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const { searchParams } = new URL(request.url);
+  const date = searchParams.get('date');
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return Response.json({ error: 'Invalid date' }, { status: 400 });
+  }
+
+  try {
+    const apts = await dbGetAppointmentsForDate(date);
+    return Response.json(apts);
+  } catch (e) {
+    return Response.json({ error: e instanceof Error ? e.message : 'Failed' }, { status: 500 });
+  }
+}
 
 export async function POST(request: Request) {
   const cookieStore = await cookies();
