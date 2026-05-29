@@ -1,4 +1,5 @@
 import { dbGetAppointmentByToken, dbUpdateAppointment } from '@/lib/db';
+import { sendRescheduleNotification } from '@/lib/notifications';
 
 function addMinutes(t: string, mins: number): string {
   const [h, m] = t.split(':').map(Number);
@@ -29,7 +30,7 @@ export async function POST(
   }
 
   const endTime = addMinutes(body.startTime, apt.durationMinutes);
-  await dbUpdateAppointment(apt.id, { date: body.date, startTime: body.startTime, endTime });
-  // TODO: trigger reschedule notification
+  const updated = await dbUpdateAppointment(apt.id, { date: body.date, startTime: body.startTime, endTime });
+  if (updated) sendRescheduleNotification(updated).catch(() => {});
   return Response.json({ ok: true, date: body.date, startTime: body.startTime, endTime });
 }

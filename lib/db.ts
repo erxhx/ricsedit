@@ -213,6 +213,26 @@ export async function dbCreateAppointment(
   return toApt(row);
 }
 
+/**
+ * Returns confirmed appointments for a given date that haven't had a reminder sent yet.
+ * Requires the `reminder_sent` column — see SQL migration in SPEC.md.
+ */
+export async function dbGetAppointmentsNeedingReminder(date: string): Promise<Appointment[]> {
+  const { data, error } = await db
+    .from('appointments')
+    .select('*')
+    .eq('date', date)
+    .eq('status', 'confirmed')
+    .or('reminder_sent.is.null,reminder_sent.eq.false');
+  if (error || !data) return [];
+  return data.map(toApt);
+}
+
+/** Marks an appointment's reminder as sent so it won't be re-sent. */
+export async function dbMarkReminderSent(id: string): Promise<void> {
+  await db.from('appointments').update({ reminder_sent: true }).eq('id', id);
+}
+
 export async function dbUpdateAppointment(
   id: string,
   patch: Partial<Omit<Appointment, 'id'>>,

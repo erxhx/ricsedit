@@ -1,4 +1,5 @@
 import { dbGetAppointmentByToken, dbUpdateAppointment } from '@/lib/db';
+import { sendCancellationNotification } from '@/lib/notifications';
 
 export async function POST(
   _req: Request,
@@ -13,6 +14,6 @@ export async function POST(
   }
 
   await dbUpdateAppointment(apt.id, { status: 'cancelled' });
-  // TODO: trigger cancellation email/SMS
+  sendCancellationNotification(apt).catch(() => {});
   return Response.json({ ok: true });
 }

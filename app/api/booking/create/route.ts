@@ -6,6 +6,7 @@
 
 import { NextRequest } from 'next/server';
 import { dbCreateAppointment } from '@/lib/db';
+import { sendBookingConfirmation } from '@/lib/notifications';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -94,6 +95,9 @@ export async function POST(req: NextRequest) {
       status: 'confirmed',
       notes: client.notes?.trim() || undefined,
     });
+
+    // Fire-and-forget — don't block the response on notification latency
+    sendBookingConfirmation(apt).catch(() => {});
 
     return Response.json(
       { ok: true, id: apt.id, manageToken: apt.manageToken },
