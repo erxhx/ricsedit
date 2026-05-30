@@ -92,6 +92,23 @@ function AcuityEmbed({ category, appointmentType, owner, label, mode = 'embed' }
 
 }
 
+function SiteFooter() {
+  return (
+    <>
+      <div className="rule" />
+      <p style={{ fontSize: 12, color: 'var(--ink-faint)', textAlign: 'center', lineHeight: 1.6 }}>
+        © {new Date().getFullYear()} Edit Studio · Oak Bay, Victoria BC
+        <br />
+        <a href="/privacy" style={{ color: 'var(--ink-faint)', textDecoration: 'none' }}
+          onMouseEnter={function(e) { e.target.style.color = 'var(--ink-soft)'; }}
+          onMouseLeave={function(e) { e.target.style.color = 'var(--ink-faint)'; }}>
+          Privacy Policy
+        </a>
+      </p>
+    </>
+  );
+}
+
 // ── Per-service content blocks ─────────────────────────────────
 function BarberingContent({ headline }) {
   return (
@@ -132,6 +149,8 @@ function BarberingContent({ headline }) {
           </div>
         </div>
       </div>
+
+      <SiteFooter />
     </div>);
 
 }
@@ -219,6 +238,8 @@ function TanContent({ headline }) {
           </div>
         </div>
       </div>
+
+      <SiteFooter />
     </div>);
 
 }
@@ -264,6 +285,8 @@ function WaxContent({ headline }) {
           </div>
         </div>
       </div>
+
+      <SiteFooter />
     </div>);
 
 }
@@ -345,16 +368,7 @@ function VisitContent() {
         <div className="row"><span>Visit in person</span><span>→</span></div>
       </div>
 
-      <div className="rule" />
-      <p style={{ fontSize: 12, color: 'var(--ink-faint)', textAlign: 'center', lineHeight: 1.6 }}>
-        © {new Date().getFullYear()} Edit Studio · Oak Bay, Victoria BC
-        <br />
-        <a href="/privacy" style={{ color: 'var(--ink-faint)', textDecoration: 'none' }}
-          onMouseEnter={e => e.target.style.color = 'var(--ink-soft)'}
-          onMouseLeave={e => e.target.style.color = 'var(--ink-faint)'}>
-          Privacy Policy
-        </a>
-      </p>
+      <SiteFooter />
     </div>);
 
 }
