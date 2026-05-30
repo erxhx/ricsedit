@@ -52,8 +52,8 @@ export default async function AdminPage({
       <DashboardTabs
         todayApts={todayApts}
         weekApts={weekApts}
-        today={today}
-        weekStart={weekStart}
+        todayStr={todayStr}
+        weekStartStr={localDateStr(weekStart)}
       />
     </>
   );

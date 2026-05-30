@@ -20,17 +20,26 @@ function addDays(d: Date, n: number): Date {
   return result;
 }
 
+function strToLocalDate(s: string): Date {
+  const [y, m, d] = s.split('-').map(Number);
+  return new Date(y, m - 1, d); // local midnight — no UTC offset skew
+}
+
 export default function DashboardTabs({
   todayApts,
   weekApts,
-  today,
-  weekStart,
+  todayStr,
+  weekStartStr,
 }: {
   todayApts: Appointment[];
   weekApts: Appointment[];
-  today: Date;
-  weekStart: Date;
+  todayStr: string;
+  weekStartStr: string;
 }) {
+  // Reconstruct dates locally so timezone serialization from the server can't shift the day
+  const today     = strToLocalDate(todayStr);
+  const weekStart = strToLocalDate(weekStartStr);
+
   const searchParams = useSearchParams();
 
   // Derive initial state from URL params (supports old ?tab=week URLs too)
