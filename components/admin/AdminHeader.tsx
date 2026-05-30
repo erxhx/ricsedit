@@ -78,7 +78,7 @@ export default function AdminHeader({ name }: { name: string }) {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               width: 36, height: 36,
               background: 'none', border: 'none', cursor: 'pointer',
-              color: 'var(--admin-text2)', fontSize: 16,
+              color: 'var(--admin-text2)', fontSize: 32,
               WebkitTapHighlightColor: 'transparent',
               transform: spinning ? 'rotate(360deg)' : 'rotate(0deg)',
               transition: spinning ? 'transform 0.6s ease' : 'none',
