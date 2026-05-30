@@ -76,6 +76,7 @@ export default function DaySchedule({
   const dragRef = useRef<DragRef | null>(null);
   const ghostRef = useRef<HTMLDivElement | null>(null);
   const aptEls = useRef<Map<string, HTMLElement>>(new Map());
+  const nowRef = useRef<HTMLDivElement>(null);
 
   const [apts, setApts] = useState(initial);
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -87,6 +88,13 @@ export default function DaySchedule({
     const d = new Date();
     return (d.getHours() - H0) * 60 + d.getMinutes();
   });
+
+  // scroll to current time on mount
+  useEffect(() => {
+    if (nowRef.current) {
+      nowRef.current.scrollIntoView({ block: 'center', behavior: 'instant' });
+    }
+  }, []);
 
   // tick current-time indicator
   useEffect(() => {
@@ -310,7 +318,7 @@ export default function DaySchedule({
 
         {/* current-time bar — spans both columns */}
         {nowMin >= 0 && nowMin <= (H1 - H0) * 60 && (
-          <div style={{
+          <div ref={nowRef} style={{
             position: 'absolute',
             top: nowMin * PPM, left: TW, right: 0,
             height: 0, borderTop: '1.5px solid #b03030',

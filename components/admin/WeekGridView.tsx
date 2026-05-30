@@ -106,6 +106,7 @@ export default function WeekGridView({
   const dragRef   = useRef<DragRef | null>(null);
   const ghostRef  = useRef<HTMLDivElement | null>(null);
   const aptEls    = useRef<Map<string, HTMLElement>>(new Map());
+  const nowRef    = useRef<HTMLDivElement>(null);
 
   const [apts,         setApts]         = useState(initial);
   const [draggingId,   setDraggingId]   = useState<string | null>(null);
@@ -136,6 +137,13 @@ export default function WeekGridView({
         return { dateStr, dateObj: d, dow: d.getDay(), isToday: dateStr === todayStr, isOpen: openDays ? (openDays[d.getDay()] ?? true) : true, apts: dayApts, positions: computePositions(dayApts) };
       })
     : [];
+
+  // ── scroll to current time on mount ──────────────────────────────────────────
+  useEffect(() => {
+    if (nowRef.current) {
+      nowRef.current.scrollIntoView({ block: 'center', behavior: 'instant' });
+    }
+  }, []);
 
   // ── native touchmove (passive:false so we can preventDefault on drag) ────────
   useEffect(() => {
@@ -349,7 +357,7 @@ export default function WeekGridView({
 
         {/* Current-time bar */}
         {showNow && (
-          <div style={{ position: 'absolute', top: nowMin * PPM, left: TW, right: 0, height: 0, borderTop: '1px solid #b03030', zIndex: 4, pointerEvents: 'none' }}>
+          <div ref={nowRef} style={{ position: 'absolute', top: nowMin * PPM, left: TW, right: 0, height: 0, borderTop: '1px solid #b03030', zIndex: 4, pointerEvents: 'none' }}>
             <div style={{ position: 'absolute', left: -3, top: -3, width: 6, height: 6, borderRadius: '50%', background: '#b03030' }} />
           </div>
         )}

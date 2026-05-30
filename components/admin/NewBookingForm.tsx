@@ -21,9 +21,9 @@ function findService(staff: StaffId, name: string, data?: ServicesData): Service
 }
 
 const TIME_SLOTS: string[] = [];
-for (let h = 9; h <= 19; h++) {
+for (let h = 8; h <= 22; h++) {
   for (let m = 0; m < 60; m += 15) {
-    if (h === 19 && m > 0) break;
+    if (h === 22 && m > 0) break;
     TIME_SLOTS.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
   }
 }
