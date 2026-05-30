@@ -95,36 +95,48 @@ export async function dbSearchClients(query: string): Promise<ClientRecord[]> {
   const q = query.toLowerCase().trim();
   if (!q) return [];
 
-  // Search by name or email (case-insensitive). Phone search handled separately.
+  // Search by name, email, or phone (partial match on all three)
   const { data, error } = await db
     .from('appointments')
-    .select('client_name, client_email, client_phone')
-    .or(`client_name.ilike.%${q}%,client_email.ilike.%${q}%`)
-    .order('client_name');
+    .select('client_name, client_email, client_phone, date, status')
+    .or(`client_name.ilike.%${q}%,client_email.ilike.%${q}%,client_phone.ilike.%${q}%`)
+    .order('date', { ascending: false }); // newest first so first-seen = most recent contact info
 
   if (error || !data) return [];
 
-  // Deduplicate by name
-  const seen = new Set<string>();
-  const results: ClientRecord[] = [];
+  // Group by name, computing visit count + last visit date
+  const map = new Map<string, ClientRecord>();
   for (const row of data) {
-    if (seen.has(row.client_name)) continue;
-    seen.add(row.client_name);
-    results.push({
-      name:  row.client_name,
-      email: row.client_email,
-      phone: row.client_phone,
-    });
+    const existing = map.get(row.client_name);
+    const isActive = row.status !== 'cancelled' && row.status !== 'blocked';
+    if (!existing) {
+      map.set(row.client_name, {
+        name:       row.client_name,
+        email:      row.client_email,
+        phone:      row.client_phone,
+        visitCount: isActive ? 1 : 0,
+        lastVisit:  isActive ? row.date : undefined,
+      });
+    } else {
+      if (isActive) {
+        existing.visitCount = (existing.visitCount ?? 0) + 1;
+        if (!existing.lastVisit || row.date > existing.lastVisit) {
+          existing.lastVisit = row.date;
+        }
+      }
+    }
   }
 
-  // Sort: starts-with first
+  const results = Array.from(map.values());
+
+  // Sort: name starts-with query first, then alphabetical
   results.sort((a, b) => {
     const aStarts = a.name.toLowerCase().startsWith(q) ? 0 : 1;
     const bStarts = b.name.toLowerCase().startsWith(q) ? 0 : 1;
     return aStarts - bStarts || a.name.localeCompare(b.name);
   });
 
-  return results.slice(0, 5);
+  return results.slice(0, 6);
 }
 
 export interface ClientSummary {

@@ -238,6 +238,8 @@ export interface ClientRecord {
   name: string;
   email: string;
   phone: string;
+  visitCount?: number;
+  lastVisit?: string; // "YYYY-MM-DD"
 }
 
 /** Search clients by name, email, or phone prefix.

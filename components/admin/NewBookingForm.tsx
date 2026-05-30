@@ -113,8 +113,7 @@ export default function NewBookingForm({
     if (svc) { setDuration(svc.durationMinutes); setPrice(svc.price); }
   }
 
-  function handleClientNameChange(value: string) {
-    setClientName(value);
+  function triggerSearch(value: string) {
     if (searchTimer.current) clearTimeout(searchTimer.current);
     if (value.trim().length < 2) { setSuggestions([]); return; }
     searchTimer.current = setTimeout(async () => {
@@ -125,11 +124,30 @@ export default function NewBookingForm({
     }, 200);
   }
 
+  function handleClientNameChange(value: string) {
+    setClientName(value);
+    triggerSearch(value);
+  }
+
+  function handleClientPhoneChange(value: string) {
+    setClientPhone(value);
+    // Only search by phone if name is blank — avoids confusing double-search
+    if (!clientName.trim()) triggerSearch(value);
+  }
+
   function selectClient(c: ClientRecord) {
     setClientName(c.name);
     setClientEmail(c.email);
     setClientPhone(c.phone);
     setSuggestions([]);
+  }
+
+  function fmtLastVisit(dateStr: string): string {
+    const [y, mo, d] = dateStr.split('-').map(Number);
+    const thisYear = new Date().getFullYear();
+    return new Date(y, mo - 1, d).toLocaleDateString('en-CA', {
+      month: 'short', day: 'numeric', ...(y !== thisYear ? { year: 'numeric' } : {}),
+    });
   }
 
   const serviceName = serviceKey === '__custom__' ? customService : serviceKey;
@@ -355,16 +373,30 @@ export default function NewBookingForm({
                     width: '100%', textAlign: 'left', background: 'none',
                     border: 'none', borderBottom: '1px solid var(--admin-border-sub)',
                     padding: '10px 16px', cursor: 'pointer',
-                    display: 'flex', flexDirection: 'column', gap: 2,
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8,
                     WebkitTapHighlightColor: 'transparent',
                   }}
                 >
-                  <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)' }}>
-                    {c.name}
-                  </span>
-                  <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)' }}>
-                    {c.email}{c.phone ? ` · ${c.phone}` : ''}
-                  </span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+                    <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {c.name}
+                    </span>
+                    <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {c.phone || c.email || '—'}
+                    </span>
+                  </div>
+                  {(c.visitCount !== undefined && c.visitCount > 0) && (
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-text3)' }}>
+                        {c.visitCount} visit{c.visitCount !== 1 ? 's' : ''}
+                      </div>
+                      {c.lastVisit && (
+                        <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-muted)' }}>
+                          {fmtLastVisit(c.lastVisit)}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </button>
               ))}
             </div>
@@ -386,7 +418,8 @@ export default function NewBookingForm({
               type="tel"
               inputMode="tel"
               value={clientPhone}
-              onChange={(e) => setClientPhone(e.target.value)}
+              onChange={(e) => handleClientPhoneChange(e.target.value)}
+              onBlur={() => setTimeout(() => setSuggestions([]), 150)}
               placeholder="Optional"
               style={{ ...inputStyle, color: clientPhone ? 'var(--admin-text)' : 'var(--admin-muted)' }}
             />
