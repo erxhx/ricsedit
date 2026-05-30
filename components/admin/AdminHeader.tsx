@@ -80,7 +80,7 @@ export default function AdminHeader({ name }: { name: string }) {
               background: 'none', border: 'none', cursor: 'pointer',
               color: 'var(--admin-text2)', fontSize: 32,
               WebkitTapHighlightColor: 'transparent',
-              transform: spinning ? 'rotate(360deg)' : 'rotate(0deg)',
+              transform: spinning ? 'rotate(450deg)' : 'rotate(90deg)',
               transition: spinning ? 'transform 0.6s ease' : 'none',
             }}
           >
