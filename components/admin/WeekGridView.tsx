@@ -293,8 +293,12 @@ export default function WeekGridView({
 
   const navArrow: React.CSSProperties = {
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    width: 32, height: 32, borderRadius: 7,
-    border: '1px solid var(--admin-border)', background: 'none',
+    width: 32, height: 32, borderRadius: 10,
+    background: 'var(--admin-glass-bg)',
+    backdropFilter: 'blur(16px)',
+    WebkitBackdropFilter: 'blur(16px)',
+    border: '1px solid var(--admin-glass-border)',
+    boxShadow: 'var(--admin-glass-shadow)',
     color: 'var(--admin-text2)', fontSize: 16, lineHeight: 1,
     flexShrink: 0, cursor: 'pointer',
     WebkitTapHighlightColor: 'transparent',
@@ -308,7 +312,7 @@ export default function WeekGridView({
           <button onClick={onPrevWeek} style={navArrow}>‹</button>
           <button onClick={onNextWeek} style={navArrow}>›</button>
           {!isThisWeek && onGoCurrentWeek && (
-            <button onClick={onGoCurrentWeek} style={{ fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500, color: '#b5824a', background: 'none', cursor: 'pointer', padding: '4px 9px', borderRadius: 6, border: '1px solid var(--admin-border)', WebkitTapHighlightColor: 'transparent' }}>
+            <button onClick={onGoCurrentWeek} style={{ fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500, color: '#b5824a', cursor: 'pointer', padding: '4px 9px', borderRadius: 9999, background: 'var(--admin-glass-bg)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: '1px solid var(--admin-glass-border)', boxShadow: 'var(--admin-glass-shadow)', WebkitTapHighlightColor: 'transparent' }}>
               Today
             </button>
           )}
@@ -324,7 +328,7 @@ export default function WeekGridView({
       </div>
 
       {/* ── day headers ── sticky ─────────────────────────────────────────── */}
-      <div style={{ display: 'flex', paddingLeft: TW, position: 'sticky', top: stickyTop, zIndex: 6, background: 'var(--admin-bg)', borderBottom: '1px solid var(--admin-border-sub)' }}>
+      <div style={{ display: 'flex', paddingLeft: TW, position: 'sticky', top: stickyTop, zIndex: 6, background: 'var(--admin-glass-bg)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)', borderBottom: '1px solid var(--admin-glass-border)' }}>
         {days.map((day) => (
           <div key={day.dateStr} style={{ flex: 1, textAlign: 'center', padding: '6px 2px', opacity: day.isOpen ? 1 : 0.3 }}>
             <div style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: 'var(--admin-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', lineHeight: 1 }}>

@@ -44,12 +44,19 @@ export default function AdminThemeProvider({
             background: 'var(--admin-bg)',
             color: 'var(--admin-text)',
             paddingTop: 'env(safe-area-inset-top)',
-            paddingBottom: 'calc(56px + env(safe-area-inset-bottom))',
+            paddingBottom: 'calc(82px + env(safe-area-inset-bottom))',
             colorScheme: theme === 'dark' ? 'dark' : 'light',
           },
           vars,
         ) as React.CSSProperties}
       >
+        {/* Warm radial gradient overlay so glass has something to refract */}
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: -1, pointerEvents: 'none',
+          background: theme === 'dark'
+            ? 'radial-gradient(ellipse 80% 60% at 50% -10%, rgba(100,80,40,0.15) 0%, transparent 70%)'
+            : 'radial-gradient(ellipse 80% 60% at 50% -10%, rgba(220,200,160,0.3) 0%, transparent 70%)',
+        }} />
         {children}
       </div>
     </Ctx.Provider>

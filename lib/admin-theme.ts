@@ -2,9 +2,9 @@ export type AdminTheme = 'light' | 'dark';
 
 /**
  * Border-radius scale (not CSS vars — just the intended values):
- *   4px  — chips, badges, small inline buttons (Today pill)
- *   8px  — cards, stat boxes, action buttons, nav arrows
- *   9999px — FAB (pill)
+ *   6px  — chips, badges, small inline buttons (Today pill)
+ *   12px — cards, stat boxes, action buttons, nav arrows
+ *   9999px — FAB / tab bar pill
  * Keep new UI elements on this 3-step scale.
  */
 
@@ -15,8 +15,8 @@ export type AdminTheme = 'light' | 'dark';
  */
 export const THEME_VARS: Record<AdminTheme, Record<string, string>> = {
   light: {
-    '--admin-bg':                '#efeae0',
-    '--admin-card':              '#f7f3eb',
+    '--admin-bg':                '#f0ebe0',
+    '--admin-card':              '#faf6ee',
     '--admin-sheet':             '#f5f0e8',
     '--admin-border':            '#d4cfc6',
     '--admin-border-sub':        '#e0dbd2',
@@ -49,6 +49,13 @@ export const THEME_VARS: Record<AdminTheme, Record<string, string>> = {
     '--admin-error':             '#a04040',
     '--admin-link':              '#4a7a9b',
     '--admin-text-tint':         '#14121012',
+    '--admin-glass-bg':          'rgba(242,237,228,0.72)',
+    '--admin-glass-border':      'rgba(255,255,255,0.62)',
+    '--admin-glass-highlight':   'rgba(255,255,255,0.75)',
+    '--admin-glass-shadow':      '0 2px 20px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.75)',
+    '--admin-glass-dark-bg':     'rgba(16,14,12,0.82)',
+    '--admin-glass-dark-border': 'rgba(255,255,255,0.14)',
+    '--admin-glass-dark-shadow': '0 4px 28px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.10)',
   },
   dark: {
     '--admin-bg':                '#0d0c0a',
@@ -85,5 +92,12 @@ export const THEME_VARS: Record<AdminTheme, Record<string, string>> = {
     '--admin-error':             '#d06060',
     '--admin-link':              '#6a9abb',
     '--admin-text-tint':         '#ece9e20f',
+    '--admin-glass-bg':          'rgba(28,26,22,0.72)',
+    '--admin-glass-border':      'rgba(255,255,255,0.10)',
+    '--admin-glass-highlight':   'rgba(255,255,255,0.08)',
+    '--admin-glass-shadow':      '0 2px 20px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.08)',
+    '--admin-glass-dark-bg':     'rgba(16,14,12,0.82)',
+    '--admin-glass-dark-border': 'rgba(255,255,255,0.14)',
+    '--admin-glass-dark-shadow': '0 4px 28px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.10)',
   },
 };

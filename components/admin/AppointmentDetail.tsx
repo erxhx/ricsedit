@@ -522,7 +522,7 @@ function Section({ label, children }: { label?: string; children: React.ReactNod
           {label}
         </div>
       )}
-      <div style={{ background: 'var(--admin-card)', border: '1px solid var(--admin-border)', borderRadius: 10, overflow: 'hidden', padding: '4px 16px' }}>
+      <div style={{ background: 'rgba(252,248,240,0.85)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.55)', borderRadius: 12, boxShadow: '0 1px 8px rgba(0,0,0,0.05)', overflow: 'hidden', padding: '4px 16px' }}>
         {children}
       </div>
     </div>
@@ -565,7 +565,7 @@ function ActionButton({
       onClick={onClick}
       disabled={disabled}
       style={{
-        width: '100%', padding: '14px', borderRadius: 10, border: 'none',
+        width: '100%', padding: '14px', borderRadius: 12, border: 'none',
         fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 500,
         cursor: disabled ? 'default' : 'pointer', textAlign: 'center',
         opacity: disabled ? 0.5 : 1,

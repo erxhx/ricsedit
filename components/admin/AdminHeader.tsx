@@ -66,8 +66,11 @@ export default function AdminHeader({ name }: { name: string }) {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 20px',
         height: 52,
-        background: 'var(--admin-bg)',
-        borderBottom: '1px solid var(--admin-border)',
+        background: 'var(--admin-glass-bg)',
+        backdropFilter: 'blur(24px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+        borderBottom: '1px solid var(--admin-glass-border)',
+        boxShadow: 'var(--admin-glass-shadow)',
         position: 'sticky', top: 0, zIndex: 10,
       }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -85,9 +88,13 @@ export default function AdminHeader({ name }: { name: string }) {
             aria-label="Refresh"
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              width: 36, height: 36,
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: 'var(--admin-text2)', fontSize: 22, lineHeight: 1,
+              width: 36, height: 36, borderRadius: 10,
+              background: 'var(--admin-glass-bg)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              border: '1px solid var(--admin-glass-border)',
+              boxShadow: 'var(--admin-glass-shadow)',
+              cursor: 'pointer', color: 'var(--admin-text2)', fontSize: 22, lineHeight: 1,
               WebkitTapHighlightColor: 'transparent',
               transform: spinning ? 'rotate(450deg)' : 'rotate(90deg)',
               transition: spinning ? 'transform 0.6s ease' : 'none',
@@ -102,8 +109,13 @@ export default function AdminHeader({ name }: { name: string }) {
           aria-label="Open menu"
           style={{
             display: 'flex', flexDirection: 'column', justifyContent: 'center',
-            gap: 5, width: 36, height: 36,
-            background: 'none', border: 'none', cursor: 'pointer', padding: '6px 0 6px 6px',
+            gap: 5, width: 36, height: 36, borderRadius: 10,
+            background: 'var(--admin-glass-bg)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            border: '1px solid var(--admin-glass-border)',
+            boxShadow: 'var(--admin-glass-shadow)',
+            cursor: 'pointer', padding: '6px 0 6px 6px',
             WebkitTapHighlightColor: 'transparent',
           }}
         >
@@ -123,19 +135,22 @@ export default function AdminHeader({ name }: { name: string }) {
           href="/admin/new-booking"
           style={{
             position: 'fixed',
-            bottom: 'calc(56px + 20px + env(safe-area-inset-bottom))',
+            bottom: 'calc(76px + env(safe-area-inset-bottom))',
             right: 20,
             zIndex: 30,
             display: 'flex', alignItems: 'center', gap: 6,
             height: 52,
             padding: '0 22px',
-            borderRadius: 26,
-            background: 'var(--admin-text)',
+            borderRadius: 9999,
+            background: 'var(--admin-glass-dark-bg)',
+            backdropFilter: 'blur(24px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+            border: '1px solid var(--admin-glass-dark-border)',
+            boxShadow: 'var(--admin-glass-dark-shadow)',
             color: 'var(--admin-bg)',
             fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 600,
             letterSpacing: '0.01em',
             textDecoration: 'none',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.12)',
             WebkitTapHighlightColor: 'transparent',
           }}
         >
@@ -257,15 +272,21 @@ export default function AdminHeader({ name }: { name: string }) {
         </div>
       </div>
 
-      {/* ── Bottom tab bar ────────────────────────────────────────────────── */}
+      {/* ── Bottom tab bar — floating glass pill ──────────────────────────── */}
       <nav style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0,
-        height: 'calc(56px + env(safe-area-inset-bottom))',
-        paddingBottom: 'env(safe-area-inset-bottom)',
-        background: 'var(--admin-bg)',
-        borderTop: '1px solid var(--admin-border)',
-        display: 'flex',
+        position: 'fixed',
+        bottom: 'calc(12px + env(safe-area-inset-bottom))',
+        left: '50%',
+        transform: 'translateX(-50%)',
         zIndex: 20,
+        display: 'flex',
+        borderRadius: 9999,
+        overflow: 'hidden',
+        background: 'var(--admin-glass-bg)',
+        backdropFilter: 'blur(24px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+        border: '1px solid var(--admin-glass-border)',
+        boxShadow: 'var(--admin-glass-shadow)',
       }}>
         {BOTTOM_NAV.map((item) => {
           const active = isActive(item.href, pathname);
@@ -274,7 +295,7 @@ export default function AdminHeader({ name }: { name: string }) {
               key={item.href}
               href={item.href}
               style={{
-                flex: 1,
+                width: 76, height: 58,
                 display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center',
                 gap: 3, textDecoration: 'none',
@@ -285,7 +306,7 @@ export default function AdminHeader({ name }: { name: string }) {
             >
               {active && (
                 <span style={{
-                  position: 'absolute', top: 0, left: '50%',
+                  position: 'absolute', top: 7, left: '50%',
                   transform: 'translateX(-50%)',
                   width: 20, height: 2, borderRadius: 1,
                   background: 'var(--admin-text)',

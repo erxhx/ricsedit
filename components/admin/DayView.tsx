@@ -117,8 +117,12 @@ function fmtDate(date: Date): string {
 
 const navArrow: React.CSSProperties = {
   display: 'flex', alignItems: 'center', justifyContent: 'center',
-  width: 36, height: 36, borderRadius: 8,
-  border: '1px solid var(--admin-border)', background: 'none',
+  width: 36, height: 36, borderRadius: 10,
+  background: 'var(--admin-glass-bg)',
+  backdropFilter: 'blur(16px)',
+  WebkitBackdropFilter: 'blur(16px)',
+  border: '1px solid var(--admin-glass-border)',
+  boxShadow: 'var(--admin-glass-shadow)',
   color: 'var(--admin-text2)', fontSize: 18, lineHeight: 1,
   cursor: 'pointer', flexShrink: 0,
   WebkitTapHighlightColor: 'transparent',
@@ -180,9 +184,13 @@ export default function DayView({
                   onClick={onGoToday}
                   style={{
                     fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500,
-                    color: '#b5824a', background: 'none', cursor: 'pointer',
-                    padding: '5px 10px', borderRadius: 6,
-                    border: '1px solid var(--admin-border)',
+                    color: '#b5824a', cursor: 'pointer',
+                    padding: '5px 10px', borderRadius: 9999,
+                    background: 'var(--admin-glass-bg)',
+                    backdropFilter: 'blur(16px)',
+                    WebkitBackdropFilter: 'blur(16px)',
+                    border: '1px solid var(--admin-glass-border)',
+                    boxShadow: 'var(--admin-glass-shadow)',
                     WebkitTapHighlightColor: 'transparent',
                     marginRight: 2,
                   }}
@@ -207,9 +215,14 @@ export default function DayView({
           <>
             {/* Summary row — always visible when open, even with zero bookings */}
             <div style={{
-              display: 'flex', gap: 16, marginBottom: 24,
+              display: 'flex', gap: 16, marginBottom: 20,
               padding: '12px 16px',
-              background: 'var(--admin-card)', border: '1px solid var(--admin-border)', borderRadius: 8,
+              background: 'rgba(252,248,240,0.85)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              border: '1px solid rgba(255,255,255,0.55)',
+              borderRadius: 12,
+              boxShadow: '0 1px 8px rgba(0,0,0,0.05)',
             }}>
               <Stat label="Total" value={total > 0 ? `$${total}` : '—'} />
               <div style={{ width: 1, background: 'var(--admin-border)' }} />

@@ -131,9 +131,12 @@ export default function DashboardTabs({
       {/* ── combined tab + mode bar ───────────────────────────────────────── */}
       <div style={{
         display: 'flex', alignItems: 'center',
-        borderBottom: '1px solid var(--admin-border)',
         padding: '0 12px 0 16px',
-        background: 'var(--admin-bg)',
+        background: 'var(--admin-glass-bg)',
+        backdropFilter: 'blur(20px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+        borderBottom: '1px solid var(--admin-glass-border)',
+        boxShadow: 'var(--admin-glass-shadow)',
         position: 'sticky', top: 52, zIndex: 9,
         height: 44,
         gap: 0,
