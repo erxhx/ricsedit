@@ -1,7 +1,103 @@
 import type { Appointment } from '@/lib/admin-mock';
-import { SERVICE_COLORS } from '@/lib/appointment-colors';
+import { SERVICE_COLORS, getAppointmentColor } from '@/lib/appointment-colors';
 import AppointmentCard from './AppointmentCard';
 
+// ── Day timeline ──────────────────────────────────────────────────────────────
+
+const TL_START = 9 * 60;   // 9 am in minutes
+const TL_END   = 21 * 60;  // 9 pm in minutes
+const TL_RANGE = TL_END - TL_START;
+
+function tlPct(mins: number): number {
+  return Math.max(0, Math.min(100, (mins - TL_START) / TL_RANGE * 100));
+}
+function tlMins(t: string): number {
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + m;
+}
+function tlHourLabel(h: number): string {
+  return h === 12 ? '12p' : h > 12 ? `${h - 12}p` : `${h}a`;
+}
+
+function DayTimeline({ appointments, isToday }: { appointments: Appointment[]; isToday?: boolean }) {
+  const active = appointments.filter((a) => a.status !== 'cancelled' && a.status !== 'blocked');
+  const ericApts = active.filter((a) => a.staff === 'eric');
+  const liviApts = active.filter((a) => a.staff === 'livi');
+
+  const now = new Date();
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  const nowPct = tlPct(nowMins);
+  const showNow = isToday && nowMins >= TL_START && nowMins <= TL_END;
+
+  // Determine visible hour labels — just show round hours that fall in the range
+  const hourLabels = [9, 12, 15, 18, 21];
+
+  function renderRow(apts: Appointment[]) {
+    return (
+      <div style={{ position: 'relative', height: 14, borderRadius: 3, overflow: 'hidden', background: 'var(--admin-border)' }}>
+        {apts.map((apt) => {
+          const left  = tlPct(tlMins(apt.startTime));
+          const right = tlPct(tlMins(apt.endTime));
+          const color = getAppointmentColor(apt.staff, apt.service);
+          return (
+            <div key={apt.id} style={{
+              position: 'absolute', top: 0, bottom: 0,
+              left: `${left}%`, width: `${right - left}%`,
+              background: color,
+              opacity: 0.85,
+            }} />
+          );
+        })}
+        {showNow && (
+          <div style={{
+            position: 'absolute', top: 0, bottom: 0,
+            left: `${nowPct}%`, width: 1.5,
+            background: '#b03030', zIndex: 2,
+          }} />
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+        {/* Staff labels */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, height: 14 }}>
+            <div style={{ width: 5, height: 5, borderRadius: '50%', background: SERVICE_COLORS.ericBarber, flexShrink: 0 }} />
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: 'var(--admin-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>E</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, height: 14 }}>
+            <div style={{ width: 5, height: 5, borderRadius: '50%', background: SERVICE_COLORS.liviWax, flexShrink: 0 }} />
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: 'var(--admin-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>L</span>
+          </div>
+        </div>
+
+        {/* Timeline bars */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {renderRow(ericApts)}
+          {renderRow(liviApts)}
+        </div>
+      </div>
+
+      {/* Hour labels */}
+      <div style={{ position: 'relative', height: 14, marginLeft: 22, marginTop: 3 }}>
+        {hourLabels.map((h) => (
+          <span key={h} style={{
+            position: 'absolute',
+            left: `${tlPct(h * 60)}%`,
+            transform: 'translateX(-50%)',
+            fontFamily: 'var(--font-body)', fontSize: 9,
+            color: 'var(--admin-muted)', letterSpacing: '0.04em',
+          }}>
+            {tlHourLabel(h)}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function fmtDate(date: Date): string {
   return date.toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric' });
@@ -98,6 +194,9 @@ export default function DayView({
         </div>
       ) : (
         <>
+          {/* Timeline strip */}
+          <DayTimeline appointments={active} isToday={isToday} />
+
           {/* Summary row */}
           <div style={{
             display: 'flex', gap: 16, marginBottom: 24,
