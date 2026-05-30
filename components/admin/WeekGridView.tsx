@@ -305,13 +305,13 @@ export default function WeekGridView({
       {/* ── week nav ──────────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px 10px 10px', borderBottom: '1px solid var(--admin-border-sub)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <button onClick={onPrevWeek} style={navArrow}>‹</button>
+          <button onClick={onNextWeek} style={navArrow}>›</button>
           {!isThisWeek && onGoCurrentWeek && (
             <button onClick={onGoCurrentWeek} style={{ fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500, color: '#b5824a', background: 'none', cursor: 'pointer', padding: '4px 9px', borderRadius: 6, border: '1px solid var(--admin-border)', WebkitTapHighlightColor: 'transparent' }}>
               Today
             </button>
           )}
-          <button onClick={onPrevWeek} style={navArrow}>‹</button>
-          <button onClick={onNextWeek} style={navArrow}>›</button>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           {(['eric', 'livi'] as const).map((s) => (

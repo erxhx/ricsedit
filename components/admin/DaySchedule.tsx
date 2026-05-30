@@ -62,14 +62,27 @@ type DragConfirm = {
 type SlotAction = { staff: 'eric' | 'livi'; time: string } | null;
 type BlockSheet = { staff: 'eric' | 'livi'; time: string } | null;
 
+function fmtDateNav(dateStr: string): string {
+  const [y, mo, d] = dateStr.split('-').map(Number);
+  return new Date(y, mo - 1, d).toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
 export default function DaySchedule({
   appointments: initial,
   date,
   stickyTop = 96,
+  isToday,
+  onPrev,
+  onNext,
+  onGoToday,
 }: {
   appointments: Appointment[];
   date: string;
   stickyTop?: number;
+  isToday?: boolean;
+  onPrev?: () => void;
+  onNext?: () => void;
+  onGoToday?: () => void;
 }) {
   const router = useRouter();
   const gridRef = useRef<HTMLDivElement>(null);
@@ -279,8 +292,35 @@ export default function DaySchedule({
   const visible = apts.filter((a) => a.status !== 'cancelled');
   const ghostApt = draggingId ? apts.find((a) => a.id === draggingId) ?? null : null;
 
+  const navArrow: React.CSSProperties = {
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    width: 32, height: 32, borderRadius: 7,
+    border: '1px solid var(--admin-border)', background: 'none',
+    color: 'var(--admin-text2)', fontSize: 16, lineHeight: 1,
+    flexShrink: 0, cursor: 'pointer',
+    WebkitTapHighlightColor: 'transparent',
+  };
+
   return (
     <div style={{ position: 'relative' }}>
+
+      {/* ── day nav bar ───────────────────────────────────────────────────── */}
+      {(onPrev || onNext) && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px 10px 10px', borderBottom: '1px solid var(--admin-border-sub)' }}>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-text)', fontWeight: isToday ? 500 : 400 }}>
+            {fmtDateNav(date)}{isToday && <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-muted)', marginLeft: 8, fontWeight: 400 }}>Today</span>}
+          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button onClick={onPrev} style={navArrow}>‹</button>
+            <button onClick={onNext} style={navArrow}>›</button>
+            {!isToday && onGoToday && (
+              <button onClick={onGoToday} style={{ fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500, color: '#b5824a', background: 'none', cursor: 'pointer', padding: '4px 9px', borderRadius: 6, border: '1px solid var(--admin-border)', WebkitTapHighlightColor: 'transparent' }}>
+                Today
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── staff column headers ──────────────────────────────────────────── */}
       <div style={{
