@@ -1052,22 +1052,34 @@
       manageUrl = base + '/booking/manage/' + props.manageToken;
     }
 
-    // Google Calendar add link
-    function calLink() {
+    // .ics data URL — works with Apple Calendar, Google Calendar, Outlook, and all others
+    function calICS() {
       var d = props.date;
       function pad2(n) { return String(n).padStart(2, '0'); }
-      var ymd  = d.getFullYear() + '' + pad2(d.getMonth() + 1) + '' + pad2(d.getDate());
+      var ymd    = d.getFullYear() + '' + pad2(d.getMonth() + 1) + '' + pad2(d.getDate());
       var hStart = pad2(props.time.h) + pad2(props.time.m) + '00';
       var endMin = props.time.h * 60 + props.time.m + (dur || 60);
       var hEnd   = pad2(Math.floor(endMin / 60)) + pad2(endMin % 60) + '00';
+      var stamp  = new Date().toISOString().replace(/[-:.]/g, '').slice(0, 15) + 'Z';
+      var uid    = 'booking-' + Date.now() + '@editstudio.space';
       var svcNames = props.services.map(function(s) { return s.name; }).join(', ');
-      var params = new URLSearchParams({
-        text: 'Edit Studio — ' + svcNames,
-        dates: ymd + 'T' + hStart + '/' + ymd + 'T' + hEnd,
-        location: '1846 Oak Bay Avenue, Victoria BC',
-        details: manageUrl || 'editstudio.space',
-      });
-      return 'https://calendar.google.com/calendar/r/eventedit?' + params.toString();
+      var desc   = manageUrl ? 'Manage your booking: ' + manageUrl : 'editstudio.space';
+      var ics = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//Edit Studio//Booking//EN',
+        'BEGIN:VEVENT',
+        'UID:' + uid,
+        'DTSTAMP:' + stamp,
+        'DTSTART:' + ymd + 'T' + hStart,
+        'DTEND:' + ymd + 'T' + hEnd,
+        'SUMMARY:Edit Studio — ' + svcNames,
+        'LOCATION:1846 Oak Bay Avenue\\, Victoria BC',
+        'DESCRIPTION:' + desc,
+        'END:VEVENT',
+        'END:VCALENDAR',
+      ].join('\r\n');
+      return 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
     }
 
     var linkSt = {
@@ -1121,7 +1133,7 @@
               Manage or cancel booking →
             </a>
           )}
-          <a href={calLink()} target="_blank" rel="noopener noreferrer" style={linkSt}>
+          <a href={calICS()} download="edit-studio-booking.ics" style={linkSt}>
             Add to calendar →
           </a>
         </div>
