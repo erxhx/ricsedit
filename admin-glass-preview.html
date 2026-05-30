@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Admin Glass Preview</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #efeae0;
+    font-family: -apple-system, 'Inter Tight', sans-serif;
+    min-height: 100dvh;
+    max-width: 430px;
+    margin: 0 auto;
+    padding-bottom: 108px;
+  }
+
+  /* ── Glass recipes ──────────────────────────────────────────────── */
+  .glass-chrome {
+    background: rgba(239,234,224,0.68);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255,255,255,0.58);
+    box-shadow: 0 2px 24px rgba(0,0,0,0.09), inset 0 1px 0 rgba(255,255,255,0.72);
+  }
+  .glass-dark {
+    background: rgba(20,18,16,0.80);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255,255,255,0.13);
+    box-shadow: 0 4px 28px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.09);
+  }
+  .glass-sheet {
+    background: rgba(245,240,232,0.90);
+    backdrop-filter: blur(32px) saturate(180%);
+    -webkit-backdrop-filter: blur(32px) saturate(180%);
+    border-top: 1px solid rgba(255,255,255,0.72);
+    box-shadow: 0 -2px 40px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.80);
+  }
+
+  /* ── Header ─────────────────────────────────────────────────────── */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 20px; height: 52px;
+    background: #efeae0;
+    border-bottom: 1px solid #d4cfc6;
+    position: sticky; top: 0; z-index: 10;
+  }
+  .logo { font-size: 13px; font-weight: 600; color: #141210; letter-spacing: 0.05em; text-transform: uppercase; }
+  .header-btns { display: flex; gap: 6px; }
+  .btn-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; border: none; font-size: 16px; color: #4a4540;
+  }
+
+  /* ── Tab bar ────────────────────────────────────────────────────── */
+  .subtabs {
+    display: flex; align-items: center;
+    padding: 0 16px; height: 44px;
+    background: #efeae0; border-bottom: 1px solid #e0dbd2;
+    gap: 4px; position: sticky; top: 52px; z-index: 9;
+  }
+  .tab-btn {
+    font-size: 13px; background: none; border: none;
+    border-bottom: 2px solid transparent;
+    padding: 0 12px; height: 100%; cursor: pointer;
+    margin-bottom: -1px; text-transform: capitalize; flex-shrink: 0;
+  }
+  .tab-btn.active { font-weight: 500; color: #141210; border-bottom-color: #141210; }
+  .tab-btn.inactive { font-weight: 400; color: #6b6762; }
+  .mode-toggle { margin-left: auto; display: flex; align-items: center; gap: 4px; }
+  .mode-btn {
+    font-size: 11px; border-radius: 4px; height: 44px; padding: 0 10px;
+    display: flex; align-items: center; cursor: pointer; text-transform: capitalize;
+    border: 1px solid transparent;
+  }
+  .mode-btn.active { font-weight: 500; color: #141210; background: #e0dbd2; border-color: #c4bdb4; }
+  .mode-btn.inactive { font-weight: 400; color: #6b6762; background: none; }
+
+  /* ── Day content ─────────────────────────────────────────────────── */
+  .content { padding: 0 20px; }
+  .day-heading { padding: 24px 0 20px; display: flex; align-items: center; justify-content: space-between; }
+  h1 { font-size: 22px; font-weight: 400; color: #141210; letter-spacing: -0.01em; line-height: 1.2; }
+  .today-label { font-size: 11px; color: #6b6762; margin-top: 3px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .nav-arrows { display: flex; gap: 6px; }
+  .nav-arrow {
+    width: 36px; height: 36px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; color: #4a4540; cursor: pointer; line-height: 1;
+  }
+
+  /* ── Stats ───────────────────────────────────────────────────────── */
+  .stats {
+    display: flex; gap: 16px; margin-bottom: 20px;
+    padding: 12px 16px;
+    background: #f7f3eb; border: 1px solid #d4cfc6; border-radius: 8px;
+  }
+  .stat { flex: 1; }
+  .stat-label { font-size: 10px; color: #6b6762; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
+  .stat-val { font-size: 15px; font-weight: 500; }
+
+  /* ── Timeline ────────────────────────────────────────────────────── */
+  .timeline { margin-bottom: 20px; }
+  .tl-rows { display: flex; gap: 6px; align-items: center; }
+  .tl-labels { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
+  .tl-label { display: flex; align-items: center; gap: 4px; height: 14px; }
+  .tl-dot { width: 5px; height: 5px; border-radius: 50%; }
+  .tl-letter { font-size: 9px; color: #6b6762; letter-spacing: 0.06em; text-transform: uppercase; }
+  .tl-bars { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+  .tl-bar { position: relative; height: 14px; border-radius: 3px; background: #d4cfc6; overflow: hidden; }
+  .tl-seg { position: absolute; top: 0; bottom: 0; opacity: 0.85; }
+  .tl-now { position: absolute; top: 0; bottom: 0; width: 2px; background: #b03030; }
+  .tl-hours { display: flex; justify-content: space-between; margin-top: 4px; padding-left: 22px; font-size: 9px; color: #6b6762; }
+
+  /* ── Cards ───────────────────────────────────────────────────────── */
+  .cards { display: flex; flex-direction: column; gap: 8px; }
+  .apt-card {
+    display: flex; background: #f7f3eb;
+    border: 1px solid #d4cfc6; border-radius: 8px;
+    padding: 14px 16px; gap: 12px; cursor: pointer;
+    transition: opacity 0.1s;
+  }
+  .apt-card:active { opacity: 0.75; }
+  .apt-time { min-width: 58px; flex-shrink: 0; }
+  .apt-time-main { font-size: 15px; font-weight: 500; color: #141210; }
+  .apt-dur { font-size: 11px; color: #6b6762; margin-top: 3px; }
+  .apt-info { flex: 1; min-width: 0; }
+  .apt-name-row { display: flex; align-items: baseline; gap: 8px; margin-bottom: 3px; }
+  .apt-name { font-size: 15px; font-weight: 500; color: #141210; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .apt-price { font-size: 13px; color: #6a6560; white-space: nowrap; }
+  .apt-svc { font-size: 11px; color: #6b6762; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .apt-chevron { display: flex; align-items: center; flex-shrink: 0; padding-left: 4px; font-size: 18px; color: #6a6560; }
+
+  .hint { text-align: center; font-size: 11px; color: #6b6762; margin-top: 28px; letter-spacing: 0.08em; text-transform: uppercase; }
+
+  /* ── Glass FAB ────────────────────────────────────────────────────── */
+  .fab {
+    position: fixed;
+    bottom: calc(68px + 20px);
+    right: 20px;
+    z-index: 30;
+    display: flex; align-items: center; gap: 6px;
+    height: 52px; padding: 0 22px;
+    border-radius: 9999px;
+    color: #efeae0;
+    font-size: 15px; font-weight: 600; letter-spacing: 0.01em;
+    cursor: pointer; border: none;
+    transition: opacity 0.15s;
+  }
+  .fab:active { opacity: 0.8; }
+  .fab-plus { font-size: 20px; line-height: 1; margin-top: -1px; }
+
+  /* ── Glass floating tab bar ────────────────────────────────────────── */
+  .tab-bar-glass {
+    position: fixed;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    display: flex;
+    border-radius: 9999px;
+    overflow: hidden;
+    /* Override border-bottom for pill */
+    border-bottom: 1px solid rgba(255,255,255,0.40) !important;
+  }
+  .tab-item {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 3px; width: 76px; height: 56px;
+    background: none; border: none;
+    cursor: pointer; position: relative;
+    border-radius: 9999px;
+    transition: color 0.15s;
+  }
+  .tab-item .tab-indicator {
+    position: absolute; top: 7px; left: 50%; transform: translateX(-50%);
+    width: 20px; height: 2px; border-radius: 1px;
+    background: #141210; display: none;
+  }
+  .tab-item.active .tab-indicator { display: block; }
+  .tab-item.active { color: #141210; }
+  .tab-item.inactive { color: #6b6762; }
+  .tab-icon { font-size: 15px; line-height: 1; }
+  .tab-label { font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .tab-item.active .tab-label { font-weight: 600; }
+
+  /* ── Glass sheet ────────────────────────────────────────────────────── */
+  .sheet-overlay {
+    position: fixed; inset: 0; z-index: 100;
+    display: none;
+  }
+  .sheet-overlay.open { display: block; }
+  .sheet-backdrop {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.25);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+  }
+  .sheet {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    max-width: 430px; margin: 0 auto;
+    border-radius: 20px 20px 0 0;
+    padding: 24px 20px 44px;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
+  }
+  .sheet-overlay.open .sheet { transform: translateY(0); }
+  .sheet-handle { width: 36px; height: 4px; border-radius: 2px; background: rgba(0,0,0,0.12); margin: 0 auto 24px; }
+  .sheet-title { font-size: 18px; font-weight: 500; color: #141210; margin-bottom: 8px; }
+  .sheet-body { font-size: 14px; color: #6a6560; margin-bottom: 28px; line-height: 1.6; }
+  .sheet-actions { display: flex; flex-direction: column; gap: 10px; }
+  .sheet-btn {
+    width: 100%; padding: 15px; border-radius: 12px;
+    font-size: 15px; font-weight: 500; cursor: pointer;
+    font-family: inherit;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    transition: opacity 0.1s;
+  }
+  .sheet-btn:active { opacity: 0.75; }
+  .sheet-btn-danger {
+    background: rgba(160,64,64,0.11); border: 1px solid rgba(160,64,64,0.26);
+    color: #a04040;
+  }
+  .sheet-btn-ghost {
+    background: rgba(239,234,224,0.55); border: 1px solid rgba(255,255,255,0.55);
+    color: #4a4540; font-weight: 400;
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────────────────────────────────── -->
+<header>
+  <span class="logo">Edit Studio</span>
+  <div class="header-btns">
+    <button class="btn-icon glass-chrome">↻</button>
+    <button class="btn-icon glass-chrome" style="flex-direction:column;gap:4px;padding:0 7px;">
+      <span style="width:16px;height:1.5px;background:#141210;border-radius:1px;display:block;"></span>
+      <span style="width:16px;height:1.5px;background:#141210;border-radius:1px;display:block;"></span>
+      <span style="width:16px;height:1.5px;background:#141210;border-radius:1px;display:block;"></span>
+    </button>
+  </div>
+</header>
+
+<!-- ── Sub-tab bar ──────────────────────────────────────────────────────────── -->
+<div class="subtabs">
+  <button class="tab-btn active">Overview</button>
+  <button class="tab-btn inactive">Calendar</button>
+  <div class="mode-toggle">
+    <button class="mode-btn active">Day</button>
+    <button class="mode-btn inactive">Week</button>
+  </div>
+</div>
+
+<!-- ── Day content ──────────────────────────────────────────────────────────── -->
+<div class="content">
+  <div class="day-heading">
+    <div>
+      <h1>Friday, May 30</h1>
+      <div class="today-label">Today</div>
+    </div>
+    <div class="nav-arrows">
+      <button class="nav-arrow glass-chrome">‹</button>
+      <button class="nav-arrow glass-chrome">›</button>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-label">Total</div><div class="stat-val">$255</div></div>
+    <div class="stat"><div class="stat-label">Eric</div><div class="stat-val" style="color:#7db83e">3 apts</div></div>
+    <div class="stat"><div class="stat-label">Livi</div><div class="stat-val" style="color:#9b7a8a">2 apts</div></div>
+  </div>
+
+  <div class="timeline">
+    <div class="tl-rows">
+      <div class="tl-labels">
+        <div class="tl-label"><div class="tl-dot" style="background:#7db83e"></div><span class="tl-letter">E</span></div>
+        <div class="tl-label"><div class="tl-dot" style="background:#9b7a8a"></div><span class="tl-letter">L</span></div>
+      </div>
+      <div class="tl-bars">
+        <div class="tl-bar">
+          <div class="tl-seg" style="left:19%;width:15%;background:#7db83e"></div>
+          <div class="tl-seg" style="left:38%;width:20%;background:#7db83e"></div>
+          <div class="tl-now" style="left:20.5%"></div>
+        </div>
+        <div class="tl-bar">
+          <div class="tl-seg" style="left:40%;width:18%;background:#9b7a8a"></div>
+          <div class="tl-seg" style="left:62%;width:15%;background:#9b7a8a"></div>
+        </div>
+      </div>
+    </div>
+    <div class="tl-hours"><span>10a</span><span>12p</span><span>3p</span><span>6p</span></div>
+  </div>
+
+  <div class="cards" id="cards">
+    <!-- cards injected by JS -->
+  </div>
+
+  <p class="hint">Tap any card → glass cancel sheet</p>
+</div>
+
+<!-- ── Glass FAB ────────────────────────────────────────────────────────────── -->
+<button class="fab glass-dark">
+  <span class="fab-plus">+</span>New
+</button>
+
+<!-- ── Floating glass pill tab bar ──────────────────────────────────────────── -->
+<nav class="tab-bar-glass glass-chrome" id="tabBar">
+  <button class="tab-item active" onclick="setTab(0)">
+    <span class="tab-indicator"></span>
+    <span class="tab-icon">▦</span>
+    <span class="tab-label">Schedule</span>
+  </button>
+  <button class="tab-item inactive" onclick="setTab(1)">
+    <span class="tab-indicator"></span>
+    <span class="tab-icon">⌘</span>
+    <span class="tab-label">Clients</span>
+  </button>
+  <button class="tab-item inactive" onclick="setTab(2)">
+    <span class="tab-indicator"></span>
+    <span class="tab-icon">✦</span>
+    <span class="tab-label">Services</span>
+  </button>
+  <button class="tab-item inactive" onclick="setTab(3)">
+    <span class="tab-indicator"></span>
+    <span class="tab-icon">◎</span>
+    <span class="tab-label">Settings</span>
+  </button>
+</nav>
+
+<!-- ── Glass cancel sheet ────────────────────────────────────────────────────── -->
+<div class="sheet-overlay" id="sheetOverlay" onclick="closeSheet(event)">
+  <div class="sheet-backdrop"></div>
+  <div class="sheet glass-sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Cancel appointment?</div>
+    <div class="sheet-body" id="sheetBody"></div>
+    <div class="sheet-actions">
+      <button class="sheet-btn sheet-btn-danger" onclick="closeSheet()">Yes, cancel it</button>
+      <button class="sheet-btn sheet-btn-ghost" onclick="closeSheet()">Keep appointment</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const APTS = [
+  { time:'12:15 pm', dur:45, name:'Sarah Johnson',  svc:'Haircut',                      price:40,  color:'#7db83e' },
+  { time:'1:45 pm',  dur:45, name:'Marcus Lee',     svc:'Haircut + Beard',               price:60,  color:'#7db83e' },
+  { time:'2:00 pm',  dur:55, name:'Emma Wilson',    svc:'Brow Wax & Shape + Lash Tint',  price:50,  color:'#9b7a8a' },
+  { time:'2:55 pm',  dur:45, name:'Jayden Park',    svc:'Rapid Full Body',               price:70,  color:'#9b7a8a' },
+];
+
+// Render cards
+const cardsEl = document.getElementById('cards');
+APTS.forEach((apt, i) => {
+  const card = document.createElement('div');
+  card.className = 'apt-card';
+  card.style.borderLeft = `3px solid ${apt.color}`;
+  card.innerHTML = `
+    <div class="apt-time">
+      <div class="apt-time-main">${apt.time}</div>
+      <div class="apt-dur">${apt.dur} min</div>
+    </div>
+    <div class="apt-info">
+      <div class="apt-name-row">
+        <span class="apt-name">${apt.name}</span>
+        <span class="apt-price">$${apt.price}</span>
+      </div>
+      <div class="apt-svc">${apt.svc}</div>
+    </div>
+    <div class="apt-chevron">›</div>
+  `;
+  card.onclick = () => openSheet(apt);
+  cardsEl.appendChild(card);
+});
+
+// Sheet
+function openSheet(apt) {
+  document.getElementById('sheetBody').textContent =
+    `${apt.name}'s ${apt.svc} on Friday, May 30 at ${apt.time} will be cancelled. A notification will be sent.`;
+  const overlay = document.getElementById('sheetOverlay');
+  overlay.classList.add('open');
+  requestAnimationFrame(() => { overlay.querySelector('.sheet').style.transform = 'translateY(0)'; });
+}
+function closeSheet(e) {
+  if (e && e.target !== document.getElementById('sheetOverlay') && !e.target.classList.contains('sheet-backdrop') && !e.currentTarget.classList.contains('sheet-btn')) return;
+  document.getElementById('sheetOverlay').classList.remove('open');
+}
+document.querySelectorAll('.sheet-btn').forEach(btn => btn.onclick = () => {
+  document.getElementById('sheetOverlay').classList.remove('open');
+});
+
+// Tabs
+function setTab(i) {
+  document.querySelectorAll('.tab-item').forEach((el, j) => {
+    el.className = 'tab-item ' + (j === i ? 'active' : 'inactive');
+  });
+}
+</script>
+</body>
+</html>
