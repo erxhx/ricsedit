@@ -25,6 +25,7 @@ function toApt(row: any): Appointment {
     price:           Number(row.price),
     status:          row.status as AppointmentStatus,
     notes:           row.notes ?? undefined,
+    adminNotes:      row.admin_notes ?? undefined,
     manageToken:     row.manage_token,
   };
 }
@@ -263,6 +264,7 @@ export async function dbUpdateAppointment(
   if (patch.price           !== undefined) update.price            = patch.price;
   if (patch.status          !== undefined) update.status           = patch.status;
   if (patch.notes           !== undefined) update.notes            = patch.notes ?? null;
+  if (patch.adminNotes      !== undefined) update.admin_notes      = patch.adminNotes ?? null;
 
   const { data: row, error } = await db
     .from('appointments')

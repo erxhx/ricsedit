@@ -16,7 +16,8 @@ export interface Appointment {
   durationMinutes: number;
   price: number;
   status: AppointmentStatus;
-  notes?: string;
+  notes?: string;       // client-submitted note from booking form
+  adminNotes?: string;  // internal admin note — never shown to the client
   manageToken: string; // unique token for client self-serve cancel/reschedule
 }
 
