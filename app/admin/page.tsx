@@ -28,8 +28,10 @@ export default async function AdminPage({
   let weekStart: Date;
   if (week && /^\d{4}-\d{2}-\d{2}$/.test(week)) {
     const [y, mo, d] = week.split('-').map(Number);
-    // week param should already be the Sunday; trust it
-    weekStart = new Date(y, mo - 1, d);
+    // Snap to the Sunday of whichever week this date falls in
+    const parsed = new Date(y, mo - 1, d);
+    weekStart = new Date(parsed);
+    weekStart.setDate(parsed.getDate() - parsed.getDay());
   } else {
     weekStart = new Date(today);
     weekStart.setDate(today.getDate() - today.getDay());
