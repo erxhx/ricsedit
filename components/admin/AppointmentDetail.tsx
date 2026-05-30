@@ -71,6 +71,24 @@ export default function AppointmentDetail({
   const [reschedDate, setReschedDate] = useState(initial.date);
   const [reschedTime, setReschedTime] = useState(initial.startTime);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  async function patchApt(patch: Record<string, unknown>): Promise<Appointment | null> {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/appointments/${apt.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patch),
+      });
+      if (!res.ok) return null;
+      return await res.json() as Appointment;
+    } catch {
+      return null;
+    } finally {
+      setSaving(false);
+    }
+  }
 
   const color = getAppointmentColor(apt.staff, apt.service);
 
@@ -83,28 +101,29 @@ export default function AppointmentDetail({
   }
   const isActive = apt.status === 'confirmed';
 
-  function saveNote() {
-    setApt((a) => ({ ...a, notes: note.trim() || undefined }));
+  async function saveNote() {
+    const trimmed = note.trim() || undefined;
+    const updated = await patchApt({ notes: trimmed ?? null });
+    if (updated) setApt(updated);
     setEditingNote(false);
-    // TODO: PATCH /api/appointments/[id] when Supabase is connected
   }
 
-  function markComplete() {
-    setApt((a) => ({ ...a, status: 'completed' }));
-    // TODO: PATCH /api/appointments/[id]
+  async function markComplete() {
+    const updated = await patchApt({ status: 'completed' });
+    if (updated) setApt(updated);
   }
 
-  function cancelAppointment() {
-    setApt((a) => ({ ...a, status: 'cancelled' }));
+  async function cancelAppointment() {
+    const updated = await patchApt({ status: 'cancelled' });
+    if (updated) setApt(updated);
     setShowCancelConfirm(false);
-    // TODO: PATCH /api/appointments/[id] + trigger cancellation email/SMS
   }
 
-  function rescheduleAppointment() {
+  async function rescheduleAppointment() {
     const newEnd = addMinutes(reschedTime, apt.durationMinutes);
-    setApt((a) => ({ ...a, date: reschedDate, startTime: reschedTime, endTime: newEnd }));
+    const updated = await patchApt({ date: reschedDate, startTime: reschedTime, endTime: newEnd });
+    if (updated) setApt(updated);
     setShowReschedule(false);
-    // TODO: PATCH /api/appointments/[id] + trigger reschedule notification
   }
 
   return (
@@ -246,8 +265,8 @@ export default function AppointmentDetail({
                 }}
               />
               <div style={{ display: 'flex', gap: 8 }}>
-                <ActionButton onClick={saveNote} variant="primary">Save</ActionButton>
-                <ActionButton onClick={() => { setNote(apt.notes ?? ''); setEditingNote(false); }} variant="ghost">Cancel</ActionButton>
+                <ActionButton onClick={saveNote} variant="primary" disabled={saving}>Save</ActionButton>
+                <ActionButton onClick={() => { setNote(apt.notes ?? ''); setEditingNote(false); }} variant="ghost" disabled={saving}>Cancel</ActionButton>
               </div>
             </div>
           ) : (
@@ -351,9 +370,9 @@ export default function AppointmentDetail({
         {/* Actions — only for active appointments */}
         {isActive && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 32 }}>
-            <ActionButton onClick={markComplete} variant="primary">Mark as complete</ActionButton>
-            <ActionButton onClick={() => { setReschedDate(apt.date); setReschedTime(apt.startTime); setShowReschedule(true); }} variant="ghost">Reschedule</ActionButton>
-            <ActionButton onClick={() => setShowCancelConfirm(true)} variant="danger">Cancel appointment</ActionButton>
+            <ActionButton onClick={markComplete} variant="primary" disabled={saving}>Mark as complete</ActionButton>
+            <ActionButton onClick={() => { setReschedDate(apt.date); setReschedTime(apt.startTime); setShowReschedule(true); }} variant="ghost" disabled={saving}>Reschedule</ActionButton>
+            <ActionButton onClick={() => setShowCancelConfirm(true)} variant="danger" disabled={saving}>Cancel appointment</ActionButton>
           </div>
         )}
 
@@ -451,10 +470,10 @@ export default function AppointmentDetail({
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <ActionButton onClick={rescheduleAppointment} variant="primary">
+              <ActionButton onClick={rescheduleAppointment} variant="primary" disabled={saving}>
                 Move to {fmtDate(reschedDate)} at {fmtTime(reschedTime)}
               </ActionButton>
-              <ActionButton onClick={() => setShowReschedule(false)} variant="ghost">Keep current time</ActionButton>
+              <ActionButton onClick={() => setShowReschedule(false)} variant="ghost" disabled={saving}>Keep current time</ActionButton>
             </div>
           </div>
         </div>
@@ -482,8 +501,8 @@ export default function AppointmentDetail({
               {' '}A cancellation notification will be sent when the database is connected.
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <ActionButton onClick={cancelAppointment} variant="danger">Yes, cancel it</ActionButton>
-              <ActionButton onClick={() => setShowCancelConfirm(false)} variant="ghost">Keep appointment</ActionButton>
+              <ActionButton onClick={cancelAppointment} variant="danger" disabled={saving}>Yes, cancel it</ActionButton>
+              <ActionButton onClick={() => setShowCancelConfirm(false)} variant="ghost" disabled={saving}>Keep appointment</ActionButton>
             </div>
           </div>
         </div>
@@ -529,11 +548,12 @@ function Row({ label, value, children, last = false }: { label: string; value?: 
 }
 
 function ActionButton({
-  onClick, variant, children,
+  onClick, variant, children, disabled,
 }: {
   onClick: () => void;
   variant: 'primary' | 'danger' | 'ghost';
   children: React.ReactNode;
+  disabled?: boolean;
 }) {
   const styles: Record<string, React.CSSProperties> = {
     primary: { background: 'var(--admin-btn-primary-bg)', color: 'var(--admin-btn-primary-fg)' },
@@ -543,10 +563,13 @@ function ActionButton({
   return (
     <button
       onClick={onClick}
+      disabled={disabled}
       style={{
         width: '100%', padding: '14px', borderRadius: 10, border: 'none',
         fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 500,
-        cursor: 'pointer', textAlign: 'center',
+        cursor: disabled ? 'default' : 'pointer', textAlign: 'center',
+        opacity: disabled ? 0.5 : 1,
+        transition: 'opacity 0.15s',
         ...styles[variant],
       }}
     >
