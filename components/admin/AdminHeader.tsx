@@ -10,6 +10,15 @@ interface NavItem {
   icon: string;
 }
 
+// Primary nav — shown in the persistent bottom tab bar
+const BOTTOM_NAV: NavItem[] = [
+  { label: 'Schedule',  href: '/admin',              icon: '▦' },
+  { label: 'Clients',   href: '/admin/clients',      icon: '⌘' },
+  { label: 'Services',  href: '/admin/services',     icon: '✦' },
+  { label: 'Settings',  href: '/admin/settings',     icon: '◎' },
+];
+
+// Secondary nav — overflow items kept in the drawer
 const NAV: NavItem[] = [
   { label: 'Schedule',           href: '/admin',                icon: '▦' },
   { label: 'Clients',            href: '/admin/clients',        icon: '⌘' },
@@ -108,13 +117,13 @@ export default function AdminHeader({ name }: { name: string }) {
         </div>
       </header>
 
-      {/* Floating + New button — hidden on the new-booking page itself */}
+      {/* Floating + New button — hidden on the new-booking page itself, floats above tab bar */}
       {pathname !== '/admin/new-booking' && (
         <a
           href="/admin/new-booking"
           style={{
             position: 'fixed',
-            bottom: 'calc(28px + env(safe-area-inset-bottom))',
+            bottom: 'calc(56px + 20px + env(safe-area-inset-bottom))',
             right: 20,
             zIndex: 30,
             display: 'flex', alignItems: 'center', gap: 6,
@@ -247,6 +256,53 @@ export default function AdminHeader({ name }: { name: string }) {
           </button>
         </div>
       </div>
+
+      {/* ── Bottom tab bar ────────────────────────────────────────────────── */}
+      <nav style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0,
+        height: 'calc(56px + env(safe-area-inset-bottom))',
+        paddingBottom: 'env(safe-area-inset-bottom)',
+        background: 'var(--admin-bg)',
+        borderTop: '1px solid var(--admin-border)',
+        display: 'flex',
+        zIndex: 20,
+      }}>
+        {BOTTOM_NAV.map((item) => {
+          const active = isActive(item.href, pathname);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              style={{
+                flex: 1,
+                display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center',
+                gap: 3, textDecoration: 'none',
+                color: active ? 'var(--admin-text)' : 'var(--admin-muted)',
+                WebkitTapHighlightColor: 'transparent',
+                position: 'relative',
+              }}
+            >
+              {active && (
+                <span style={{
+                  position: 'absolute', top: 0, left: '50%',
+                  transform: 'translateX(-50%)',
+                  width: 20, height: 2, borderRadius: 1,
+                  background: 'var(--admin-text)',
+                }} />
+              )}
+              <span style={{ fontSize: 16, lineHeight: 1 }}>{item.icon}</span>
+              <span style={{
+                fontFamily: 'var(--font-body)', fontSize: 9,
+                letterSpacing: '0.06em', textTransform: 'uppercase',
+                fontWeight: active ? 600 : 400,
+              }}>
+                {item.label}
+              </span>
+            </Link>
+          );
+        })}
+      </nav>
     </>
   );
 }

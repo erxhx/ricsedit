@@ -44,7 +44,7 @@ export default function AdminThemeProvider({
             background: 'var(--admin-bg)',
             color: 'var(--admin-text)',
             paddingTop: 'env(safe-area-inset-top)',
-            paddingBottom: 'env(safe-area-inset-bottom)',
+            paddingBottom: 'calc(56px + env(safe-area-inset-bottom))',
             colorScheme: theme === 'dark' ? 'dark' : 'light',
           },
           vars,
