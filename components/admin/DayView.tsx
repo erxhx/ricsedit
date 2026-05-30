@@ -209,7 +209,7 @@ export default function DayView({
             <div style={{
               display: 'flex', gap: 16, marginBottom: 24,
               padding: '12px 16px',
-              background: 'var(--admin-card)', border: '1px solid var(--admin-border)', borderRadius: 10,
+              background: 'var(--admin-card)', border: '1px solid var(--admin-border)', borderRadius: 8,
             }}>
               <Stat label="Total" value={total > 0 ? `$${total}` : '—'} />
               <div style={{ width: 1, background: 'var(--admin-border)' }} />

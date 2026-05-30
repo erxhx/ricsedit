@@ -174,8 +174,10 @@ export default function DashboardTabs({
                 color: dayMode === m ? 'var(--admin-text)' : 'var(--admin-muted)',
                 background: dayMode === m ? 'var(--admin-btn)' : 'none',
                 border: dayMode === m ? '1px solid var(--admin-btn-border)' : '1px solid transparent',
-                borderRadius: 5,
-                padding: '3px 9px',
+                borderRadius: 4,
+                // Full tab-bar height = 44px tap target
+                height: 44, padding: '0 10px',
+                display: 'flex', alignItems: 'center',
                 cursor: 'pointer',
                 textTransform: 'capitalize',
                 WebkitTapHighlightColor: 'transparent',

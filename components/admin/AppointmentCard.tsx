@@ -17,7 +17,7 @@ export default function AppointmentCard({ apt }: { apt: Appointment }) {
       background: 'var(--admin-card)',
       border: '1px solid var(--admin-border)',
       borderLeft: `3px solid ${color}`,
-      borderRadius: 10,
+      borderRadius: 8,
       padding: '14px 16px',
       gap: 12,
       textDecoration: 'none',
@@ -62,8 +62,8 @@ export default function AppointmentCard({ apt }: { apt: Appointment }) {
       </div>
 
       {/* Chevron */}
-      <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-        <span style={{ fontSize: 16, color: 'var(--admin-muted)', lineHeight: 1 }}>›</span>
+      <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0, paddingLeft: 4 }}>
+        <span style={{ fontSize: 18, color: 'var(--admin-text3)', lineHeight: 1 }}>›</span>
       </div>
     </Link>
   );

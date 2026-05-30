@@ -1,6 +1,14 @@
 export type AdminTheme = 'light' | 'dark';
 
 /**
+ * Border-radius scale (not CSS vars — just the intended values):
+ *   4px  — chips, badges, small inline buttons (Today pill)
+ *   8px  — cards, stat boxes, action buttons, nav arrows
+ *   9999px — FAB (pill)
+ * Keep new UI elements on this 3-step scale.
+ */
+
+/**
  * CSS custom-property values for each theme.
  * Spread onto the root wrapper div via AdminThemeProvider so every
  * child component can reference var(--admin-*) in its inline styles.
@@ -16,7 +24,7 @@ export const THEME_VARS: Record<AdminTheme, Record<string, string>> = {
     '--admin-text':              '#141210',
     '--admin-text2':             '#4a4540',
     '--admin-text3':             '#6a6560',
-    '--admin-muted':             '#9a9590',
+    '--admin-muted':             '#6b6762', // was #9a9590 (2.5:1); #6b6762 = 4.6:1 on beige bg
     '--admin-btn':               '#e0dbd2',
     '--admin-btn-border':        '#c4bdb4',
     '--admin-btn-primary-bg':    '#141210',
