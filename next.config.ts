@@ -7,8 +7,9 @@ const nextConfig: NextConfig = {
   },
   // Ensure the HTML source files are bundled into the serverless function
   outputFileTracingIncludes: {
-    '/': ['./editstudio.space/index.html'],
-    '/privacy': ['./editstudio.space/privacy.html'],
+    '/':          ['./editstudio.space/index.html'],
+    '/[...slug]': ['./editstudio.space/index.html'],
+    '/privacy':   ['./editstudio.space/privacy.html'],
   },
 };
 
