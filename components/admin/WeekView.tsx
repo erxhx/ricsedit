@@ -31,7 +31,14 @@ function fmtWeekRange(start: Date): string {
   return `${sm} ${start.getDate()} – ${em} ${end.getDate()}`;
 }
 
-export default function WeekView({ appointments, weekStart }: { appointments: Appointment[]; weekStart: Date }) {
+export default function WeekView({ appointments, weekStart, isLoading, onPrevWeek, onNextWeek, onGoCurrentWeek }: {
+  appointments: Appointment[];
+  weekStart: Date;
+  isLoading?: boolean;
+  onPrevWeek?: () => void;
+  onNextWeek?: () => void;
+  onGoCurrentWeek?: () => void;
+}) {
   const today = new Date();
   const todayStr = localDateStr(today);
 
@@ -40,11 +47,6 @@ export default function WeekView({ appointments, weekStart }: { appointments: Ap
   thisWeekStart.setDate(today.getDate() - today.getDay());
   const isThisWeek = localDateStr(weekStart) === localDateStr(thisWeekStart);
 
-  // Prev / next week Sunday dates
-  const prevWeek = new Date(weekStart);
-  prevWeek.setDate(weekStart.getDate() - 7);
-  const nextWeek = new Date(weekStart);
-  nextWeek.setDate(weekStart.getDate() + 7);
 
   const days: DaySummary[] = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(weekStart);
@@ -74,7 +76,7 @@ export default function WeekView({ appointments, weekStart }: { appointments: Ap
     width: 36, height: 36, borderRadius: 8,
     border: '1px solid var(--admin-border)', background: 'none',
     color: 'var(--admin-text2)', fontSize: 18, lineHeight: 1,
-    textDecoration: 'none', flexShrink: 0,
+    flexShrink: 0, cursor: 'pointer',
     WebkitTapHighlightColor: 'transparent',
   };
 
@@ -95,13 +97,12 @@ export default function WeekView({ appointments, weekStart }: { appointments: Ap
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-            {/* Jump to today — only shown when browsing a different week */}
-            {!isThisWeek && (
-              <Link
-                href="/admin?tab=overview&mode=week"
+            {!isThisWeek && onGoCurrentWeek && (
+              <button
+                onClick={onGoCurrentWeek}
                 style={{
                   fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500,
-                  color: '#b5824a', textDecoration: 'none',
+                  color: '#b5824a', background: 'none', cursor: 'pointer',
                   padding: '5px 10px', borderRadius: 6,
                   border: '1px solid var(--admin-border)',
                   WebkitTapHighlightColor: 'transparent',
@@ -109,30 +110,32 @@ export default function WeekView({ appointments, weekStart }: { appointments: Ap
                 }}
               >
                 Today
-              </Link>
+              </button>
             )}
-            <Link href={`/admin?tab=overview&mode=week&week=${localDateStr(prevWeek)}`} style={navArrow}>‹</Link>
-            <Link href={`/admin?tab=overview&mode=week&week=${localDateStr(nextWeek)}`} style={navArrow}>›</Link>
+            <button onClick={onPrevWeek} style={navArrow}>‹</button>
+            <button onClick={onNextWeek} style={navArrow}>›</button>
           </div>
         </div>
       </div>
 
-      {/* Week totals */}
-      <div style={{
-        display: 'flex', gap: 16, marginBottom: 24,
-        padding: '12px 16px',
-        background: 'var(--admin-card)', border: '1px solid var(--admin-border)', borderRadius: 10,
-      }}>
-        <WeekStat label="Revenue" value={`$${weekRevenue}`} />
-        <div style={{ width: 1, background: 'var(--admin-border)' }} />
-        <WeekStat label="Bookings" value={String(weekApts)} />
-      </div>
+      <div style={{ opacity: isLoading ? 0.4 : 1, transition: 'opacity 0.15s ease' }}>
+        {/* Week totals */}
+        <div style={{
+          display: 'flex', gap: 16, marginBottom: 24,
+          padding: '12px 16px',
+          background: 'var(--admin-card)', border: '1px solid var(--admin-border)', borderRadius: 10,
+        }}>
+          <WeekStat label="Revenue" value={`$${weekRevenue}`} />
+          <div style={{ width: 1, background: 'var(--admin-border)' }} />
+          <WeekStat label="Bookings" value={String(weekApts)} />
+        </div>
 
-      {/* Day cards */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {days.map((day) => (
-          <DayCard key={day.date} day={day} />
-        ))}
+        {/* Day cards */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {days.map((day) => (
+            <DayCard key={day.date} day={day} />
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -63,12 +63,17 @@ export default function DashboardTabs({
   const [overviewMode, setOverviewMode] = useState<'day' | 'week'>(initOverviewMode);
   const [calendarMode, setCalendarMode] = useState<'day' | 'week'>(initCalendarMode);
 
-  // Day navigation state — starts on today, can be scrolled forward/back
+  // Day navigation state
   const [viewDate, setViewDate] = useState<Date>(today);
   const [viewApts, setViewApts] = useState<Appointment[]>(todayApts);
   const [loadingApts, setLoadingApts] = useState(false);
 
-  // Fetch appointments whenever viewDate changes (skip initial today load)
+  // Week navigation state
+  const [viewWeekStart, setViewWeekStart] = useState<Date>(weekStart);
+  const [viewWeekApts,  setViewWeekApts]  = useState<Appointment[]>(weekApts);
+  const [loadingWeek,   setLoadingWeek]   = useState(false);
+
+  // Fetch day appointments whenever viewDate changes
   useEffect(() => {
     if (localDateStr(viewDate) === localDateStr(today)) {
       setViewApts(todayApts);
@@ -82,9 +87,28 @@ export default function DashboardTabs({
       .finally(() => setLoadingApts(false));
   }, [localDateStr(viewDate)]);
 
-  function prevDay() { setViewDate((d) => addDays(d, -1)); }
-  function nextDay() { setViewDate((d) => addDays(d, 1)); }
+  // Fetch week appointments whenever viewWeekStart changes
+  useEffect(() => {
+    if (localDateStr(viewWeekStart) === weekStartStr) {
+      setViewWeekApts(weekApts);
+      return;
+    }
+    const weekEnd = addDays(viewWeekStart, 6);
+    setLoadingWeek(true);
+    fetch(`/api/admin/appointments?start=${localDateStr(viewWeekStart)}&end=${localDateStr(weekEnd)}`)
+      .then((r) => r.json())
+      .then((data) => { setViewWeekApts(Array.isArray(data) ? data : []); })
+      .catch(() => setViewWeekApts([]))
+      .finally(() => setLoadingWeek(false));
+  }, [localDateStr(viewWeekStart)]);
+
+  function prevDay()  { setViewDate((d) => addDays(d, -1)); }
+  function nextDay()  { setViewDate((d) => addDays(d,  1)); }
   function goToToday() { setViewDate(today); }
+
+  function prevWeek()        { setViewWeekStart((d) => addDays(d, -7)); }
+  function nextWeek()        { setViewWeekStart((d) => addDays(d,  7)); }
+  function goToCurrentWeek() { setViewWeekStart(weekStart); }
 
   useEffect(() => {
     const t = searchParams.get('tab');
@@ -180,9 +204,9 @@ export default function DashboardTabs({
 
       {/* ── content ───────────────────────────────────────────────────────── */}
       {activeTab === 'overview' && overviewMode === 'day'  && <DayView appointments={viewApts} date={viewDate} isToday={localDateStr(viewDate) === localDateStr(today)} onPrev={prevDay} onNext={nextDay} onGoToday={goToToday} isLoading={loadingApts} />}
-      {activeTab === 'overview' && overviewMode === 'week' && <WeekView appointments={weekApts} weekStart={weekStart} />}
+      {activeTab === 'overview' && overviewMode === 'week' && <WeekView appointments={viewWeekApts} weekStart={viewWeekStart} isLoading={loadingWeek} onPrevWeek={prevWeek} onNextWeek={nextWeek} onGoCurrentWeek={goToCurrentWeek} />}
       {activeTab === 'calendar' && calendarMode === 'day'  && <DaySchedule appointments={viewApts} date={localDateStr(viewDate)} stickyTop={SUB_STICKY} />}
-      {activeTab === 'calendar' && calendarMode === 'week' && <WeekGridView appointments={weekApts} weekStart={weekStart} stickyTop={SUB_STICKY} />}
+      {activeTab === 'calendar' && calendarMode === 'week' && <WeekGridView appointments={viewWeekApts} weekStart={viewWeekStart} isLoading={loadingWeek} onPrevWeek={prevWeek} onNextWeek={nextWeek} onGoCurrentWeek={goToCurrentWeek} stickyTop={SUB_STICKY} />}
     </div>
   );
 }

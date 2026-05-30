@@ -1,7 +1,9 @@
 import { cookies } from 'next/headers';
 import { verifySession, SESSION_COOKIE } from '@/lib/admin-auth';
-import { dbCreateAppointment, dbGetAppointmentsForDate } from '@/lib/db';
+import { dbCreateAppointment, dbGetAppointmentsForDate, dbGetAppointmentsForRange } from '@/lib/db';
 import type { Appointment } from '@/lib/admin-mock';
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export async function GET(request: Request) {
   const cookieStore = await cookies();
@@ -10,14 +12,20 @@ export async function GET(request: Request) {
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { searchParams } = new URL(request.url);
-  const date = searchParams.get('date');
-  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-    return Response.json({ error: 'Invalid date' }, { status: 400 });
-  }
+  const date  = searchParams.get('date');
+  const start = searchParams.get('start');
+  const end   = searchParams.get('end');
 
   try {
-    const apts = await dbGetAppointmentsForDate(date);
-    return Response.json(apts);
+    if (start && end && DATE_RE.test(start) && DATE_RE.test(end)) {
+      const apts = await dbGetAppointmentsForRange(start, end);
+      return Response.json(apts);
+    }
+    if (date && DATE_RE.test(date)) {
+      const apts = await dbGetAppointmentsForDate(date);
+      return Response.json(apts);
+    }
+    return Response.json({ error: 'Provide ?date= or ?start=&end=' }, { status: 400 });
   } catch (e) {
     return Response.json({ error: e instanceof Error ? e.message : 'Failed' }, { status: 500 });
   }

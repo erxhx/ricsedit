@@ -1,7 +1,6 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import type { Appointment } from '@/lib/admin-mock';
 import { getAppointmentColor, SERVICE_COLORS } from '@/lib/appointment-colors';
 
@@ -87,10 +86,18 @@ type SlotAction  = { date: string; time: string } | null;
 export default function WeekGridView({
   appointments: initial,
   weekStart,
+  isLoading,
+  onPrevWeek,
+  onNextWeek,
+  onGoCurrentWeek,
   stickyTop = 96,
 }: {
   appointments: Appointment[];
   weekStart: Date;
+  isLoading?: boolean;
+  onPrevWeek?: () => void;
+  onNextWeek?: () => void;
+  onGoCurrentWeek?: () => void;
   stickyTop?: number;
 }) {
   const router = useRouter();
@@ -112,8 +119,6 @@ export default function WeekGridView({
   thisWeekStart.setDate(today.getDate() - today.getDay());
   const isThisWeek = localStr(weekStart) === localStr(thisWeekStart);
 
-  const prevWeek = new Date(weekStart); prevWeek.setDate(weekStart.getDate() - 7);
-  const nextWeek = new Date(weekStart); nextWeek.setDate(weekStart.getDate() + 7);
 
   const nowMin = (today.getHours() - H0) * 60 + today.getMinutes();
   const showNow = nowMin >= 0 && nowMin <= (H1 - H0) * 60;
@@ -230,7 +235,7 @@ export default function WeekGridView({
     width: 32, height: 32, borderRadius: 7,
     border: '1px solid var(--admin-border)', background: 'none',
     color: 'var(--admin-text2)', fontSize: 16, lineHeight: 1,
-    textDecoration: 'none', flexShrink: 0,
+    flexShrink: 0, cursor: 'pointer',
     WebkitTapHighlightColor: 'transparent',
   };
 
@@ -239,13 +244,13 @@ export default function WeekGridView({
       {/* ── week nav ──────────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px 10px 10px', borderBottom: '1px solid var(--admin-border-sub)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          {!isThisWeek && (
-            <Link href="/admin?tab=calendar&mode=week" style={{ fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500, color: '#b5824a', textDecoration: 'none', padding: '4px 9px', borderRadius: 6, border: '1px solid var(--admin-border)', WebkitTapHighlightColor: 'transparent' }}>
+          {!isThisWeek && onGoCurrentWeek && (
+            <button onClick={onGoCurrentWeek} style={{ fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500, color: '#b5824a', background: 'none', cursor: 'pointer', padding: '4px 9px', borderRadius: 6, border: '1px solid var(--admin-border)', WebkitTapHighlightColor: 'transparent' }}>
               Today
-            </Link>
+            </button>
           )}
-          <Link href={`/admin?tab=calendar&mode=week&week=${localStr(prevWeek)}`} style={navArrow}>‹</Link>
-          <Link href={`/admin?tab=calendar&mode=week&week=${localStr(nextWeek)}`} style={navArrow}>›</Link>
+          <button onClick={onPrevWeek} style={navArrow}>‹</button>
+          <button onClick={onNextWeek} style={navArrow}>›</button>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           {(['eric', 'livi'] as const).map((s) => (
@@ -278,7 +283,7 @@ export default function WeekGridView({
       </div>
 
       {/* ── time grid ─────────────────────────────────────────────────────── */}
-      <div ref={gridRef} style={{ display: 'flex', position: 'relative', paddingBottom: 24 }}>
+      <div ref={gridRef} style={{ display: 'flex', position: 'relative', paddingBottom: 24, opacity: isLoading ? 0.4 : 1, transition: 'opacity 0.15s ease' }}>
 
         {/* Hour labels */}
         <div style={{ width: TW, flexShrink: 0, position: 'relative', height: TOTAL_PX }}>
