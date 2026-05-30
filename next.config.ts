@@ -5,6 +5,11 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: __dirname,
   },
+  // Ensure the HTML source files are bundled into the serverless function
+  outputFileTracingIncludes: {
+    '/': ['./editstudio.space/index.html'],
+    '/privacy': ['./editstudio.space/privacy.html'],
+  },
 };
 
 export default nextConfig;
