@@ -2,7 +2,6 @@ import Link from 'next/link';
 import type { Appointment } from '@/lib/admin-mock';
 import { SERVICE_COLORS, liviCategory } from '@/lib/appointment-colors';
 
-const STUDIO_HOURS: Record<number, boolean> = { 0: true, 1: false, 2: false, 3: true, 4: true, 5: true, 6: true };
 const DAY_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 interface DaySummary {
@@ -31,13 +30,14 @@ function fmtWeekRange(start: Date): string {
   return `${sm} ${start.getDate()} – ${em} ${end.getDate()}`;
 }
 
-export default function WeekView({ appointments, weekStart, isLoading, onPrevWeek, onNextWeek, onGoCurrentWeek }: {
+export default function WeekView({ appointments, weekStart, isLoading, onPrevWeek, onNextWeek, onGoCurrentWeek, openDays }: {
   appointments: Appointment[];
   weekStart: Date;
   isLoading?: boolean;
   onPrevWeek?: () => void;
   onNextWeek?: () => void;
   onGoCurrentWeek?: () => void;
+  openDays?: Record<number, boolean>;
 }) {
   const today = new Date();
   const todayStr = localDateStr(today);
@@ -57,7 +57,7 @@ export default function WeekView({ appointments, weekStart, isLoading, onPrevWee
     return {
       date: dateStr,
       dateObj: d,
-      isOpen: STUDIO_HOURS[d.getDay()] ?? false,
+      isOpen: openDays ? (openDays[d.getDay()] ?? true) : true,
       isToday: dateStr === todayStr,
       total: dayApts.length,
       ericCount: dayApts.filter((a) => a.staff === 'eric').length,

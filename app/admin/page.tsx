@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { verifySession, SESSION_COOKIE } from '@/lib/admin-auth';
 import { dbGetAppointmentsForDate, dbGetAppointmentsForRange } from '@/lib/db';
+import { getAvailabilityConfig } from '@/lib/availability-store';
 import AdminHeader from '@/components/admin/AdminHeader';
 import DashboardTabs from '@/components/admin/DashboardTabs';
 
@@ -40,11 +41,15 @@ export default async function AdminPage({
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekStart.getDate() + 6);
 
-  const todayApts = await dbGetAppointmentsForDate(todayStr);
-  const weekApts = await dbGetAppointmentsForRange(
-    localDateStr(weekStart),
-    localDateStr(weekEnd),
-  );
+  const [todayApts, weekApts, availability] = await Promise.all([
+    dbGetAppointmentsForDate(todayStr),
+    dbGetAppointmentsForRange(localDateStr(weekStart), localDateStr(weekEnd)),
+    getAvailabilityConfig(),
+  ]);
+
+  // Derive a simple open/closed map from the availability config
+  const openDays: Record<number, boolean> = {};
+  for (let i = 0; i <= 6; i++) openDays[i] = availability.days[i] !== null;
 
   return (
     <>
@@ -54,6 +59,7 @@ export default async function AdminPage({
         weekApts={weekApts}
         todayStr={todayStr}
         weekStartStr={localDateStr(weekStart)}
+        openDays={openDays}
       />
     </>
   );

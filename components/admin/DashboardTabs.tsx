@@ -30,11 +30,13 @@ export default function DashboardTabs({
   weekApts,
   todayStr,
   weekStartStr,
+  openDays,
 }: {
   todayApts: Appointment[];
   weekApts: Appointment[];
   todayStr: string;
   weekStartStr: string;
+  openDays: Record<number, boolean>;
 }) {
   // Reconstruct dates locally so timezone serialization from the server can't shift the day
   const today     = strToLocalDate(todayStr);
@@ -203,10 +205,10 @@ export default function DashboardTabs({
       </div>
 
       {/* ── content ───────────────────────────────────────────────────────── */}
-      {activeTab === 'overview' && overviewMode === 'day'  && <DayView appointments={viewApts} date={viewDate} isToday={localDateStr(viewDate) === localDateStr(today)} onPrev={prevDay} onNext={nextDay} onGoToday={goToToday} isLoading={loadingApts} />}
-      {activeTab === 'overview' && overviewMode === 'week' && <WeekView appointments={viewWeekApts} weekStart={viewWeekStart} isLoading={loadingWeek} onPrevWeek={prevWeek} onNextWeek={nextWeek} onGoCurrentWeek={goToCurrentWeek} />}
+      {activeTab === 'overview' && overviewMode === 'day'  && <DayView appointments={viewApts} date={viewDate} isToday={localDateStr(viewDate) === localDateStr(today)} onPrev={prevDay} onNext={nextDay} onGoToday={goToToday} isLoading={loadingApts} openDays={openDays} />}
+      {activeTab === 'overview' && overviewMode === 'week' && <WeekView appointments={viewWeekApts} weekStart={viewWeekStart} isLoading={loadingWeek} onPrevWeek={prevWeek} onNextWeek={nextWeek} onGoCurrentWeek={goToCurrentWeek} openDays={openDays} />}
       {activeTab === 'calendar' && calendarMode === 'day'  && <DaySchedule appointments={viewApts} date={localDateStr(viewDate)} stickyTop={SUB_STICKY} />}
-      {activeTab === 'calendar' && calendarMode === 'week' && <WeekGridView appointments={viewWeekApts} weekStart={viewWeekStart} isLoading={loadingWeek} onPrevWeek={prevWeek} onNextWeek={nextWeek} onGoCurrentWeek={goToCurrentWeek} stickyTop={SUB_STICKY} />}
+      {activeTab === 'calendar' && calendarMode === 'week' && <WeekGridView appointments={viewWeekApts} weekStart={viewWeekStart} isLoading={loadingWeek} onPrevWeek={prevWeek} onNextWeek={nextWeek} onGoCurrentWeek={goToCurrentWeek} stickyTop={SUB_STICKY} openDays={openDays} />}
     </div>
   );
 }

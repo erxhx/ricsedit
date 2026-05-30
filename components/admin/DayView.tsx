@@ -2,11 +2,6 @@ import type { Appointment } from '@/lib/admin-mock';
 import { SERVICE_COLORS } from '@/lib/appointment-colors';
 import AppointmentCard from './AppointmentCard';
 
-const STUDIO_HOURS: Record<number, boolean> = { 0: true, 1: false, 2: false, 3: true, 4: true, 5: true, 6: true };
-
-function isOpen(date: Date): boolean {
-  return STUDIO_HOURS[date.getDay()] ?? false;
-}
 
 function fmtDate(date: Date): string {
   return date.toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric' });
@@ -29,6 +24,7 @@ export default function DayView({
   onNext,
   onGoToday,
   isLoading,
+  openDays,
 }: {
   appointments: Appointment[];
   date: Date;
@@ -37,8 +33,9 @@ export default function DayView({
   onNext?: () => void;
   onGoToday?: () => void;
   isLoading?: boolean;
+  openDays?: Record<number, boolean>;
 }) {
-  const open = isOpen(date);
+  const open = openDays ? (openDays[date.getDay()] ?? true) : true;
 
   // Revenue summary
   const active = appointments.filter((a) => a.status !== 'cancelled' && a.status !== 'blocked');

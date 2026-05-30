@@ -11,7 +11,6 @@ const TW = 28;
 const TOTAL_PX = (H1 - H0) * 60 * PPM;   // 900 px
 const HOURS = Array.from({ length: H1 - H0 + 1 }, (_, i) => H0 + i);
 const DAY_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const OPEN: Record<number, boolean> = { 0: true, 1: false, 2: false, 3: true, 4: true, 5: true, 6: true };
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 function t2m(t: string): number {
@@ -90,6 +89,7 @@ export default function WeekGridView({
   onPrevWeek,
   onNextWeek,
   onGoCurrentWeek,
+  openDays,
   stickyTop = 96,
 }: {
   appointments: Appointment[];
@@ -98,6 +98,7 @@ export default function WeekGridView({
   onPrevWeek?: () => void;
   onNextWeek?: () => void;
   onGoCurrentWeek?: () => void;
+  openDays?: Record<number, boolean>;
   stickyTop?: number;
 }) {
   const router = useRouter();
@@ -132,7 +133,7 @@ export default function WeekGridView({
         const dayApts = apts.filter(
           (a) => a.date === dateStr && a.status !== 'cancelled' && a.status !== 'blocked',
         );
-        return { dateStr, dateObj: d, dow: d.getDay(), isToday: dateStr === todayStr, isOpen: OPEN[d.getDay()] ?? false, apts: dayApts, positions: computePositions(dayApts) };
+        return { dateStr, dateObj: d, dow: d.getDay(), isToday: dateStr === todayStr, isOpen: openDays ? (openDays[d.getDay()] ?? true) : true, apts: dayApts, positions: computePositions(dayApts) };
       })
     : [];
 
