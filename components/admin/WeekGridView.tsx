@@ -6,7 +6,7 @@ import type { Appointment } from '@/lib/admin-mock';
 import { getAppointmentColor, SERVICE_COLORS } from '@/lib/appointment-colors';
 
 // ── layout constants ──────────────────────────────────────────────────────────
-const H0 = 9, H1 = 19;
+const H0 = 8, H1 = 22;
 const PPM = 1.5;
 const TW = 28;
 const TOTAL_PX = (H1 - H0) * 60 * PPM;   // 900 px

@@ -5,7 +5,7 @@ import type { Appointment } from '@/lib/admin-mock';
 import { getAppointmentColor, SERVICE_COLORS } from '@/lib/appointment-colors';
 
 // ── layout constants ──────────────────────────────────────────────────────────
-const H0 = 9, H1 = 19;          // visible range: 9 am – 7 pm
+const H0 = 8, H1 = 22;          // visible range: 8 am – 10 pm
 const PPM = 2;                   // pixels per minute
 const TW = 44;                   // time-label column width
 const TOTAL_PX = (H1 - H0) * 60 * PPM;  // 1200 px
