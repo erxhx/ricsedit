@@ -255,6 +255,28 @@
   }
 
 
+  // ── Saved contacts (localStorage) ─────────────────────────────────────────
+
+  var BK_CONTACTS_KEY = 'es-contacts';
+
+  function bkLoadContacts() {
+    try { return JSON.parse(localStorage.getItem(BK_CONTACTS_KEY) || '[]'); }
+    catch (e) { return []; }
+  }
+
+  function bkSaveContact(form) {
+    try {
+      var contacts = bkLoadContacts();
+      // Dedup key: normalised full name + digits-only phone
+      var key = (form.firstName + ' ' + form.lastName).toLowerCase().trim() + '|' + form.phone.replace(/\D/g, '');
+      contacts = contacts.filter(function(c) {
+        return ((c.firstName + ' ' + c.lastName).toLowerCase().trim() + '|' + c.phone.replace(/\D/g, '')) !== key;
+      });
+      contacts.unshift({ firstName: form.firstName, lastName: form.lastName, email: form.email, phone: form.phone });
+      localStorage.setItem(BK_CONTACTS_KEY, JSON.stringify(contacts.slice(0, 8)));
+    } catch (e) {}
+  }
+
   // ── Shared micro-components ────────────────────────────────────────────────
 
   function BkEyebrow(props) {
@@ -760,8 +782,24 @@
 
   function StepClient(props) {
     var { useState } = React;
-    var [form,   setForm]   = useState({ firstName: '', lastName: '', email: '', phone: '', notes: '' });
-    var [errors, setErrors] = useState({});
+    var saved    = props.savedContacts || [];
+    var hasSaved = saved.length > 0;
+
+    var [showPicker, setShowPicker] = useState(hasSaved);
+    var [form,       setForm]       = useState({ firstName: '', lastName: '', email: '', phone: '', notes: '' });
+    var [errors,     setErrors]     = useState({});
+
+    function pickSaved(c) {
+      setForm({ firstName: c.firstName, lastName: c.lastName, email: c.email, phone: c.phone, notes: '' });
+      setErrors({});
+      setShowPicker(false);
+    }
+
+    function pickNew() {
+      setForm({ firstName: '', lastName: '', email: '', phone: '', notes: '' });
+      setErrors({});
+      setShowPicker(false);
+    }
 
     function update(k, v) {
       setForm(function(f) { var n = Object.assign({}, f); n[k] = v; return n; });
@@ -791,37 +829,100 @@
         <BkBack onClick={props.onBack} />
         <BkEyebrow left="Your details" />
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
-          <div style={{ marginBottom: 22 }}>
-            <label style={labelSt}>First name</label>
-            <input className="bk-input" style={fieldSt('firstName')} value={form.firstName} onChange={function(e) { update('firstName', e.target.value); }} placeholder="First" />
-            {errors.firstName && <span style={errSt}>{errors.firstName}</span>}
+        {/* ── Contact picker ─────────────────────────────────────────────── */}
+        {showPicker ? (
+          <div>
+            <h3 style={{ fontFamily: 'var(--display)', fontWeight: 300, fontStyle: 'italic', fontSize: 'clamp(24px,4vw,34px)', margin: '0 0 22px', letterSpacing: '-0.01em', lineHeight: 1.1 }}>
+              Who's booking?
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 1, background: 'var(--rule)', marginBottom: 20 }}>
+              {saved.map(function(c) {
+                return (
+                  <button
+                    key={c.firstName + c.lastName + c.phone}
+                    onClick={function() { pickSaved(c); }}
+                    style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      padding: '16px 4px', background: 'var(--bg)', border: 'none',
+                      borderLeft: '2px solid transparent', cursor: 'pointer', textAlign: 'left',
+                      transition: 'background 0.15s ease',
+                    }}
+                    onMouseEnter={function(e) { e.currentTarget.style.background = 'var(--paper)'; }}
+                    onMouseLeave={function(e) { e.currentTarget.style.background = 'var(--bg)'; }}
+                  >
+                    <span>
+                      <span style={{ fontFamily: 'var(--display)', fontSize: 20, fontWeight: 400, display: 'block', lineHeight: 1.2 }}>
+                        {c.firstName} {c.lastName}
+                      </span>
+                      <span style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: '0.08em', color: 'var(--ink-faint)', display: 'block', marginTop: 3 }}>
+                        {c.phone}{c.email ? '  ·  ' + c.email : ''}
+                      </span>
+                    </span>
+                    <span style={{ fontFamily: 'var(--display)', fontStyle: 'italic', fontSize: 18, color: 'var(--ink-soft)', paddingRight: 4 }}>→</span>
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              onClick={pickNew}
+              style={{
+                width: '100%', padding: '14px', background: 'transparent',
+                border: '1px dashed var(--rule)', cursor: 'pointer',
+                fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: '0.14em',
+                textTransform: 'uppercase', color: 'var(--ink-faint)',
+                transition: 'border-color 0.15s, color 0.15s',
+              }}
+              onMouseEnter={function(e) { e.currentTarget.style.borderColor = 'var(--ink-soft)'; e.currentTarget.style.color = 'var(--ink-soft)'; }}
+              onMouseLeave={function(e) { e.currentTarget.style.borderColor = 'var(--rule)'; e.currentTarget.style.color = 'var(--ink-faint)'; }}
+            >
+              + Book for someone new
+            </button>
           </div>
-          <div style={{ marginBottom: 22 }}>
-            <label style={labelSt}>Last name</label>
-            <input className="bk-input" style={fieldSt('lastName')} value={form.lastName} onChange={function(e) { update('lastName', e.target.value); }} placeholder="Last" />
-            {errors.lastName && <span style={errSt}>{errors.lastName}</span>}
+        ) : (
+          /* ── Contact form ──────────────────────────────────────────────── */
+          <div>
+            {hasSaved && (
+              <button
+                onClick={function() { setShowPicker(true); }}
+                style={{ appearance: 'none', border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ink-faint)', display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 22 }}
+              >
+                ← Change
+              </button>
+            )}
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
+              <div style={{ marginBottom: 22 }}>
+                <label style={labelSt}>First name</label>
+                <input className="bk-input" style={fieldSt('firstName')} value={form.firstName} onChange={function(e) { update('firstName', e.target.value); }} placeholder="First" />
+                {errors.firstName && <span style={errSt}>{errors.firstName}</span>}
+              </div>
+              <div style={{ marginBottom: 22 }}>
+                <label style={labelSt}>Last name</label>
+                <input className="bk-input" style={fieldSt('lastName')} value={form.lastName} onChange={function(e) { update('lastName', e.target.value); }} placeholder="Last" />
+                {errors.lastName && <span style={errSt}>{errors.lastName}</span>}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 22 }}>
+              <label style={labelSt}>Email</label>
+              <input className="bk-input" style={fieldSt('email')} type="email" value={form.email} onChange={function(e) { update('email', e.target.value); }} placeholder="you@example.com" />
+              {errors.email && <span style={errSt}>{errors.email}</span>}
+            </div>
+
+            <div style={{ marginBottom: 22 }}>
+              <label style={labelSt}>Phone</label>
+              <input className="bk-input" style={fieldSt('phone')} type="tel" value={form.phone} onChange={function(e) { update('phone', e.target.value); }} placeholder="250 555 0100" />
+              {errors.phone && <span style={errSt}>{errors.phone}</span>}
+            </div>
+
+            <div style={{ marginBottom: 28 }}>
+              <label style={labelSt}>Notes <span style={{ opacity: 0.5, fontStyle: 'italic', textTransform: 'none', letterSpacing: 0 }}>— optional</span></label>
+              <textarea className="bk-input" style={Object.assign({}, fieldSt('notes'), { resize: 'none', height: 68, lineHeight: 1.5 })} value={form.notes} onChange={function(e) { update('notes', e.target.value); }} placeholder="Anything we should know before your appointment?" />
+            </div>
+
+            <BkBtn onClick={function() { if (validate()) props.onNext(form); }}>Continue</BkBtn>
           </div>
-        </div>
-
-        <div style={{ marginBottom: 22 }}>
-          <label style={labelSt}>Email</label>
-          <input className="bk-input" style={fieldSt('email')} type="email" value={form.email} onChange={function(e) { update('email', e.target.value); }} placeholder="you@example.com" />
-          {errors.email && <span style={errSt}>{errors.email}</span>}
-        </div>
-
-        <div style={{ marginBottom: 22 }}>
-          <label style={labelSt}>Phone</label>
-          <input className="bk-input" style={fieldSt('phone')} type="tel" value={form.phone} onChange={function(e) { update('phone', e.target.value); }} placeholder="250 555 0100" />
-          {errors.phone && <span style={errSt}>{errors.phone}</span>}
-        </div>
-
-        <div style={{ marginBottom: 28 }}>
-          <label style={labelSt}>Notes <span style={{ opacity: 0.5, fontStyle: 'italic', textTransform: 'none', letterSpacing: 0 }}>— optional</span></label>
-          <textarea className="bk-input" style={Object.assign({}, fieldSt('notes'), { resize: 'none', height: 68, lineHeight: 1.5 })} value={form.notes} onChange={function(e) { update('notes', e.target.value); }} placeholder="Anything we should know before your appointment?" />
-        </div>
-
-        <BkBtn onClick={function() { if (validate()) props.onNext(form); }}>Continue</BkBtn>
+        )}
       </div>
     );
   }
@@ -974,6 +1075,8 @@
     var [error,        setError]        = useState(null);
     // prefillActive: true when a "Next available" CTA pre-selected the date+time
     var [prefillActive, setPrefillActive] = useState(false);
+    // Saved contacts from localStorage — loaded once on mount
+    var [savedContacts, setSavedContacts] = useState(function() { return bkLoadContacts(); });
 
     // Approximate progress for the thin bar
     var PROGRESS = { category: 0, service: 0.15, datetime: 0.38, client: 0.58, waiver: 0.75, confirm: 0.88, done: 1 };
@@ -999,6 +1102,9 @@
           // No endpoint yet — simulate delay then show done
           await new Promise(function(r) { setTimeout(r, 1100); });
         }
+        // Save contact to localStorage so they're pre-filled next time
+        bkSaveContact(client);
+        setSavedContacts(bkLoadContacts());
         setStep('done');
       } catch (e) {
         setError(e.message || 'Something went wrong. Please call 778 535 3348.');
@@ -1089,6 +1195,7 @@
           )}
           {step === 'client' && (
             <StepClient
+              savedContacts={savedContacts}
               onNext={function(info) { setClient(info); setStep(needsWaiver(category) ? 'waiver' : 'confirm'); }}
               onBack={function() { setStep(prefillActive ? 'service' : 'datetime'); }}
             />
