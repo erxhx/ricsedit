@@ -398,26 +398,19 @@
     var ctaRef = useRef(null);
 
     useEffect(function() {
-      // For multi-select (wax), don't scroll on every selection — the user is
-      // building a list and needs to stay where they are in the service groups.
-      // The CTA appears at the bottom of the list; cpanel's 96px bottom padding
-      // keeps it clear of the chrome-bot when they scroll there naturally.
+      // For multi-select (wax), don't scroll — user is building a list.
       if (category === 'wax') return;
       if (selected.length > 0 && ctaRef.current) {
-        // Scroll the whole booking-embed to the top of the cpanel (same technique
-        // as the goto-booking FAB) so the full service list + CTA is in view.
-        // block:'end' on ctaRef was pushing the button under the chrome-bot overlay.
-        var embed = ctaRef.current.closest('.booking-embed');
-        var scroller = embed && embed.closest('.cpanel');
+        var scroller = ctaRef.current.closest('.cpanel');
         setTimeout(function() {
-          if (embed && scroller) {
-            var chromeEl  = document.querySelector('.chrome-top');
-            var clearance = chromeEl ? chromeEl.getBoundingClientRect().bottom + 16 : 120;
-            var top = embed.getBoundingClientRect().top
-                      - scroller.getBoundingClientRect().top
-                      + scroller.scrollTop
-                      - clearance;
-            scroller.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+          if (!scroller || !ctaRef.current) return;
+          var ctaRect     = ctaRef.current.getBoundingClientRect();
+          var scrollerRect = scroller.getBoundingClientRect();
+          // Scroll just enough so the CTA's bottom clears the chrome-bot (~52px)
+          var visibleBottom = scrollerRect.bottom - 52;
+          var overlap = ctaRect.bottom - visibleBottom;
+          if (overlap > 0) {
+            scroller.scrollBy({ top: overlap + 8, behavior: 'smooth' });
           }
         }, 60);
       }
