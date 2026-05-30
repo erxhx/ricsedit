@@ -425,6 +425,24 @@
 
     var catLabel = category === 'barber' ? '01 / Barbering' : category === 'tan' ? '02 / Sunless' : '03 / Waxing';
 
+    // Portal CTA — computed before return so Babel doesn't have to parse it inside JSX
+    var ctaPortal = null;
+    var ctaSlot = document.getElementById('bk-cta-slot');
+    if (selected.length > 0 && ctaSlot) {
+      ctaPortal = ReactDOM.createPortal(
+        <div style={{ pointerEvents: 'auto', background: 'var(--bg)', borderTop: '1px solid var(--rule)', padding: '8px 24px 20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '8px 0 10px' }}>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-faint)' }}>
+              {all.length} service{all.length !== 1 ? 's' : ''} · {dur} min
+            </span>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 15 }}>{bkFmtPrice(total)}</span>
+          </div>
+          <BkBtn onClick={function() { props.onNext(selected, addons); }}>Continue to date & time</BkBtn>
+        </div>,
+        ctaSlot
+      );
+    }
+
     // Pre-selected slot (from "Next available" CTA)
     var prefill = props.prefillSlot;
 
@@ -508,19 +526,7 @@
 
         {/* Footer / totals / CTA — sticky so it's always reachable */}
         {selected.length > 0 && (
-          {/* Portal: rendered outside the scroll container into #bk-cta-slot */}
-          {selected.length > 0 && document.getElementById('bk-cta-slot') && ReactDOM.createPortal(
-            <div style={{ pointerEvents: 'auto', background: 'var(--bg)', borderTop: '1px solid var(--rule)', padding: '8px 24px 20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '8px 0 10px' }}>
-                <span style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-faint)' }}>
-                  {all.length} service{all.length !== 1 ? 's' : ''} · {dur} min
-                </span>
-                <span style={{ fontFamily: 'var(--mono)', fontSize: 15 }}>{bkFmtPrice(total)}</span>
-              </div>
-              <BkBtn onClick={function() { props.onNext(selected, addons); }}>Continue to date & time</BkBtn>
-            </div>,
-            document.getElementById('bk-cta-slot')
-          )}
+          {ctaPortal}
         )}
       </div>
     );
