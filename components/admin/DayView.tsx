@@ -198,41 +198,53 @@ export default function DayView({
       </div>
 
       <div style={{ opacity: isLoading ? 0.4 : 1, transition: 'opacity 0.15s ease' }}>
-      {!open ? (
-        <div style={{ paddingTop: 32, textAlign: 'center', color: 'var(--admin-muted)' }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>—</div>
-          <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text3)' }}>Studio closed</div>
-        </div>
-      ) : appointments.length === 0 ? (
-        <div style={{ paddingTop: 32, textAlign: 'center' }}>
-          <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text3)' }}>No bookings today</div>
-        </div>
-      ) : (
-        <>
-          {/* Timeline strip */}
-          <DayTimeline appointments={active} isToday={isToday} hours={dayHours} />
-
-          {/* Summary row */}
-          <div style={{
-            display: 'flex', gap: 16, marginBottom: 24,
-            padding: '12px 16px',
-            background: 'var(--admin-card)', border: '1px solid var(--admin-border)', borderRadius: 10,
-          }}>
-            <Stat label="Total" value={`$${total}`} />
-            <div style={{ width: 1, background: 'var(--admin-border)' }} />
-            <Stat label="Eric" value={`${ericApts.length} apt${ericApts.length !== 1 ? 's' : ''}`} color={SERVICE_COLORS.ericBarber} />
-            <div style={{ width: 1, background: 'var(--admin-border)' }} />
-            <Stat label="Livi" value={`${liviApts.length} apt${liviApts.length !== 1 ? 's' : ''}`} color={SERVICE_COLORS.liviWax} />
+        {!open ? (
+          <div style={{ paddingTop: 32, textAlign: 'center', color: 'var(--admin-muted)' }}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>—</div>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text3)' }}>Studio closed</div>
           </div>
+        ) : (
+          <>
+            {/* Summary row — always visible when open, even with zero bookings */}
+            <div style={{
+              display: 'flex', gap: 16, marginBottom: 24,
+              padding: '12px 16px',
+              background: 'var(--admin-card)', border: '1px solid var(--admin-border)', borderRadius: 10,
+            }}>
+              <Stat label="Total" value={total > 0 ? `$${total}` : '—'} />
+              <div style={{ width: 1, background: 'var(--admin-border)' }} />
+              <Stat
+                label="Eric"
+                value={ericApts.length > 0 ? `${ericApts.length} apt${ericApts.length !== 1 ? 's' : ''}` : '—'}
+                color={ericApts.length > 0 ? SERVICE_COLORS.ericBarber : undefined}
+              />
+              <div style={{ width: 1, background: 'var(--admin-border)' }} />
+              <Stat
+                label="Livi"
+                value={liviApts.length > 0 ? `${liviApts.length} apt${liviApts.length !== 1 ? 's' : ''}` : '—'}
+                color={liviApts.length > 0 ? SERVICE_COLORS.liviWax : undefined}
+              />
+            </div>
 
-          {/* Appointment list */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {appointments.map((a) => (
-              <AppointmentCard key={a.id} apt={a} />
-            ))}
-          </div>
-        </>
-      )}
+            {active.length > 0 ? (
+              <>
+                {/* Timeline strip */}
+                <DayTimeline appointments={active} isToday={isToday} hours={dayHours} />
+
+                {/* Appointment list */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {appointments.map((a) => (
+                    <AppointmentCard key={a.id} apt={a} />
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div style={{ paddingTop: 16, textAlign: 'center' }}>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text3)' }}>No bookings</div>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );
