@@ -217,6 +217,58 @@ export default function WeekGridView({
     setDraggingDate(null);
   }
 
+  function onAptMouseDown(e: React.MouseEvent, apt: Appointment) {
+    if (e.button !== 0) return; // left button only
+    e.preventDefault();         // prevent text selection while dragging
+
+    const origTopPx = t2m(apt.startTime) * PPM;
+    const col = getAppointmentColor(apt.staff, apt.service);
+    dragRef.current = {
+      aptId: apt.id, aptDate: apt.date, color: col,
+      startTouchY: e.clientY, origTopPx,
+      durationPx: apt.durationMinutes * PPM,
+      currentTopPx: origTopPx,
+      hasMoved: false, longPressReady: true, // no long-press for mouse
+      longPressTimer: null, scrollCancelled: false,
+    };
+
+    function onMouseMove(ev: MouseEvent) {
+      const drag = dragRef.current;
+      if (!drag) return;
+      const dy = ev.clientY - drag.startTouchY;
+      if (!drag.hasMoved && Math.abs(dy) > 4) {
+        drag.hasMoved = true;
+        const el = aptEls.current.get(drag.aptId);
+        if (el) { el.style.opacity = '0.25'; el.style.transform = 'none'; el.style.boxShadow = 'none'; el.style.transition = 'none'; }
+        setDraggingId(drag.aptId);
+        setDraggingDate(drag.aptDate);
+      }
+      if (drag.hasMoved) {
+        const maxPx = TOTAL_PX - drag.durationPx;
+        const snp = Math.round(Math.max(0, Math.min(maxPx, drag.origTopPx + dy)) / (15 * PPM)) * (15 * PPM);
+        drag.currentTopPx = snp;
+        if (ghostRef.current) ghostRef.current.style.top = `${snp}px`;
+      }
+    }
+
+    function onMouseUp() {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      const drag = dragRef.current;
+      dragRef.current = null;
+      clearDragVisuals(apt.id);
+      setDraggingId(null);
+      setDraggingDate(null);
+      if (!drag) return;
+      if (!drag.hasMoved) { router.push(`/admin/appointments/${apt.id}`); return; }
+      const newStart = m2t(Math.round(drag.currentTopPx / PPM / 15) * 15);
+      setDragConfirm({ apt, newStartTime: newStart, newEndTime: addMin(newStart, apt.durationMinutes) });
+    }
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  }
+
   async function confirmReschedule() {
     if (!dragConfirm) return;
     const { apt, newStartTime, newEndTime } = dragConfirm;
@@ -350,7 +402,7 @@ export default function WeekGridView({
                     onTouchStart={(e) => onAptTouchStart(e, apt)}
                     onTouchEnd={(e) => onAptTouchEnd(e, apt)}
                     onTouchCancel={() => onAptTouchCancel(apt)}
-                    onClick={() => router.push(`/admin/appointments/${apt.id}`)}
+                    onMouseDown={(e) => onAptMouseDown(e, apt)}
                     style={{
                       position: 'absolute',
                       top: topPx,
