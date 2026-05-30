@@ -1078,14 +1078,18 @@
       <div style={{ paddingBottom: 24 }}>
         {/* Header */}
         <div style={{ paddingTop: 32, paddingBottom: 24, borderBottom: '1px solid var(--rule)', marginBottom: 24 }}>
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'oklch(0.58 0.13 150)', marginBottom: 14 }}>
-            ✓ Confirmed
+          {/* Large confirmation mark */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 64, height: 64, borderRadius: '50%', background: 'oklch(0.58 0.13 150)', marginBottom: 22 }}>
+            <span style={{ color: '#fff', fontSize: 28, lineHeight: 1, fontWeight: 300 }}>✓</span>
           </div>
-          <h3 style={{ fontFamily: 'var(--display)', fontWeight: 300, fontStyle: 'italic', fontSize: 'clamp(28px,5vw,44px)', margin: '0 0 10px', letterSpacing: '-0.02em', lineHeight: 1 }}>
+          <h3 style={{ fontFamily: 'var(--display)', fontWeight: 300, fontStyle: 'italic', fontSize: 'clamp(32px,6vw,52px)', margin: '0 0 12px', letterSpacing: '-0.02em', lineHeight: 1 }}>
             You're booked.
           </h3>
-          <p style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-faint)', margin: 0 }}>
-            Confirmation sent to {props.client.email}
+          <p style={{ fontFamily: 'var(--body)', fontSize: 14, color: 'var(--ink-soft)', margin: '0 0 6px', lineHeight: 1.5 }}>
+            Confirmation sent to <strong style={{ color: 'var(--ink)' }}>{props.client.email}</strong>
+          </p>
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'oklch(0.58 0.13 150)', margin: 0 }}>
+            Booking confirmed
           </p>
         </div>
 
@@ -1219,14 +1223,27 @@
     }, [categoryProp]);
 
     // Scroll the embed's top into view when the step changes (not on initial mount).
-    // Skipping mount prevents the 3 simultaneously-rendered panels from all
-    // auto-scrolling their cpanels to the embed before the user has done anything.
+    // Scroll the embed into view when the step changes, clearing the chrome-top header.
+    // scrollIntoView({ block:'start' }) would land the embed directly under the logo —
+    // instead we manually offset by the chrome-top's actual rendered height.
     useEffect(function() {
       if (!mountedRef.current) { mountedRef.current = true; return; }
       var el = embedRef.current;
       if (!el) return;
       setTimeout(function() {
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (!el) return;
+        var scroller = el.closest('.cpanel');
+        var chromeEl  = document.querySelector('.chrome-top');
+        var clearance = chromeEl ? chromeEl.getBoundingClientRect().bottom + 16 : 120;
+        if (scroller) {
+          var top = el.getBoundingClientRect().top
+                    - scroller.getBoundingClientRect().top
+                    + scroller.scrollTop
+                    - clearance;
+          scroller.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+        } else {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
       }, 80);
     }, [step]);
 
