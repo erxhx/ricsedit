@@ -532,9 +532,9 @@
           );
         })}
 
-        {/* Footer / totals / CTA */}
+        {/* Footer / totals / CTA — sticky so it's always reachable */}
         {selected.length > 0 && (
-          <div ref={ctaRef} style={{ marginTop: 24 }}>
+          <div ref={ctaRef} style={{ position: 'sticky', bottom: 0, background: 'var(--bg)', paddingTop: 16, paddingBottom: 20, marginTop: 4 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '12px 0', borderTop: '1px solid var(--rule)', marginBottom: 12 }}>
               <span style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-faint)' }}>
                 {all.length} service{all.length !== 1 ? 's' : ''} · {dur} min
