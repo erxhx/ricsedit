@@ -524,10 +524,7 @@
           );
         })}
 
-        {/* Footer / totals / CTA — sticky so it's always reachable */}
-        {selected.length > 0 && (
-          {ctaPortal}
-        )}
+        {ctaPortal}
       </div>
     );
   }
