@@ -407,7 +407,9 @@
             : prev.concat([item]);
         });
       } else {
-        setSelected([item]);
+        setSelected(function(prev) {
+          return prev.find(function(s) { return s.id === item.id; }) ? [] : [item];
+        });
       }
     }
 
