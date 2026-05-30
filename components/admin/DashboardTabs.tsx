@@ -183,24 +183,6 @@ export default function DashboardTabs({
             </button>
           ))}
 
-          {/* New booking button */}
-          <a
-            href="/admin/new-booking"
-            style={{
-              marginLeft: 6,
-              display: 'flex', alignItems: 'center',
-              fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600,
-              color: 'var(--admin-bg)',
-              background: 'var(--admin-text)',
-              border: 'none', borderRadius: 6,
-              padding: '5px 12px',
-              textDecoration: 'none',
-              whiteSpace: 'nowrap',
-              letterSpacing: '0.01em',
-            }}
-          >
-            + New
-          </a>
         </div>
       </div>
 

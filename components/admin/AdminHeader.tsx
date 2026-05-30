@@ -108,6 +108,33 @@ export default function AdminHeader({ name }: { name: string }) {
         </div>
       </header>
 
+      {/* Floating + New button — hidden on the new-booking page itself */}
+      {pathname !== '/admin/new-booking' && (
+        <a
+          href="/admin/new-booking"
+          style={{
+            position: 'fixed',
+            bottom: 'calc(28px + env(safe-area-inset-bottom))',
+            right: 20,
+            zIndex: 30,
+            display: 'flex', alignItems: 'center', gap: 6,
+            height: 52,
+            padding: '0 22px',
+            borderRadius: 26,
+            background: 'var(--admin-text)',
+            color: 'var(--admin-bg)',
+            fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 600,
+            letterSpacing: '0.01em',
+            textDecoration: 'none',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.12)',
+            WebkitTapHighlightColor: 'transparent',
+          }}
+        >
+          <span style={{ fontSize: 20, lineHeight: 1, marginTop: -1 }}>+</span>
+          New
+        </a>
+      )}
+
       {/* Backdrop */}
       <div
         onClick={() => setOpen(false)}
