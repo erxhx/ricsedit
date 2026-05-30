@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAdminTheme } from './AdminThemeProvider';
@@ -34,7 +34,14 @@ export default function AdminHeader({ name }: { name: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [spinning, setSpinning] = useState(false);
   const { theme } = useAdminTheme();
+
+  const refresh = useCallback(() => {
+    setSpinning(true);
+    router.refresh();
+    setTimeout(() => setSpinning(false), 600);
+  }, [router]);
 
   async function logout() {
     await fetch('/api/admin/logout', { method: 'POST' });
@@ -61,9 +68,28 @@ export default function AdminHeader({ name }: { name: string }) {
           style={{ height: 36, width: 'auto', display: 'block' }}
         />
 
-        {/* Hamburger button */}
-        <button
-          onClick={() => setOpen(true)}
+        {/* Right-side controls */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          {/* Refresh button */}
+          <button
+            onClick={refresh}
+            aria-label="Refresh"
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: 36, height: 36,
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: 'var(--admin-text2)', fontSize: 16,
+              WebkitTapHighlightColor: 'transparent',
+              transform: spinning ? 'rotate(360deg)' : 'rotate(0deg)',
+              transition: spinning ? 'transform 0.6s ease' : 'none',
+            }}
+          >
+            ↻
+          </button>
+
+          {/* Hamburger button */}
+          <button
+            onClick={() => setOpen(true)}
           aria-label="Open menu"
           style={{
             display: 'flex', flexDirection: 'column', justifyContent: 'center',
@@ -72,13 +98,14 @@ export default function AdminHeader({ name }: { name: string }) {
             WebkitTapHighlightColor: 'transparent',
           }}
         >
-          {[0, 1, 2].map((i) => (
-            <span key={i} style={{
-              display: 'block', width: 20, height: 1.5,
-              background: 'var(--admin-text)', borderRadius: 2,
-            }} />
-          ))}
-        </button>
+            {[0, 1, 2].map((i) => (
+              <span key={i} style={{
+                display: 'block', width: 20, height: 1.5,
+                background: 'var(--admin-text)', borderRadius: 2,
+              }} />
+            ))}
+          </button>
+        </div>
       </header>
 
       {/* Backdrop */}
