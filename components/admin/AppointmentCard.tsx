@@ -16,15 +16,16 @@ export default function AppointmentCard({ apt }: { apt: Appointment }) {
       display: 'flex',
       background: 'var(--admin-card)',
       border: '1px solid var(--admin-border)',
+      borderLeft: `3px solid ${color}`,
       borderRadius: 10,
       padding: '14px 16px',
       gap: 12,
       textDecoration: 'none',
       WebkitTapHighlightColor: 'transparent',
     }}>
-      {/* Time column */}
-      <div style={{ minWidth: 52, paddingTop: 1 }}>
-        <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 500, color: 'var(--admin-text)', letterSpacing: '0.01em', whiteSpace: 'nowrap' }}>
+      {/* Time column — same visual weight as client name for easy scanning */}
+      <div style={{ minWidth: 58, paddingTop: 1, flexShrink: 0 }}>
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 500, color: 'var(--admin-text)', letterSpacing: '-0.01em', whiteSpace: 'nowrap' }}>
           {fmtTime(apt.startTime)}
         </div>
         <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-muted)', marginTop: 3 }}>
@@ -60,10 +61,9 @@ export default function AppointmentCard({ apt }: { apt: Appointment }) {
         </div>
       </div>
 
-      {/* Staff dot + chevron */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-        <div style={{ width: 6, height: 6, borderRadius: '50%', background: color, marginTop: 4 }} />
-        <span style={{ fontSize: 10, color: 'var(--admin-muted)', lineHeight: 1 }}>›</span>
+      {/* Chevron */}
+      <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+        <span style={{ fontSize: 16, color: 'var(--admin-muted)', lineHeight: 1 }}>›</span>
       </div>
     </Link>
   );
