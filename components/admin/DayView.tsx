@@ -28,6 +28,7 @@ export default function DayView({
   onPrev,
   onNext,
   onGoToday,
+  isLoading,
 }: {
   appointments: Appointment[];
   date: Date;
@@ -35,6 +36,7 @@ export default function DayView({
   onPrev?: () => void;
   onNext?: () => void;
   onGoToday?: () => void;
+  isLoading?: boolean;
 }) {
   const open = isOpen(date);
 
@@ -87,6 +89,7 @@ export default function DayView({
         </div>
       </div>
 
+      <div style={{ opacity: isLoading ? 0.4 : 1, transition: 'opacity 0.15s ease' }}>
       {!open ? (
         <div style={{ paddingTop: 32, textAlign: 'center', color: 'var(--admin-muted)' }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>—</div>
@@ -119,6 +122,7 @@ export default function DayView({
           </div>
         </>
       )}
+      </div>
     </div>
   );
 }

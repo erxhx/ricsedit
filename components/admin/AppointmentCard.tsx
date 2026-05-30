@@ -35,15 +35,15 @@ export default function AppointmentCard({ apt }: { apt: Appointment }) {
       {/* Content */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 3 }}>
-          <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 400, color: 'var(--admin-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 500, color: 'var(--admin-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {apt.clientName}
           </span>
-          <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-text3)', whiteSpace: 'nowrap' }}>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-text3)', whiteSpace: 'nowrap' }}>
             ${apt.price}
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-          <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-text3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
             {apt.service}
           </div>
           {apt.notes && (

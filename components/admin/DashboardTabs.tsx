@@ -7,8 +7,8 @@ import WeekView from './WeekView';
 import DaySchedule from './DaySchedule';
 import WeekGridView from './WeekGridView';
 
-// Heights: AdminHeader=52, tab bar=44, sub-toggle=36 → column headers sticky at 132
-const SUB_STICKY = 132;
+// Heights: AdminHeader=52, tab bar=44 (sub-toggle merged in) → column headers sticky at 96
+const SUB_STICKY = 96;
 
 function localDateStr(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -100,15 +100,17 @@ export default function DashboardTabs({
 
   return (
     <div>
-      {/* ── main tab bar ──────────────────────────────────────────────────── */}
+      {/* ── combined tab + mode bar ───────────────────────────────────────── */}
       <div style={{
         display: 'flex', alignItems: 'center',
         borderBottom: '1px solid var(--admin-border)',
-        padding: '0 16px',
+        padding: '0 12px 0 16px',
         background: 'var(--admin-bg)',
         position: 'sticky', top: 52, zIndex: 9,
         height: 44,
+        gap: 0,
       }}>
+        {/* Overview / Calendar tabs */}
         {(['overview', 'calendar'] as const).map((t) => (
           <button
             key={t}
@@ -119,72 +121,65 @@ export default function DashboardTabs({
               color: activeTab === t ? 'var(--admin-text)' : 'var(--admin-muted)',
               background: 'none', border: 'none',
               borderBottom: activeTab === t ? '2px solid var(--admin-text)' : '2px solid transparent',
-              padding: '0 14px',
+              padding: '0 12px',
               height: '100%',
               cursor: 'pointer',
               marginBottom: -1,
               textTransform: 'capitalize',
               WebkitTapHighlightColor: 'transparent',
+              flexShrink: 0,
             }}
           >
             {t}
           </button>
         ))}
 
-        {/* New booking button */}
-        <a
-          href="/admin/new-booking"
-          style={{
-            marginLeft: 'auto',
-            display: 'flex', alignItems: 'center',
-            fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 500,
-            color: 'var(--admin-text)',
-            background: 'var(--admin-btn)',
-            border: 'none', borderRadius: 6,
-            padding: '5px 12px',
-            textDecoration: 'none',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          + New
-        </a>
-      </div>
+        {/* Day / Week mode toggle — right-aligned, before + New */}
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
+          {(['day', 'week'] as const).map((m) => (
+            <button
+              key={m}
+              onClick={() => setDayMode(m)}
+              style={{
+                fontFamily: 'var(--font-body)', fontSize: 11,
+                fontWeight: dayMode === m ? 500 : 400,
+                color: dayMode === m ? 'var(--admin-text)' : 'var(--admin-muted)',
+                background: dayMode === m ? 'var(--admin-btn)' : 'none',
+                border: dayMode === m ? '1px solid var(--admin-btn-border)' : '1px solid transparent',
+                borderRadius: 5,
+                padding: '3px 9px',
+                cursor: 'pointer',
+                textTransform: 'capitalize',
+                WebkitTapHighlightColor: 'transparent',
+              }}
+            >
+              {m}
+            </button>
+          ))}
 
-      {/* ── day / week sub-toggle ─────────────────────────────────────────── */}
-      <div style={{
-        display: 'flex', alignItems: 'center',
-        padding: '0 16px',
-        background: 'var(--admin-bg)',
-        borderBottom: '1px solid var(--admin-border-sub)',
-        position: 'sticky', top: 96, zIndex: 8,
-        height: 36,
-        gap: 4,
-      }}>
-        {(['day', 'week'] as const).map((m) => (
-          <button
-            key={m}
-            onClick={() => setDayMode(m)}
+          {/* New booking button */}
+          <a
+            href="/admin/new-booking"
             style={{
-              fontFamily: 'var(--font-body)', fontSize: 12,
-              fontWeight: dayMode === m ? 500 : 400,
-              color: dayMode === m ? 'var(--admin-text)' : 'var(--admin-muted)',
-              background: dayMode === m ? 'var(--admin-btn)' : 'none',
-              border: dayMode === m ? '1px solid var(--admin-btn-border)' : '1px solid transparent',
-              borderRadius: 6,
-              padding: '3px 12px',
-              cursor: 'pointer',
-              textTransform: 'capitalize',
-              WebkitTapHighlightColor: 'transparent',
+              marginLeft: 6,
+              display: 'flex', alignItems: 'center',
+              fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600,
+              color: 'var(--admin-bg)',
+              background: 'var(--admin-text)',
+              border: 'none', borderRadius: 6,
+              padding: '5px 12px',
+              textDecoration: 'none',
+              whiteSpace: 'nowrap',
+              letterSpacing: '0.01em',
             }}
           >
-            {m}
-          </button>
-        ))}
-
+            + New
+          </a>
+        </div>
       </div>
 
       {/* ── content ───────────────────────────────────────────────────────── */}
-      {activeTab === 'overview' && overviewMode === 'day'  && <DayView appointments={viewApts} date={viewDate} isToday={localDateStr(viewDate) === localDateStr(today)} onPrev={prevDay} onNext={nextDay} onGoToday={goToToday} />}
+      {activeTab === 'overview' && overviewMode === 'day'  && <DayView appointments={viewApts} date={viewDate} isToday={localDateStr(viewDate) === localDateStr(today)} onPrev={prevDay} onNext={nextDay} onGoToday={goToToday} isLoading={loadingApts} />}
       {activeTab === 'overview' && overviewMode === 'week' && <WeekView appointments={weekApts} weekStart={weekStart} />}
       {activeTab === 'calendar' && calendarMode === 'day'  && <DaySchedule appointments={viewApts} date={localDateStr(viewDate)} stickyTop={SUB_STICKY} />}
       {activeTab === 'calendar' && calendarMode === 'week' && <WeekGridView appointments={weekApts} weekStart={weekStart} stickyTop={SUB_STICKY} />}
