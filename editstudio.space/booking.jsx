@@ -915,12 +915,15 @@
               {errors.phone && <span style={errSt}>{errors.phone}</span>}
             </div>
 
-            <div style={{ marginBottom: 28 }}>
+            <div style={{ marginBottom: 16 }}>
               <label style={labelSt}>Notes <span style={{ opacity: 0.5, fontStyle: 'italic', textTransform: 'none', letterSpacing: 0 }}>— optional</span></label>
               <textarea className="bk-input" style={Object.assign({}, fieldSt('notes'), { resize: 'none', height: 68, lineHeight: 1.5 })} value={form.notes} onChange={function(e) { update('notes', e.target.value); }} placeholder="Anything we should know before your appointment?" />
             </div>
 
-            <BkBtn onClick={function() { if (validate()) props.onNext(form); }}>Continue</BkBtn>
+            {/* Sticky CTA — floats at the bottom of the scroll container */}
+            <div style={{ position: 'sticky', bottom: 0, background: 'var(--bg)', paddingTop: 12, paddingBottom: 20, marginTop: 4 }}>
+              <BkBtn onClick={function() { if (validate()) props.onNext(form); }}>Continue</BkBtn>
+            </div>
           </div>
         )}
       </div>
@@ -1037,19 +1040,92 @@
   // ── Step: Done ─────────────────────────────────────────────────────────────
 
   function StepDone(props) {
+    var total    = bkTotalPrice(props.services);
+    var dur      = bkTotalDuration(props.services);
+    var ROW      = { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '11px 0', borderBottom: '1px solid var(--rule)' };
+
+    // Derive manage URL from the booking endpoint base
+    var manageUrl = null;
+    if (props.manageToken) {
+      var endpoint = window.__booking && window.__booking.endpoint;
+      var base = endpoint ? endpoint.replace(/\/api\/booking\/create$/, '') : '';
+      manageUrl = base + '/booking/manage/' + props.manageToken;
+    }
+
+    // Google Calendar add link
+    function calLink() {
+      var d = props.date;
+      function pad2(n) { return String(n).padStart(2, '0'); }
+      var ymd  = d.getFullYear() + '' + pad2(d.getMonth() + 1) + '' + pad2(d.getDate());
+      var hStart = pad2(props.time.h) + pad2(props.time.m) + '00';
+      var endMin = props.time.h * 60 + props.time.m + (dur || 60);
+      var hEnd   = pad2(Math.floor(endMin / 60)) + pad2(endMin % 60) + '00';
+      var svcNames = props.services.map(function(s) { return s.name; }).join(', ');
+      var params = new URLSearchParams({
+        text: 'Edit Studio — ' + svcNames,
+        dates: ymd + 'T' + hStart + '/' + ymd + 'T' + hEnd,
+        location: '1846 Oak Bay Avenue, Victoria BC',
+        details: manageUrl || 'editstudio.space',
+      });
+      return 'https://calendar.google.com/calendar/r/eventedit?' + params.toString();
+    }
+
+    var linkSt = {
+      display: 'block', width: '100%', padding: '14px 20px',
+      boxSizing: 'border-box',
+      border: '1px solid var(--rule)', background: 'transparent',
+      fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: '0.14em',
+      textTransform: 'uppercase', color: 'var(--ink-soft)',
+      textDecoration: 'none', textAlign: 'center', cursor: 'pointer',
+    };
+
     return (
-      <div style={{ textAlign: 'center', padding: '40px 0 24px' }}>
-        <div style={{ fontFamily: 'var(--display)', fontSize: 56, lineHeight: 1, marginBottom: 20, color: 'var(--ink)' }}>✓</div>
-        <h3 style={{ fontFamily: 'var(--display)', fontWeight: 300, fontStyle: 'italic', fontSize: 'clamp(28px,5vw,44px)', margin: '0 0 14px', letterSpacing: '-0.02em', lineHeight: 1 }}>
-          You're booked.
-        </h3>
-        <p style={{ fontFamily: 'var(--body)', fontSize: 14, color: 'var(--ink-soft)', lineHeight: 1.65, marginBottom: 8 }}>
-          {bkFmtDate(props.date)} at {bkFmtTime(props.time.h, props.time.m)}<br />
-          {props.services.map(function(s) { return s.name; }).join(', ')}
-        </p>
-        <p style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ink-faint)', marginBottom: 36 }}>
-          Confirmation sent to {props.client.email}
-        </p>
+      <div style={{ paddingBottom: 24 }}>
+        {/* Header */}
+        <div style={{ paddingTop: 32, paddingBottom: 24, borderBottom: '1px solid var(--rule)', marginBottom: 24 }}>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'oklch(0.58 0.13 150)', marginBottom: 14 }}>
+            ✓ Confirmed
+          </div>
+          <h3 style={{ fontFamily: 'var(--display)', fontWeight: 300, fontStyle: 'italic', fontSize: 'clamp(28px,5vw,44px)', margin: '0 0 10px', letterSpacing: '-0.02em', lineHeight: 1 }}>
+            You're booked.
+          </h3>
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-faint)', margin: 0 }}>
+            Confirmation sent to {props.client.email}
+          </p>
+        </div>
+
+        {/* Booking summary */}
+        <div style={{ marginBottom: 24 }}>
+          <div style={ROW}>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--ink-faint)' }}>Date + time</span>
+            <span style={{ fontFamily: 'var(--body)', fontSize: 14 }}>{bkFmtDate(props.date)} · {bkFmtTime(props.time.h, props.time.m)}</span>
+          </div>
+          {props.services.map(function(s) {
+            return (
+              <div key={s.id} style={ROW}>
+                <span style={{ fontFamily: 'var(--display)', fontSize: 17, letterSpacing: '-0.005em' }}>{s.name}</span>
+                <span style={{ fontFamily: 'var(--mono)', fontSize: 12, letterSpacing: '0.04em' }}>{bkFmtPrice(s.price)}</span>
+              </div>
+            );
+          })}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '11px 0' }}>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--ink-faint)' }}>{dur} min total</span>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 15 }}>{bkFmtPrice(total)}</span>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 28 }}>
+          {manageUrl && (
+            <a href={manageUrl} style={linkSt}>
+              Manage or cancel booking →
+            </a>
+          )}
+          <a href={calLink()} target="_blank" rel="noopener noreferrer" style={linkSt}>
+            Add to calendar →
+          </a>
+        </div>
+
         <button onClick={props.onReset}
           style={{ appearance: 'none', border: 'none', background: 'none', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ink-faint)', borderBottom: '1px solid var(--rule)', paddingBottom: 2 }}>
           Book another appointment
@@ -1073,6 +1149,7 @@
     var [client,       setClient]       = useState(null);
     var [submitting,   setSubmitting]   = useState(false);
     var [error,        setError]        = useState(null);
+    var [manageToken,  setManageToken]  = useState(null);
     // prefillActive: true when a "Next available" CTA pre-selected the date+time
     var [prefillActive, setPrefillActive] = useState(false);
     // Saved contacts from localStorage — loaded once on mount
@@ -1098,6 +1175,8 @@
             body: JSON.stringify({ category: category, services: services, addons: addons, date: date.toISOString(), time: time, client: client }),
           });
           if (!res.ok) throw new Error('Booking failed. Please try again or call us at 778 535 3348.');
+          var data = await res.json();
+          if (data.manageToken) setManageToken(data.manageToken);
         } else {
           // No endpoint yet — simulate delay then show done
           await new Promise(function(r) { setTimeout(r, 1100); });
@@ -1118,7 +1197,7 @@
       setCategory(categoryProp);
       setServices([]); setAddons([]);
       setDate(null); setTime(null); setClient(null);
-      setError(null); setPrefillActive(false);
+      setError(null); setPrefillActive(false); setManageToken(null);
     }
 
     var embedRef   = useRef(null);
@@ -1227,6 +1306,7 @@
               date={date}
               time={time}
               services={services.concat(addons)}
+              manageToken={manageToken}
               onReset={reset}
             />
           )}
