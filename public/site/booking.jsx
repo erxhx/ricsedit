@@ -455,7 +455,7 @@
     var prefill = props.prefillSlot;
 
     return (
-      <div style={{ paddingBottom: 'calc(108px + env(safe-area-inset-bottom))' }}>
+      <div>
         <BkBack onClick={props.onBack} />
         <BkEyebrow left={catLabel} right={isMulti ? 'Select all that apply' : 'Select a service'} />
 
@@ -534,8 +534,8 @@
 
         {/* Footer / totals / CTA — sticky so it's always reachable */}
         {selected.length > 0 && (
-          <div ref={ctaRef} style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100, background: 'var(--bg)', padding: '8px 24px', paddingBottom: 'env(safe-area-inset-bottom)', borderTop: '1px solid var(--rule)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '4px 0', marginBottom: 10 }}>
+          <div ref={ctaRef} style={{ position: 'sticky', bottom: 0, background: 'var(--bg)', marginTop: 4 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '12px 0', borderTop: '1px solid var(--rule)', marginBottom: 12 }}>
               <span style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-faint)' }}>
                 {all.length} service{all.length !== 1 ? 's' : ''} · {dur} min
               </span>
@@ -880,7 +880,7 @@
           </div>
         ) : (
           /* ── Contact form ──────────────────────────────────────────────── */
-          <div style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
+          <div>
             {hasSaved && (
               <button
                 onClick={function() { setShowPicker(true); }}
@@ -920,8 +920,8 @@
               <textarea className="bk-input" style={Object.assign({}, fieldSt('notes'), { resize: 'none', height: 68, lineHeight: 1.5 })} value={form.notes} onChange={function(e) { update('notes', e.target.value); }} placeholder="Anything we should know before your appointment?" />
             </div>
 
-            {/* Fixed CTA — pinned to the bottom of the viewport */}
-            <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100, background: 'var(--bg)', padding: '8px 24px', paddingBottom: 'env(safe-area-inset-bottom)', borderTop: '1px solid var(--rule)' }}>
+            {/* Sticky CTA — floats at the bottom of the scroll container */}
+            <div style={{ position: 'sticky', bottom: 0, background: 'var(--bg)', marginTop: 4 }}>
               <BkBtn onClick={function() { if (validate()) props.onNext(form); }}>Continue</BkBtn>
             </div>
           </div>
