@@ -4,13 +4,6 @@ import AppointmentCard from './AppointmentCard';
 
 // ── Day timeline ──────────────────────────────────────────────────────────────
 
-const TL_START = 9 * 60;   // 9 am in minutes
-const TL_END   = 21 * 60;  // 9 pm in minutes
-const TL_RANGE = TL_END - TL_START;
-
-function tlPct(mins: number): number {
-  return Math.max(0, Math.min(100, (mins - TL_START) / TL_RANGE * 100));
-}
 function tlMins(t: string): number {
   const [h, m] = t.split(':').map(Number);
   return h * 60 + m;
@@ -19,7 +12,23 @@ function tlHourLabel(h: number): string {
   return h === 12 ? '12p' : h > 12 ? `${h - 12}p` : `${h}a`;
 }
 
-function DayTimeline({ appointments, isToday }: { appointments: Appointment[]; isToday?: boolean }) {
+function DayTimeline({
+  appointments,
+  isToday,
+  hours,
+}: {
+  appointments: Appointment[];
+  isToday?: boolean;
+  hours: [number, number];
+}) {
+  const TL_START = hours[0] * 60;
+  const TL_END   = hours[1] * 60;
+  const TL_RANGE = TL_END - TL_START;
+
+  function tlPct(mins: number): number {
+    return Math.max(0, Math.min(100, (mins - TL_START) / TL_RANGE * 100));
+  }
+
   const active = appointments.filter((a) => a.status !== 'cancelled' && a.status !== 'blocked');
   const ericApts = active.filter((a) => a.staff === 'eric');
   const liviApts = active.filter((a) => a.staff === 'livi');
@@ -29,8 +38,11 @@ function DayTimeline({ appointments, isToday }: { appointments: Appointment[]; i
   const nowPct = tlPct(nowMins);
   const showNow = isToday && nowMins >= TL_START && nowMins <= TL_END;
 
-  // Determine visible hour labels — just show round hours that fall in the range
-  const hourLabels = [9, 12, 15, 18, 21];
+  // Hour labels: only whole hours within the open range
+  const hourLabels: number[] = [];
+  for (let h = hours[0]; h <= hours[1]; h++) {
+    if (h === hours[0] || h === hours[1] || (h % 3 === 0)) hourLabels.push(h);
+  }
 
   function renderRow(apts: Appointment[]) {
     return (
@@ -121,6 +133,7 @@ export default function DayView({
   onGoToday,
   isLoading,
   openDays,
+  hoursByDay,
 }: {
   appointments: Appointment[];
   date: Date;
@@ -130,8 +143,10 @@ export default function DayView({
   onGoToday?: () => void;
   isLoading?: boolean;
   openDays?: Record<number, boolean>;
+  hoursByDay?: Record<number, [number, number] | null>;
 }) {
   const open = openDays ? (openDays[date.getDay()] ?? true) : true;
+  const dayHours: [number, number] = hoursByDay?.[date.getDay()] ?? [10, 18];
 
   // Revenue summary
   const active = appointments.filter((a) => a.status !== 'cancelled' && a.status !== 'blocked');
@@ -195,7 +210,7 @@ export default function DayView({
       ) : (
         <>
           {/* Timeline strip */}
-          <DayTimeline appointments={active} isToday={isToday} />
+          <DayTimeline appointments={active} isToday={isToday} hours={dayHours} />
 
           {/* Summary row */}
           <div style={{

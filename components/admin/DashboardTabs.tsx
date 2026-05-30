@@ -31,12 +31,14 @@ export default function DashboardTabs({
   todayStr,
   weekStartStr,
   openDays,
+  hoursByDay,
 }: {
   todayApts: Appointment[];
   weekApts: Appointment[];
   todayStr: string;
   weekStartStr: string;
   openDays: Record<number, boolean>;
+  hoursByDay?: Record<number, [number, number] | null>;
 }) {
   // Reconstruct dates locally so timezone serialization from the server can't shift the day
   const today     = strToLocalDate(todayStr);
@@ -187,7 +189,7 @@ export default function DashboardTabs({
       </div>
 
       {/* ── content ───────────────────────────────────────────────────────── */}
-      {activeTab === 'overview' && overviewMode === 'day'  && <DayView appointments={viewApts} date={viewDate} isToday={localDateStr(viewDate) === localDateStr(today)} onPrev={prevDay} onNext={nextDay} onGoToday={goToToday} isLoading={loadingApts} openDays={openDays} />}
+      {activeTab === 'overview' && overviewMode === 'day'  && <DayView appointments={viewApts} date={viewDate} isToday={localDateStr(viewDate) === localDateStr(today)} onPrev={prevDay} onNext={nextDay} onGoToday={goToToday} isLoading={loadingApts} openDays={openDays} hoursByDay={hoursByDay} />}
       {activeTab === 'overview' && overviewMode === 'week' && <WeekView appointments={viewWeekApts} weekStart={viewWeekStart} isLoading={loadingWeek} onPrevWeek={prevWeek} onNextWeek={nextWeek} onGoCurrentWeek={goToCurrentWeek} openDays={openDays} />}
       {activeTab === 'calendar' && calendarMode === 'day'  && <DaySchedule appointments={viewApts} date={localDateStr(viewDate)} stickyTop={SUB_STICKY} isToday={localDateStr(viewDate) === localDateStr(today)} onPrev={prevDay} onNext={nextDay} onGoToday={goToToday} />}
       {activeTab === 'calendar' && calendarMode === 'week' && <WeekGridView appointments={viewWeekApts} weekStart={viewWeekStart} isLoading={loadingWeek} onPrevWeek={prevWeek} onNextWeek={nextWeek} onGoCurrentWeek={goToCurrentWeek} stickyTop={SUB_STICKY} openDays={openDays} />}

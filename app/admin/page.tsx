@@ -60,6 +60,7 @@ export default async function AdminPage({
         todayStr={todayStr}
         weekStartStr={localDateStr(weekStart)}
         openDays={openDays}
+        hoursByDay={availability.days}
       />
     </>
   );
