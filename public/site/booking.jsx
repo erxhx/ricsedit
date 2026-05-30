@@ -398,22 +398,8 @@
     var ctaRef = useRef(null);
 
     useEffect(function() {
-      // For multi-select (wax), don't scroll — user is building a list.
-      if (category === 'wax') return;
-      if (selected.length > 0 && ctaRef.current) {
-        var scroller = ctaRef.current.closest('.cpanel');
-        setTimeout(function() {
-          if (!scroller || !ctaRef.current) return;
-          var ctaRect     = ctaRef.current.getBoundingClientRect();
-          var scrollerRect = scroller.getBoundingClientRect();
-          // Scroll just enough so the CTA's bottom clears the chrome-bot (~52px)
-          var visibleBottom = scrollerRect.bottom - 52;
-          var overlap = ctaRect.bottom - visibleBottom;
-          if (overlap > 0) {
-            scroller.scrollBy({ top: overlap + 8, behavior: 'smooth' });
-          }
-        }, 60);
-      }
+      // No auto-scroll on selection — the CTA appears at its natural position
+      // at the end of the list and sticks at bottom: 52px as the user scrolls.
     }, [selected.length]);
 
     var isMulti = category === 'wax';
