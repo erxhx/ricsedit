@@ -987,6 +987,13 @@ function App() {
       <ChromeTop active={active} total={total} idx={idx} logoSrc={t.palette === 'noir' ? 'assets/logo-white.png' : 'assets/logo-black.png'} />
       <ChromeBot services={services.map((s) => SERVICES_DEF[s])} idx={idx} vIdx={activeVIdx} vCount={activeVCount} />
 
+      {/* Portal target for the service-step CTA — sits just above the chrome-bot,
+          outside every scroll container so it's always at the viewport bottom */}
+      <div id="bk-cta-slot" style={{
+        position: 'absolute', bottom: 52, left: 0, right: 0,
+        zIndex: 49, pointerEvents: 'none',
+      }} />
+
       <div style={{
         position: 'absolute', inset: 0,
         display: 'flex', flexDirection: 'row',
