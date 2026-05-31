@@ -426,6 +426,9 @@
     var isMulti = category === 'wax';
 
     function toggleMain(item) {
+      if (props.embedId) {
+        window.dispatchEvent(new CustomEvent('bk-embed-active', { detail: { id: props.embedId } }));
+      }
       if (isMulti) {
         setSelected(function(prev) {
           return prev.find(function(s) { return s.id === item.id; })
@@ -1152,6 +1155,19 @@
     var { useState, useRef, useEffect } = React;
     var categoryProp = props.category || null;
 
+    var embedId      = useRef(String(Math.random()));
+    var [serviceKey, setServiceKey] = useState(0);
+
+    useEffect(function() {
+      function onActive(e) {
+        if (e.detail.id !== embedId.current) {
+          setServiceKey(function(k) { return k + 1; });
+        }
+      }
+      window.addEventListener('bk-embed-active', onActive);
+      return function() { window.removeEventListener('bk-embed-active', onActive); };
+    }, []);
+
     var [step,         setStep]         = useState(categoryProp ? 'service' : 'category');
     var [category,     setCategory]     = useState(categoryProp);
     var [services,     setServices]     = useState([]);
@@ -1265,6 +1281,8 @@
           )}
           {step === 'service' && (
             <StepService
+              key={serviceKey}
+              embedId={embedId.current}
               category={category}
               prefillSlot={prefillActive && date && time ? { date: date, time: time } : null}
               onClearPrefill={function() { setPrefillActive(false); setDate(null); setTime(null); }}
