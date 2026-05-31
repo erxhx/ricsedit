@@ -416,6 +416,18 @@
       return function() { window.removeEventListener('bk:claim-cta', onClaim); };
     }, [category]);
 
+    // Clear selection when the user swipes away from this service panel
+    useEffect(function() {
+      function onDeactivated(e) {
+        if (e.detail.service === category) {
+          setSelected([]);
+          setAddons([]);
+        }
+      }
+      window.addEventListener('bk:panel-deactivated', onDeactivated);
+      return function() { window.removeEventListener('bk:panel-deactivated', onDeactivated); };
+    }, [category]);
+
     var isMulti = category === 'wax';
 
     function toggleMain(item) {

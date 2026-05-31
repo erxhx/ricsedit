@@ -459,6 +459,13 @@ function ServiceColumn({ service, isActive, hProgress, animSpeed, density, headl
   const stripRef = useRef(null);
   const [vIdx, setVIdx] = useState(0);
   const dragRef = useRef({ y: 0, dy: 0, dragging: false, t: 0 });
+
+  // Clear any active CTA when the user swipes away from this panel
+  useEffect(() => {
+    if (!isActive) {
+      window.dispatchEvent(new CustomEvent('bk:panel-deactivated', { detail: { service } }));
+    }
+  }, [isActive]);
   const data = SERVICES_DEF[service];
   const heroData = { ...HERO_FOR[service], num: data.num };
   if (headlines && headlines[service]) {
