@@ -397,6 +397,25 @@
     var [addons,   setAddons]       = useState([]);
     var ctaRef = useRef(null); // kept for wax scroll-to behaviour
 
+    // When this panel selects a service, tell all other panels to clear theirs
+    // so only one CTA ever renders into #bk-cta-slot at a time.
+    useEffect(function() {
+      if (selected.length > 0) {
+        window.dispatchEvent(new CustomEvent('bk:claim-cta', { detail: { category: category } }));
+      }
+    }, [selected.length]);
+
+    useEffect(function() {
+      function onClaim(e) {
+        if (e.detail.category !== category) {
+          setSelected([]);
+          setAddons([]);
+        }
+      }
+      window.addEventListener('bk:claim-cta', onClaim);
+      return function() { window.removeEventListener('bk:claim-cta', onClaim); };
+    }, [category]);
+
     var isMulti = category === 'wax';
 
     function toggleMain(item) {
