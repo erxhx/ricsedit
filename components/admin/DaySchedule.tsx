@@ -102,6 +102,11 @@ export default function DaySchedule({
     return (d.getHours() - H0) * 60 + d.getMinutes();
   });
 
+  // sync appointments when the parent navigates to a different day
+  useEffect(() => {
+    setApts(initial);
+  }, [initial]);
+
   // scroll to current time on mount
   useEffect(() => {
     if (nowRef.current) {

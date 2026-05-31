@@ -138,6 +138,11 @@ export default function WeekGridView({
       })
     : [];
 
+  // ── sync appointments when the parent fetches a new week ─────────────────────
+  useEffect(() => {
+    setApts(initial);
+  }, [initial]);
+
   // ── scroll to current time on mount ──────────────────────────────────────────
   useEffect(() => {
     if (nowRef.current) {
