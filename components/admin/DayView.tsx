@@ -310,19 +310,39 @@ export default function DayView({
           borderRadius: 12,
           boxShadow: '0 1px 8px rgba(0,0,0,0.05)',
         }}>
-          <Stat label="Total" value={total > 0 ? `$${total}` : '—'} />
-          <div style={{ width: 1, background: 'var(--admin-border)' }} />
-          <Stat
-            label="Eric"
-            value={ericApts.length > 0 ? `${ericApts.length} apt${ericApts.length !== 1 ? 's' : ''}` : '—'}
-            color={ericApts.length > 0 ? SERVICE_COLORS.ericBarber : undefined}
-          />
-          <div style={{ width: 1, background: 'var(--admin-border)' }} />
-          <Stat
-            label="Livi"
-            value={liviApts.length > 0 ? `${liviApts.length} apt${liviApts.length !== 1 ? 's' : ''}` : '—'}
-            color={liviApts.length > 0 ? SERVICE_COLORS.liviWax : undefined}
-          />
+          {(() => {
+            const totalMins = (dayHours[1] - dayHours[0]) * 60;
+            function util(apts: Appointment[]) {
+              if (totalMins <= 0) return null;
+              const booked = apts.reduce((s, a) => s + a.durationMinutes, 0);
+              const pct = Math.round(booked / totalMins * 100);
+              const color = pct >= 80 ? '#4a9b6f' : pct >= 50 ? '#b5824a' : 'var(--admin-muted)';
+              return { pct, color };
+            }
+            const ericUtil = util(ericApts);
+            const liviUtil = util(liviApts);
+            return (
+              <>
+                <Stat label="Total" value={total > 0 ? `$${total}` : '—'} />
+                <div style={{ width: 1, background: 'var(--admin-border)' }} />
+                <Stat
+                  label="Eric"
+                  value={ericApts.length > 0 ? `${ericApts.length} apt${ericApts.length !== 1 ? 's' : ''}` : '—'}
+                  color={ericApts.length > 0 ? SERVICE_COLORS.ericBarber : undefined}
+                  sub={ericUtil ? `${ericUtil.pct}% utilization` : undefined}
+                  subColor={ericUtil?.color}
+                />
+                <div style={{ width: 1, background: 'var(--admin-border)' }} />
+                <Stat
+                  label="Livi"
+                  value={liviApts.length > 0 ? `${liviApts.length} apt${liviApts.length !== 1 ? 's' : ''}` : '—'}
+                  color={liviApts.length > 0 ? SERVICE_COLORS.liviWax : undefined}
+                  sub={liviUtil ? `${liviUtil.pct}% utilization` : undefined}
+                  subColor={liviUtil?.color}
+                />
+              </>
+            );
+          })()}
         </div>
 
         {active.length > 0 ? (
@@ -347,7 +367,7 @@ export default function DayView({
   );
 }
 
-function Stat({ label, value, color }: { label: string; value: string; color?: string }) {
+function Stat({ label, value, color, sub, subColor }: { label: string; value: string; color?: string; sub?: string; subColor?: string }) {
   return (
     <div style={{ flex: 1 }}>
       <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>
@@ -356,6 +376,11 @@ function Stat({ label, value, color }: { label: string; value: string; color?: s
       <div style={{ fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 500, color: color ?? 'var(--admin-text)' }}>
         {value}
       </div>
+      {sub && (
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: subColor ?? 'var(--admin-muted)', marginTop: 3, letterSpacing: '0.02em' }}>
+          {sub}
+        </div>
+      )}
     </div>
   );
 }
