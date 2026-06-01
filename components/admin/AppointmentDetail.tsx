@@ -34,12 +34,14 @@ const STATUS_LABEL: Record<AppointmentStatus, string> = {
   completed: 'Completed',
   cancelled: 'Cancelled',
   blocked: 'Blocked',
+  no_show: 'No show',
 };
 const STATUS_COLOR: Record<AppointmentStatus, string> = {
   confirmed: '#4a9b6f',
   completed: '#5a7a9b',
   cancelled: '#8b3a3a',
   blocked: '#9a9590',
+  no_show: '#b5824a',
 };
 
 function fmtTime(t: string): string {
@@ -74,6 +76,7 @@ export default function AppointmentDetail({
   const [reschedTime, setReschedTime] = useState(initial.startTime);
   const [linkCopied, setLinkCopied] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showNoShowConfirm, setShowNoShowConfirm] = useState(false);
 
   async function patchApt(patch: Record<string, unknown>): Promise<Appointment | null> {
     setSaving(true);
@@ -126,6 +129,12 @@ export default function AppointmentDetail({
     const updated = await patchApt({ status: 'cancelled' });
     if (updated) setApt(updated);
     setShowCancelConfirm(false);
+  }
+
+  async function markNoShow() {
+    const updated = await patchApt({ status: 'no_show' });
+    if (updated) setApt(updated);
+    setShowNoShowConfirm(false);
   }
 
   async function rescheduleAppointment() {
@@ -337,12 +346,26 @@ export default function AppointmentDetail({
         {/* Client history */}
         {history.length > 0 && (
           <div style={{ marginTop: 24 }}>
-            <div style={{
-              fontFamily: 'var(--font-body)', fontSize: 10, letterSpacing: '0.12em',
-              textTransform: 'uppercase', color: 'var(--admin-muted)', marginBottom: 10,
-            }}>
-              History
-            </div>
+            {(() => {
+              const noShows = history.filter(h => h.status === 'no_show').length;
+              return (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--admin-muted)' }}>
+                    History
+                  </div>
+                  {noShows > 0 && (
+                    <div style={{
+                      fontFamily: 'var(--font-body)', fontSize: 10, fontWeight: 500,
+                      color: '#b5824a', background: '#b5824a22',
+                      border: '1px solid #b5824a44',
+                      borderRadius: 4, padding: '1px 6px', letterSpacing: '0.04em',
+                    }}>
+                      {noShows} no-show{noShows !== 1 ? 's' : ''}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {history.map((h) => {
                 const today = new Date().toISOString().slice(0, 10);
@@ -416,6 +439,7 @@ export default function AppointmentDetail({
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 32 }}>
             <ActionButton onClick={markComplete} variant="primary" disabled={saving}>Mark as complete</ActionButton>
             <ActionButton onClick={() => { setReschedDate(apt.date); setReschedTime(apt.startTime); setShowReschedule(true); }} variant="ghost" disabled={saving}>Reschedule</ActionButton>
+            <ActionButton onClick={() => setShowNoShowConfirm(true)} variant="noshow" disabled={saving}>Mark as no-show</ActionButton>
             <ActionButton onClick={() => setShowCancelConfirm(true)} variant="danger" disabled={saving}>Cancel appointment</ActionButton>
           </div>
         )}
@@ -551,6 +575,35 @@ export default function AppointmentDetail({
           </div>
         </div>
       )}
+
+      {/* No-show confirmation sheet */}
+      {showNoShowConfirm && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+          display: 'flex', alignItems: 'flex-end', zIndex: 100,
+        }} onClick={() => setShowNoShowConfirm(false)}>
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%', background: 'var(--admin-sheet)',
+              borderRadius: '16px 16px 0 0',
+              padding: '24px 20px 40px',
+            }}
+          >
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 500, color: 'var(--admin-text)', marginBottom: 8 }}>
+              Mark as no-show?
+            </div>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text3)', marginBottom: 24, lineHeight: 1.5 }}>
+              {apt.clientName} didn't show up for their {apt.service} on {fmtDate(apt.date)} at {fmtTime(apt.startTime)}.
+              {' '}This will be recorded on their history.
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <ActionButton onClick={markNoShow} variant="noshow" disabled={saving}>Yes, mark as no-show</ActionButton>
+              <ActionButton onClick={() => setShowNoShowConfirm(false)} variant="ghost" disabled={saving}>They showed up</ActionButton>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -595,7 +648,7 @@ function ActionButton({
   onClick, variant, children, disabled,
 }: {
   onClick: () => void;
-  variant: 'primary' | 'danger' | 'ghost';
+  variant: 'primary' | 'danger' | 'ghost' | 'noshow';
   children: React.ReactNode;
   disabled?: boolean;
 }) {
@@ -603,6 +656,7 @@ function ActionButton({
     primary: { background: 'var(--admin-btn-primary-bg)', color: 'var(--admin-btn-primary-fg)' },
     danger:  { background: 'var(--admin-danger-bg)', color: 'var(--admin-danger-text)', border: '1px solid var(--admin-danger-border)' },
     ghost:   { background: 'none', color: 'var(--admin-text2)', border: '1px solid var(--admin-border)' },
+    noshow:  { background: '#b5824a22', color: '#b5824a', border: '1px solid #b5824a44' },
   };
   return (
     <button

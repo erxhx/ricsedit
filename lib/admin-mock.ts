@@ -1,6 +1,6 @@
 import { createHash } from 'crypto';
 
-export type AppointmentStatus = 'confirmed' | 'completed' | 'cancelled' | 'blocked';
+export type AppointmentStatus = 'confirmed' | 'completed' | 'cancelled' | 'blocked' | 'no_show';
 export type StaffId = 'eric' | 'livi';
 
 export interface Appointment {
