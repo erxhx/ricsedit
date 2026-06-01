@@ -6,9 +6,9 @@ import { getAppointmentColor, SERVICE_COLORS } from '@/lib/appointment-colors';
 
 // ── layout constants ──────────────────────────────────────────────────────────
 const H0 = 8, H1 = 22;
-const PPM = 1.5;
-const TW = 28;
-const TOTAL_PX = (H1 - H0) * 60 * PPM;   // 900 px
+const PPM = 2.5;
+const TW = 40;
+const TOTAL_PX = (H1 - H0) * 60 * PPM;
 const HOURS = Array.from({ length: H1 - H0 + 1 }, (_, i) => H0 + i);
 const DAY_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -335,16 +335,16 @@ export default function WeekGridView({
       {/* ── day headers ── sticky ─────────────────────────────────────────── */}
       <div style={{ display: 'flex', paddingLeft: TW, position: 'sticky', top: stickyTop, zIndex: 6, background: 'var(--admin-glass-bg)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)', borderBottom: '1px solid var(--admin-glass-border)' }}>
         {days.map((day) => (
-          <div key={day.dateStr} style={{ flex: 1, textAlign: 'center', padding: '6px 2px', opacity: day.isOpen ? 1 : 0.3 }}>
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: 'var(--admin-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', lineHeight: 1 }}>
+          <div key={day.dateStr} style={{ flex: 1, textAlign: 'center', padding: '8px 2px', opacity: day.isOpen ? 1 : 0.3 }}>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', lineHeight: 1 }}>
               {DAY_ABBR[day.dow]}
             </div>
             {day.isToday ? (
               <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--admin-btn-primary-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '2px auto 0' }}>
-                <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600, color: 'var(--admin-btn-primary-fg)', lineHeight: 1 }}>{day.dateObj.getDate()}</span>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600, color: 'var(--admin-btn-primary-fg)', lineHeight: 1 }}>{day.dateObj.getDate()}</span>
               </div>
             ) : (
-              <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 400, color: 'var(--admin-text3)', lineHeight: 1.2, marginTop: 2 }}>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 400, color: 'var(--admin-text3)', lineHeight: 1.2, marginTop: 2 }}>
                 {day.dateObj.getDate()}
               </div>
             )}
@@ -358,7 +358,7 @@ export default function WeekGridView({
         {/* Hour labels */}
         <div style={{ width: TW, flexShrink: 0, position: 'relative', height: TOTAL_PX }}>
           {HOURS.map((h) => (
-            <div key={h} style={{ position: 'absolute', top: (h - H0) * 60 * PPM - 5, right: 4, fontFamily: 'var(--font-body)', fontSize: 9, color: 'var(--admin-muted)', userSelect: 'none', lineHeight: 1 }}>
+            <div key={h} style={{ position: 'absolute', top: (h - H0) * 60 * PPM - 6, right: 4, fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', userSelect: 'none', lineHeight: 1 }}>
               {fmtHour(h)}
             </div>
           ))}
@@ -430,7 +430,7 @@ export default function WeekGridView({
                       border: `1px solid ${col}55`,
                       borderLeft: `2px solid ${col}`,
                       borderRadius: 3,
-                      padding: '2px 3px',
+                      padding: '4px 5px',
                       overflow: 'hidden',
                       cursor: 'pointer',
                       touchAction: 'pan-y',
@@ -438,16 +438,16 @@ export default function WeekGridView({
                       boxSizing: 'border-box',
                     }}
                   >
-                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: 'var(--admin-text)', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: apt.notes ? 8 : 0 }}>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-text)', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: apt.notes ? 10 : 0 }}>
                       {apt.clientName.split(' ')[0]}
                     </div>
-                    {hPx > 26 && (
-                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 8, color: 'var(--admin-text3)', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 1 }}>
+                    {hPx > 36 && (
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-text3)', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}>
                         {apt.service}
                       </div>
                     )}
                     {apt.notes && (
-                      <div style={{ position: 'absolute', top: 2, right: 2, fontSize: 8, color: '#b5824a', lineHeight: 1 }}>≡</div>
+                      <div style={{ position: 'absolute', top: 3, right: 3, fontSize: 10, color: '#b5824a', lineHeight: 1 }}>≡</div>
                     )}
                   </div>
                 );
