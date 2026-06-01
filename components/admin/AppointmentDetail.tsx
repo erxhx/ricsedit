@@ -218,9 +218,9 @@ export default function AppointmentDetail({
               style={{
                 flex: 1, textAlign: 'center',
                 padding: '13px 0', borderRadius: 10,
-                border: '1px solid var(--admin-call-border)',
-                background: 'var(--admin-call-bg)',
-                color: 'var(--admin-call-text)',
+                border: 'none',
+                background: '#2a6a48',
+                color: '#fff',
                 fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 500,
                 textDecoration: 'none',
                 WebkitTapHighlightColor: 'transparent',
@@ -233,9 +233,9 @@ export default function AppointmentDetail({
               style={{
                 flex: 1, textAlign: 'center',
                 padding: '13px 0', borderRadius: 10,
-                border: '1px solid var(--admin-sms-border)',
-                background: 'var(--admin-sms-bg)',
-                color: 'var(--admin-sms-text)',
+                border: 'none',
+                background: '#2a5a80',
+                color: '#fff',
                 fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 500,
                 textDecoration: 'none',
                 WebkitTapHighlightColor: 'transparent',
@@ -654,9 +654,9 @@ function ActionButton({
 }) {
   const styles: Record<string, React.CSSProperties> = {
     primary: { background: 'var(--admin-btn-primary-bg)', color: 'var(--admin-btn-primary-fg)' },
-    danger:  { background: 'var(--admin-danger-bg)', color: 'var(--admin-danger-text)', border: '1px solid var(--admin-danger-border)' },
-    ghost:   { background: 'none', color: 'var(--admin-text2)', border: '1px solid var(--admin-border)' },
-    noshow:  { background: '#b5824a22', color: '#b5824a', border: '1px solid #b5824a44' },
+    danger:  { background: '#a03030', color: '#fff' },
+    ghost:   { background: '#4a5568', color: '#fff' },
+    noshow:  { background: '#b5824a', color: '#fff' },
   };
   return (
     <button
