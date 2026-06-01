@@ -241,6 +241,7 @@ export interface ClientRecord {
   phone: string;
   visitCount?: number;
   lastVisit?: string; // "YYYY-MM-DD"
+  lastService?: string;
 }
 
 /** Search clients by name, email, or phone prefix.

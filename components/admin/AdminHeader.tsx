@@ -1,6 +1,6 @@
 'use client';
 import { useState, useCallback } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAdminTheme } from './AdminThemeProvider';
 
@@ -12,10 +12,11 @@ interface NavItem {
 
 // Primary nav — shown in the persistent bottom tab bar
 const BOTTOM_NAV: NavItem[] = [
-  { label: 'Schedule',  href: '/admin',              icon: '▦' },
-  { label: 'Clients',   href: '/admin/clients',      icon: '⌘' },
-  { label: 'Services',  href: '/admin/services',     icon: '✦' },
-  { label: 'Settings',  href: '/admin/settings',     icon: '◎' },
+  { label: 'Today',    href: '/admin',             icon: '◈' },
+  { label: 'Schedule', href: '/admin?tab=calendar', icon: '▦' },
+  { label: 'Clients',  href: '/admin/clients',      icon: '⌘' },
+  { label: 'Reports',  href: '/admin/reports',      icon: '↑' },
+  { label: 'Settings', href: '/admin/settings',     icon: '◎' },
 ];
 
 // Secondary nav — overflow items kept in the drawer
@@ -27,14 +28,23 @@ const NAV: NavItem[] = [
   { label: 'Settings',           href: '/admin/settings',       icon: '◎' },
 ];
 
-function isActive(href: string, pathname: string): boolean {
+function isActive(href: string, pathname: string, searchParams: ReturnType<typeof useSearchParams>): boolean {
+  const isCalendarTab = searchParams.get('tab') === 'calendar';
+
   if (href === '/admin') {
+    // Today is active when on /admin paths but NOT in calendar tab
     return (
-      pathname === '/admin' ||
-      pathname.startsWith('/admin/day') ||
-      pathname.startsWith('/admin/appointments') ||
-      pathname.startsWith('/admin/new-booking')
+      !isCalendarTab && (
+        pathname === '/admin' ||
+        pathname.startsWith('/admin/day') ||
+        pathname.startsWith('/admin/appointments') ||
+        pathname.startsWith('/admin/new-booking')
+      )
     );
+  }
+  if (href === '/admin?tab=calendar') {
+    // Schedule is active when on /admin with tab=calendar
+    return pathname === '/admin' && isCalendarTab;
   }
   return pathname.startsWith(href);
 }
@@ -42,6 +52,7 @@ function isActive(href: string, pathname: string): boolean {
 export default function AdminHeader({ name }: { name: string }) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
   const [spinning, setSpinning] = useState(false);
   const { theme } = useAdminTheme();
@@ -212,7 +223,7 @@ export default function AdminHeader({ name }: { name: string }) {
         {/* Nav */}
         <nav style={{ flex: 1, padding: '8px 0', overflowY: 'auto' }}>
           {NAV.map((item) => {
-            const active = isActive(item.href, pathname);
+            const active = isActive(item.href, pathname, searchParams);
             return (
               <Link
                 key={item.href}
@@ -289,13 +300,13 @@ export default function AdminHeader({ name }: { name: string }) {
         boxShadow: 'var(--admin-glass-shadow)',
       }}>
         {BOTTOM_NAV.map((item) => {
-          const active = isActive(item.href, pathname);
+          const active = isActive(item.href, pathname, searchParams);
           return (
             <Link
               key={item.href}
               href={item.href}
               style={{
-                width: 76, height: 58,
+                width: 68, height: 58,
                 display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center',
                 gap: 3, textDecoration: 'none',

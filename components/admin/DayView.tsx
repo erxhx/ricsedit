@@ -111,6 +111,87 @@ function DayTimeline({
   );
 }
 
+function StaffStatus({ appointments, dayHours }: {
+  appointments: Appointment[];
+  dayHours: [number, number];
+}) {
+  const now = new Date();
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  const active = appointments.filter(a => a.status !== 'cancelled' && a.status !== 'blocked');
+
+  function staffInfo(staffId: string) {
+    const apts = active.filter(a => a.staff === staffId);
+    const current = apts.find(a => {
+      const [sh, sm] = a.startTime.split(':').map(Number);
+      const [eh, em] = a.endTime.split(':').map(Number);
+      const s = sh*60+sm, e = eh*60+em;
+      return nowMins >= s && nowMins < e;
+    });
+    const next = apts
+      .filter(a => { const [h,m] = a.startTime.split(':').map(Number); return h*60+m > nowMins; })
+      .sort((a,b) => a.startTime.localeCompare(b.startTime))[0];
+    const totalMins = (dayHours[1] - dayHours[0]) * 60;
+    const bookedMins = apts.reduce((s, a) => s + a.durationMinutes, 0);
+    const util = totalMins > 0 ? Math.round(bookedMins / totalMins * 100) : 0;
+    return { current, next, util };
+  }
+
+  const ericInfo = staffInfo('eric');
+  const liviInfo  = staffInfo('livi');
+
+  return (
+    <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+      {[
+        { id: 'eric', label: 'Eric', color: SERVICE_COLORS.ericBarber, info: ericInfo },
+        { id: 'livi', label: 'Livi', color: SERVICE_COLORS.liviWax,   info: liviInfo },
+      ].map(({ id, label, color, info }) => {
+        function fmtTime(t: string) {
+          const [h, m] = t.split(':').map(Number);
+          const p = h >= 12 ? 'pm' : 'am';
+          const hr = h > 12 ? h - 12 : h === 0 ? 12 : h;
+          return `${hr}:${String(m).padStart(2,'0')}${p}`;
+        }
+        return (
+          <div key={id} style={{
+            flex: 1, padding: '10px 12px', borderRadius: 10,
+            background: info.current ? `${color}18` : 'var(--admin-card)',
+            border: `1px solid ${info.current ? `${color}40` : 'var(--admin-border)'}`,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: color }} />
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 500, color: 'var(--admin-text)' }}>{label}</span>
+              </div>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: info.util >= 80 ? '#4a9b6f' : info.util >= 50 ? '#b5824a' : 'var(--admin-muted)', letterSpacing: '0.04em' }}>
+                {info.util}%
+              </span>
+            </div>
+            {info.current ? (
+              <>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-text)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {info.current.clientName.split(' ')[0]}
+                </div>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', marginTop: 2 }}>
+                  until {fmtTime(info.current.endTime)}
+                </div>
+              </>
+            ) : info.next ? (
+              <>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)' }}>Next</div>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-text)', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {info.next.clientName.split(' ')[0]} · {fmtTime(info.next.startTime)}
+                </div>
+              </>
+            ) : (
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', fontStyle: 'italic' }}>Free</div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function fmtDate(date: Date): string {
   return date.toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric' });
 }
@@ -214,6 +295,9 @@ export default function DayView({
             </div>
           </div>
         )}
+
+        {/* Staff status bar — today only, when there are active appointments */}
+        {isToday && active.length > 0 && <StaffStatus appointments={active} dayHours={dayHours} />}
 
         {/* Summary row — always visible */}
         <div style={{

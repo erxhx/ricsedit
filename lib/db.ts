@@ -99,7 +99,7 @@ export async function dbSearchClients(query: string): Promise<ClientRecord[]> {
   // Search by name, email, or phone (partial match on all three)
   const { data, error } = await db
     .from('appointments')
-    .select('client_name, client_email, client_phone, date, status')
+    .select('client_name, client_email, client_phone, date, status, service')
     .or(`client_name.ilike.%${q}%,client_email.ilike.%${q}%,client_phone.ilike.%${q}%`)
     .order('date', { ascending: false }); // newest first so first-seen = most recent contact info
 
@@ -112,17 +112,19 @@ export async function dbSearchClients(query: string): Promise<ClientRecord[]> {
     const isActive = row.status !== 'cancelled' && row.status !== 'blocked';
     if (!existing) {
       map.set(row.client_name, {
-        name:       row.client_name,
-        email:      row.client_email,
-        phone:      row.client_phone,
-        visitCount: isActive ? 1 : 0,
-        lastVisit:  isActive ? row.date : undefined,
+        name:        row.client_name,
+        email:       row.client_email,
+        phone:       row.client_phone,
+        visitCount:  isActive ? 1 : 0,
+        lastVisit:   isActive ? row.date : undefined,
+        lastService: isActive ? row.service : undefined,
       });
     } else {
       if (isActive) {
         existing.visitCount = (existing.visitCount ?? 0) + 1;
         if (!existing.lastVisit || row.date > existing.lastVisit) {
-          existing.lastVisit = row.date;
+          existing.lastVisit   = row.date;
+          existing.lastService = row.service;
         }
       }
     }

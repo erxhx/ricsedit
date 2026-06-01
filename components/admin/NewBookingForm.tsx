@@ -93,6 +93,7 @@ export default function NewBookingForm({
   const [clientEmail, setClientEmail] = useState('');
   const [clientPhone, setClientPhone] = useState('');
   const [suggestions, setSuggestions] = useState<ClientRecord[]>([]);
+  const [selectedClientLastService, setSelectedClientLastService] = useState<string | null>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -126,6 +127,7 @@ export default function NewBookingForm({
 
   function handleClientNameChange(value: string) {
     setClientName(value);
+    setSelectedClientLastService(null);
     triggerSearch(value);
   }
 
@@ -140,6 +142,7 @@ export default function NewBookingForm({
     setClientEmail(c.email);
     setClientPhone(c.phone);
     setSuggestions([]);
+    setSelectedClientLastService(c.lastService ?? null);
   }
 
   function fmtLastVisit(dateStr: string): string {
@@ -228,6 +231,111 @@ export default function NewBookingForm({
               </button>
             );
           })}
+        </div>
+
+        {/* Client */}
+        <SectionLabel>Client</SectionLabel>
+        <div style={sectionBox}>
+          <FormRow label="Name">
+            <input
+              type="text"
+              value={clientName}
+              onChange={(e) => handleClientNameChange(e.target.value)}
+              onBlur={() => setTimeout(() => setSuggestions([]), 150)}
+              placeholder="Full name"
+              autoCapitalize="words"
+              style={{ ...inputStyle, color: clientName ? 'var(--admin-text)' : 'var(--admin-muted)' }}
+            />
+          </FormRow>
+
+          {/* Autocomplete suggestions */}
+          {suggestions.length > 0 && (
+            <div style={{ margin: '0 -16px', borderBottom: '1px solid var(--admin-border-sub)' }}>
+              {suggestions.map((c) => (
+                <button
+                  key={c.name}
+                  onPointerDown={(e) => { e.preventDefault(); selectClient(c); }}
+                  style={{
+                    width: '100%', textAlign: 'left', background: 'none',
+                    border: 'none', borderBottom: '1px solid var(--admin-border-sub)',
+                    padding: '10px 16px', cursor: 'pointer',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8,
+                    WebkitTapHighlightColor: 'transparent',
+                  }}
+                >
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+                    <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {c.name}
+                    </span>
+                    <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {c.phone || c.email || '—'}
+                    </span>
+                  </div>
+                  {(c.visitCount !== undefined && c.visitCount > 0) && (
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-text3)' }}>
+                        {c.visitCount} visit{c.visitCount !== 1 ? 's' : ''}
+                      </div>
+                      {c.lastVisit && (
+                        <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-muted)' }}>
+                          {fmtLastVisit(c.lastVisit)}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <FormRow label="Email">
+            <input
+              type="email"
+              inputMode="email"
+              value={clientEmail}
+              onChange={(e) => setClientEmail(e.target.value)}
+              placeholder="Optional"
+              autoCapitalize="none"
+              style={{ ...inputStyle, color: clientEmail ? 'var(--admin-text)' : 'var(--admin-muted)' }}
+            />
+          </FormRow>
+          <FormRow label="Phone" last>
+            <input
+              type="tel"
+              inputMode="tel"
+              value={clientPhone}
+              onChange={(e) => handleClientPhoneChange(e.target.value)}
+              onBlur={() => setTimeout(() => setSuggestions([]), 150)}
+              placeholder="Optional"
+              style={{ ...inputStyle, color: clientPhone ? 'var(--admin-text)' : 'var(--admin-muted)' }}
+            />
+          </FormRow>
+
+          {/* Rebook last visit shortcut */}
+          {selectedClientLastService && (() => {
+            const svc = findService(staff, selectedClientLastService, servicesData);
+            return svc ? (
+              <div style={{
+                marginTop: 4, padding: '10px 12px',
+                background: 'var(--admin-nav-active)',
+                border: '1px solid var(--admin-btn-border)',
+                borderRadius: 8, cursor: 'pointer',
+              }}
+              onClick={() => {
+                handleServiceChange(svc.name);
+                setServiceKey(svc.name);
+                setDuration(svc.durationMinutes);
+                setPrice(svc.price);
+              }}>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 3 }}>
+                  Rebook last visit
+                </div>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)' }}>
+                  {svc.name} · ${svc.price} · {svc.durationMinutes} min →
+                </div>
+              </div>
+            ) : null;
+          })()}
         </div>
 
         {/* When */}
@@ -344,85 +452,6 @@ export default function NewBookingForm({
                 style={{ ...inputStyle, width: 52 }}
               />
             </div>
-          </FormRow>
-        </div>
-
-        {/* Client */}
-        <SectionLabel>Client</SectionLabel>
-        <div style={sectionBox}>
-          <FormRow label="Name">
-            <input
-              type="text"
-              value={clientName}
-              onChange={(e) => handleClientNameChange(e.target.value)}
-              onBlur={() => setTimeout(() => setSuggestions([]), 150)}
-              placeholder="Full name"
-              autoCapitalize="words"
-              style={{ ...inputStyle, color: clientName ? 'var(--admin-text)' : 'var(--admin-muted)' }}
-            />
-          </FormRow>
-
-          {/* Autocomplete suggestions */}
-          {suggestions.length > 0 && (
-            <div style={{ margin: '0 -16px', borderBottom: '1px solid var(--admin-border-sub)' }}>
-              {suggestions.map((c) => (
-                <button
-                  key={c.name}
-                  onPointerDown={(e) => { e.preventDefault(); selectClient(c); }}
-                  style={{
-                    width: '100%', textAlign: 'left', background: 'none',
-                    border: 'none', borderBottom: '1px solid var(--admin-border-sub)',
-                    padding: '10px 16px', cursor: 'pointer',
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8,
-                    WebkitTapHighlightColor: 'transparent',
-                  }}
-                >
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-                    <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {c.name}
-                    </span>
-                    <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {c.phone || c.email || '—'}
-                    </span>
-                  </div>
-                  {(c.visitCount !== undefined && c.visitCount > 0) && (
-                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-text3)' }}>
-                        {c.visitCount} visit{c.visitCount !== 1 ? 's' : ''}
-                      </div>
-                      {c.lastVisit && (
-                        <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-muted)' }}>
-                          {fmtLastVisit(c.lastVisit)}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-
-          <FormRow label="Email">
-            <input
-              type="email"
-              inputMode="email"
-              value={clientEmail}
-              onChange={(e) => setClientEmail(e.target.value)}
-              placeholder="Optional"
-              autoCapitalize="none"
-              style={{ ...inputStyle, color: clientEmail ? 'var(--admin-text)' : 'var(--admin-muted)' }}
-            />
-          </FormRow>
-          <FormRow label="Phone" last>
-            <input
-              type="tel"
-              inputMode="tel"
-              value={clientPhone}
-              onChange={(e) => handleClientPhoneChange(e.target.value)}
-              onBlur={() => setTimeout(() => setSuggestions([]), 150)}
-              placeholder="Optional"
-              style={{ ...inputStyle, color: clientPhone ? 'var(--admin-text)' : 'var(--admin-muted)' }}
-            />
           </FormRow>
         </div>
 

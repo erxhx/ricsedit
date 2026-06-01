@@ -59,8 +59,8 @@ export default function DashboardTabs({
     return 'day';
   }
   function initCalendarMode(): 'day' | 'week' {
-    if (searchParams.get('tab') === 'calendar' && searchParams.get('mode') === 'day') return 'day';
-    return 'week'; // default Calendar to week grid
+    if (searchParams.get('tab') === 'calendar' && searchParams.get('mode') === 'week') return 'week';
+    return 'day'; // default Calendar to staff day grid
   }
 
   const [activeTab,    setActiveTab]    = useState<'overview' | 'calendar'>(initTab);
@@ -120,7 +120,7 @@ export default function DashboardTabs({
     else if (t === 'overview') { setActiveTab('overview'); }
     const mode = searchParams.get('mode');
     if (t === 'overview') setOverviewMode(mode === 'week' ? 'week' : 'day');
-    if (t === 'calendar') setCalendarMode(mode === 'day' ? 'day' : 'week');
+    if (t === 'calendar') setCalendarMode(mode === 'week' ? 'week' : 'day');
   }, [searchParams]);
 
   const dayMode   = activeTab === 'overview' ? overviewMode   : calendarMode;
