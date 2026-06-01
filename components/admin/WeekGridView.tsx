@@ -6,7 +6,7 @@ import { getAppointmentColor, SERVICE_COLORS } from '@/lib/appointment-colors';
 
 // ── layout constants ──────────────────────────────────────────────────────────
 const H0 = 8, H1 = 22;
-const PPM = 2.5;
+const PPM = 1.5;
 const TW = 40;
 const TOTAL_PX = (H1 - H0) * 60 * PPM;
 const HOURS = Array.from({ length: H1 - H0 + 1 }, (_, i) => H0 + i);
