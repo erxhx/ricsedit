@@ -653,10 +653,10 @@ function ActionButton({
   disabled?: boolean;
 }) {
   const styles: Record<string, React.CSSProperties> = {
-    primary: { background: '#34C759', color: '#fff' },  // iOS green — mark complete
-    danger:  { background: '#FF3B30', color: '#fff' },  // iOS red — end call / cancel
-    ghost:   { background: '#8E8E93', color: '#fff' },  // iOS gray — reschedule
-    noshow:  { background: '#FF9500', color: '#fff' },  // iOS orange — snooze / warning
+    primary: { background: 'var(--admin-btn-primary-bg)', color: 'var(--admin-btn-primary-fg)' }, // black
+    danger:  { background: '#FF3B30', color: '#fff' },  // iOS red — cancel
+    ghost:   { background: '#fff', color: '#000', border: '1px solid rgba(0,0,0,0.12)' },        // white
+    noshow:  { background: '#FF9500', color: '#fff' },  // iOS orange — no-show
   };
   return (
     <button
