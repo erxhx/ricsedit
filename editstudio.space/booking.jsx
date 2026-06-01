@@ -255,6 +255,27 @@
   }
 
 
+  // ── Waiver config — fetched from admin so text can be updated without code changes ──
+
+  var BK_WAIVERS = {
+    tan: { enabled: true, text: 'I confirm I have no known allergies to the ingredients in NUDA spray tan solutions, and that I have followed the preparation guidelines — including exfoliating 24–48 hours prior and avoiding oils, lotions, and deodorant on the day of. I understand that results vary by skin type and preparation, and that Edit Studio is not liable for reactions resulting from undisclosed allergies or failure to follow prep guidelines.', checkboxLabel: 'I have read and agree to the above.' },
+    wax: { enabled: true, text: 'I confirm I have not applied retinol, AHA/BHA exfoliants, or received direct sun exposure on the areas to be waxed within 24 hours prior to my appointment. I understand that waxing results vary by skin type and hair growth cycle, and that Edit Studio is not liable for reactions resulting from undisclosed skin conditions or failure to follow aftercare instructions.', checkboxLabel: 'I have read and agree to the above.' },
+  };
+
+  (function() {
+    var endpoint = (window.__booking || {}).endpoint || '';
+    var base = endpoint.replace(/\/api\/booking\/create$/, '');
+    if (!base) return;
+    fetch(base + '/api/booking/waivers')
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(d) {
+        if (!d) return;
+        if (d.tan) BK_WAIVERS.tan = d.tan;
+        if (d.wax) BK_WAIVERS.wax = d.wax;
+      })
+      .catch(function() {});
+  })();
+
   // ── Saved contacts (localStorage) ─────────────────────────────────────────
 
   var BK_CONTACTS_KEY = 'es-contacts';
@@ -262,6 +283,32 @@
   function bkLoadContacts() {
     try { return JSON.parse(localStorage.getItem(BK_CONTACTS_KEY) || '[]'); }
     catch (e) { return []; }
+  }
+
+  var BK_WAIVERS_KEY = 'es-waivers-v1';
+
+  function bkHasSignedWaiver(phone, category) {
+    try {
+      var digits = phone.replace(/\D/g, '');
+      if (!digits) return false;
+      var signed = JSON.parse(localStorage.getItem(BK_WAIVERS_KEY) || '[]');
+      var cutoff = new Date();
+      cutoff.setFullYear(cutoff.getFullYear() - 1); // valid for 1 year
+      return signed.some(function(w) {
+        return w.phone === digits && w.category === category && new Date(w.signedAt) > cutoff;
+      });
+    } catch(e) { return false; }
+  }
+
+  function bkSaveWaiverSigning(phone, category) {
+    try {
+      var digits = phone.replace(/\D/g, '');
+      if (!digits) return;
+      var signed = JSON.parse(localStorage.getItem(BK_WAIVERS_KEY) || '[]');
+      signed = signed.filter(function(w) { return !(w.phone === digits && w.category === category); });
+      signed.push({ phone: digits, category: category, signedAt: new Date().toISOString() });
+      localStorage.setItem(BK_WAIVERS_KEY, JSON.stringify(signed.slice(-50)));
+    } catch(e) {}
   }
 
   function bkSaveContact(form) {
@@ -937,9 +984,9 @@
     var [agreed, setAgreed] = useState(false);
     var category = props.category;
 
-    var text = category === 'tan'
-      ? 'I confirm I have no known allergies to the ingredients in NUDA spray tan solutions, and that I have followed the preparation guidelines — including exfoliating 24–48 hours prior and avoiding oils, lotions, and deodorant on the day of. I understand that results vary by skin type and preparation, and that Edit Studio is not liable for reactions resulting from undisclosed allergies or failure to follow prep guidelines.'
-      : 'I confirm I have not applied retinol, AHA/BHA exfoliants, or received direct sun exposure on the areas to be waxed within 24 hours prior to my appointment. I understand that waxing results vary by skin type and hair growth cycle, and that Edit Studio is not liable for reactions resulting from undisclosed skin conditions or failure to follow aftercare instructions.';
+    var waiver = category === 'tan' ? BK_WAIVERS.tan : BK_WAIVERS.wax;
+    var text = waiver.text;
+    var checkboxLabel = waiver.checkboxLabel;
 
     return (
       <div>
@@ -962,11 +1009,18 @@
             {agreed && <span style={{ color: 'var(--bg)', fontSize: 12, lineHeight: 1, fontWeight: 700 }}>✓</span>}
           </span>
           <span style={{ fontFamily: 'var(--body)', fontSize: 13, lineHeight: 1.5, color: 'var(--ink-soft)', userSelect: 'none' }}>
-            I have read and agree to the above.
+            {checkboxLabel}
           </span>
         </label>
 
-        <BkBtn onClick={function() { if (agreed) props.onNext(); }} disabled={!agreed}>
+        <BkBtn onClick={function() {
+          if (agreed) {
+            if (props.client && props.client.phone) {
+              bkSaveWaiverSigning(props.client.phone, category);
+            }
+            props.onNext();
+          }
+        }} disabled={!agreed}>
           Review booking
         </BkBtn>
       </div>
@@ -1173,7 +1227,14 @@
 
     var catLabel = category === 'barber' ? 'Barbering' : category === 'tan' ? 'Sunless' : category === 'wax' ? 'Waxing' : 'Book now';
 
-    function needsWaiver(cat) { return cat === 'tan' || cat === 'wax'; }
+    function needsWaiver(cat, clientInfo) {
+      if (cat !== 'tan' && cat !== 'wax') return false;
+      var cfg = cat === 'tan' ? BK_WAIVERS.tan : BK_WAIVERS.wax;
+      if (!cfg.enabled) return false;
+      // Skip if client already signed within the last year
+      if (clientInfo && clientInfo.phone && bkHasSignedWaiver(clientInfo.phone, cat)) return false;
+      return true;
+    }
 
     async function handleConfirm() {
       setSubmitting(true);
@@ -1287,13 +1348,14 @@
           {step === 'client' && (
             <StepClient
               savedContacts={savedContacts}
-              onNext={function(info) { setClient(info); setStep(needsWaiver(category) ? 'waiver' : 'confirm'); }}
+              onNext={function(info) { setClient(info); setStep(needsWaiver(category, info) ? 'waiver' : 'confirm'); }}
               onBack={function() { setStep(prefillActive ? 'service' : 'datetime'); }}
             />
           )}
           {step === 'waiver' && (
             <StepWaiver
               category={category}
+              client={client}
               onNext={function() { setStep('confirm'); }}
               onBack={function() { setStep('client'); }}
             />
@@ -1307,7 +1369,7 @@
               time={time}
               client={client}
               onConfirm={handleConfirm}
-              onBack={function() { setStep(needsWaiver(category) ? 'waiver' : 'client'); }}
+              onBack={function() { setStep(needsWaiver(category, client) ? 'waiver' : 'client'); }}
               submitting={submitting}
               error={error}
             />
