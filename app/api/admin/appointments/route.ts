@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { verifySession, SESSION_COOKIE } from '@/lib/admin-auth';
 import { dbCreateAppointment, dbGetAppointmentsForDate, dbGetAppointmentsForRange } from '@/lib/db';
+import { sendBookingConfirmation } from '@/lib/notifications';
 import type { Appointment } from '@/lib/admin-mock';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -45,6 +46,8 @@ export async function POST(request: Request) {
 
   try {
     const apt = await dbCreateAppointment(body);
+    // Send confirmation to the client (fire-and-forget — never fails the response)
+    await sendBookingConfirmation(apt).catch(() => {});
     return Response.json(apt, { status: 201 });
   } catch (e) {
     return Response.json({ error: e instanceof Error ? e.message : 'Failed to create' }, { status: 500 });
