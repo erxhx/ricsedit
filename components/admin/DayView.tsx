@@ -206,57 +206,57 @@ export default function DayView({
       </div>
 
       <div style={{ opacity: isLoading ? 0.4 : 1, transition: 'opacity 0.15s ease' }}>
-        {!open ? (
-          <div style={{ paddingTop: 32, textAlign: 'center', color: 'var(--admin-muted)' }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>—</div>
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text3)' }}>Studio closed</div>
-          </div>
-        ) : (
-          <>
-            {/* Summary row — always visible when open, even with zero bookings */}
-            <div style={{
-              display: 'flex', gap: 16, marginBottom: 20,
-              padding: '12px 16px',
-              background: 'rgba(252,248,240,0.85)',
-              backdropFilter: 'blur(8px)',
-              WebkitBackdropFilter: 'blur(8px)',
-              border: '1px solid rgba(255,255,255,0.55)',
-              borderRadius: 12,
-              boxShadow: '0 1px 8px rgba(0,0,0,0.05)',
-            }}>
-              <Stat label="Total" value={total > 0 ? `$${total}` : '—'} />
-              <div style={{ width: 1, background: 'var(--admin-border)' }} />
-              <Stat
-                label="Eric"
-                value={ericApts.length > 0 ? `${ericApts.length} apt${ericApts.length !== 1 ? 's' : ''}` : '—'}
-                color={ericApts.length > 0 ? SERVICE_COLORS.ericBarber : undefined}
-              />
-              <div style={{ width: 1, background: 'var(--admin-border)' }} />
-              <Stat
-                label="Livi"
-                value={liviApts.length > 0 ? `${liviApts.length} apt${liviApts.length !== 1 ? 's' : ''}` : '—'}
-                color={liviApts.length > 0 ? SERVICE_COLORS.liviWax : undefined}
-              />
+        {/* Closed label — shown when studio is closed, but appointments still render below */}
+        {!open && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              Studio closed
             </div>
+          </div>
+        )}
 
-            {active.length > 0 ? (
-              <>
-                {/* Timeline strip */}
-                <DayTimeline appointments={active} isToday={isToday} hours={dayHours} />
+        {/* Summary row — always visible */}
+        <div style={{
+          display: 'flex', gap: 16, marginBottom: 20,
+          padding: '12px 16px',
+          background: 'rgba(252,248,240,0.85)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+          border: '1px solid rgba(255,255,255,0.55)',
+          borderRadius: 12,
+          boxShadow: '0 1px 8px rgba(0,0,0,0.05)',
+        }}>
+          <Stat label="Total" value={total > 0 ? `$${total}` : '—'} />
+          <div style={{ width: 1, background: 'var(--admin-border)' }} />
+          <Stat
+            label="Eric"
+            value={ericApts.length > 0 ? `${ericApts.length} apt${ericApts.length !== 1 ? 's' : ''}` : '—'}
+            color={ericApts.length > 0 ? SERVICE_COLORS.ericBarber : undefined}
+          />
+          <div style={{ width: 1, background: 'var(--admin-border)' }} />
+          <Stat
+            label="Livi"
+            value={liviApts.length > 0 ? `${liviApts.length} apt${liviApts.length !== 1 ? 's' : ''}` : '—'}
+            color={liviApts.length > 0 ? SERVICE_COLORS.liviWax : undefined}
+          />
+        </div>
 
-                {/* Appointment list */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {appointments.map((a) => (
-                    <AppointmentCard key={a.id} apt={a} />
-                  ))}
-                </div>
-              </>
-            ) : (
-              <div style={{ paddingTop: 16, textAlign: 'center' }}>
-                <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text3)' }}>No bookings</div>
-              </div>
-            )}
+        {active.length > 0 ? (
+          <>
+            {/* Timeline strip */}
+            <DayTimeline appointments={active} isToday={isToday} hours={dayHours} />
+
+            {/* Appointment list */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {appointments.map((a) => (
+                <AppointmentCard key={a.id} apt={a} />
+              ))}
+            </div>
           </>
+        ) : (
+          <div style={{ paddingTop: 16, textAlign: 'center' }}>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text3)' }}>No bookings</div>
+          </div>
         )}
       </div>
     </div>
