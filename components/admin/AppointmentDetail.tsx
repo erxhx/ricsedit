@@ -219,7 +219,7 @@ export default function AppointmentDetail({
                 flex: 1, textAlign: 'center',
                 padding: '13px 0', borderRadius: 10,
                 border: 'none',
-                background: '#2a6a48',
+                background: '#34C759',
                 color: '#fff',
                 fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 500,
                 textDecoration: 'none',
@@ -234,7 +234,7 @@ export default function AppointmentDetail({
                 flex: 1, textAlign: 'center',
                 padding: '13px 0', borderRadius: 10,
                 border: 'none',
-                background: '#2a5a80',
+                background: '#007AFF',
                 color: '#fff',
                 fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 500,
                 textDecoration: 'none',
@@ -653,10 +653,10 @@ function ActionButton({
   disabled?: boolean;
 }) {
   const styles: Record<string, React.CSSProperties> = {
-    primary: { background: 'var(--admin-btn-primary-bg)', color: 'var(--admin-btn-primary-fg)' },
-    danger:  { background: '#a03030', color: '#fff' },
-    ghost:   { background: '#4a5568', color: '#fff' },
-    noshow:  { background: '#b5824a', color: '#fff' },
+    primary: { background: '#34C759', color: '#fff' },  // iOS green — mark complete
+    danger:  { background: '#FF3B30', color: '#fff' },  // iOS red — end call / cancel
+    ghost:   { background: '#8E8E93', color: '#fff' },  // iOS gray — reschedule
+    noshow:  { background: '#FF9500', color: '#fff' },  // iOS orange — snooze / warning
   };
   return (
     <button
