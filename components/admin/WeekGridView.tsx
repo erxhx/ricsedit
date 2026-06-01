@@ -438,8 +438,8 @@ export default function WeekGridView({
                       boxSizing: 'border-box',
                     }}
                   >
-                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-text)', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: apt.notes ? 10 : 0 }}>
-                      {apt.clientName.split(' ')[0]}
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500, color: 'var(--admin-text)', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: apt.notes ? 10 : 0 }}>
+                      {apt.clientName}
                     </div>
                     {hPx > 36 && (
                       <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-text3)', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}>
