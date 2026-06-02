@@ -442,9 +442,9 @@ export default function DaySchedule({
                 }} />
               ))}
 
-              {/* tap-to-book slots (30-min buckets) */}
-              {Array.from({ length: (H1 - H0) * 2 }, (_, i) => {
-                const s0 = i * 30, s1 = s0 + 30;
+              {/* tap-to-book slots (15-min buckets for precise back-to-back booking) */}
+              {Array.from({ length: (H1 - H0) * 4 }, (_, i) => {
+                const s0 = i * 15, s1 = s0 + 15;
                 const busy = staffApts.some((a) => t2m(a.startTime) < s1 && t2m(a.endTime) > s0);
                 if (busy) return null;
                 return (
@@ -453,7 +453,7 @@ export default function DaySchedule({
                     onClick={() => setSlotAction({ staff, time: m2t(s0) })}
                     style={{
                       position: 'absolute', top: s0 * PPM, left: 0, right: 0,
-                      height: 30 * PPM, background: 'none', border: 'none', cursor: 'pointer',
+                      height: 15 * PPM, background: 'none', border: 'none', cursor: 'pointer',
                     }}
                   />
                 );

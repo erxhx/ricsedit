@@ -453,16 +453,16 @@ export default function WeekGridView({
                 <div key={`${h}h`} style={{ position: 'absolute', top: (h - H0) * 60 * PPM + 30 * PPM, left: 0, right: 0, borderTop: '1px solid var(--admin-border-faint)', pointerEvents: 'none' }} />
               ))}
 
-              {/* Tap-to-book slots */}
-              {Array.from({ length: (H1 - H0) * 2 }, (_, i) => {
-                const s0 = i * 30, s1 = s0 + 30;
+              {/* Tap-to-book slots (15-min buckets for precise back-to-back booking) */}
+              {Array.from({ length: (H1 - H0) * 4 }, (_, i) => {
+                const s0 = i * 15, s1 = s0 + 15;
                 const busy = day.apts.some((a) => t2m(a.startTime) < s1 && t2m(a.endTime) > s0);
                 if (busy) return null;
                 return (
                   <button
                     key={i}
                     onClick={() => setSlotAction({ date: day.dateStr, time: m2t(s0) })}
-                    style={{ position: 'absolute', top: s0 * PPM, left: 0, right: 0, height: 30 * PPM, background: 'none', border: 'none', cursor: 'pointer' }}
+                    style={{ position: 'absolute', top: s0 * PPM, left: 0, right: 0, height: 15 * PPM, background: 'none', border: 'none', cursor: 'pointer' }}
                   />
                 );
               })}
