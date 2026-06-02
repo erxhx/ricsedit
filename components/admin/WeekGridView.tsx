@@ -494,10 +494,11 @@ export default function WeekGridView({
                       borderRadius: 3,
                       padding: '4px 5px',
                       overflow: 'hidden',
-                      cursor: 'pointer',
+                      cursor: 'grab',
                       touchAction: 'pan-y',
                       zIndex: 2,
                       boxSizing: 'border-box',
+                      userSelect: 'none',
                     }}
                   >
                     {apt.status === 'blocked' ? (
