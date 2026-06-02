@@ -278,3 +278,22 @@ export async function dbUpdateAppointment(
   if (error || !row) return null;
   return toApt(row);
 }
+
+// ── Client notes ──────────────────────────────────────────────────────────────
+
+export async function dbGetClientNotes(phone: string): Promise<string> {
+  if (!phone) return '';
+  const { data } = await db
+    .from('client_notes')
+    .select('notes')
+    .eq('phone', phone)
+    .maybeSingle();
+  return data?.notes ?? '';
+}
+
+export async function dbSaveClientNotes(phone: string, notes: string): Promise<void> {
+  await db.from('client_notes').upsert(
+    { phone, notes, updated_at: new Date().toISOString() },
+    { onConflict: 'phone' },
+  );
+}

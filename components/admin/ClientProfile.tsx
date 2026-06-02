@@ -1,4 +1,5 @@
 'use client';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import type { Appointment } from '@/lib/admin-mock';
 import { SERVICE_COLORS } from '@/lib/appointment-colors';
@@ -38,6 +39,39 @@ export default function ClientProfile({
   const completed = appointments.filter((a) => a.status !== 'cancelled');
   const totalSpent = completed.reduce((s, a) => s + a.price, 0);
   const lastVisit = appointments[0]?.date ?? null;
+
+  const [notes, setNotes]         = useState('');
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [draftNotes, setDraftNotes]     = useState('');
+  const [savingNotes, setSavingNotes]   = useState(false);
+  const [savedFlash, setSavedFlash]     = useState(false);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!phone) return;
+    fetch(`/api/admin/clients/notes?phone=${encodeURIComponent(phone)}`)
+      .then(r => r.json())
+      .then(d => { setNotes(d.notes ?? ''); setDraftNotes(d.notes ?? ''); })
+      .catch(() => {});
+  }, [phone]);
+
+  async function saveNotes() {
+    setSavingNotes(true);
+    try {
+      await fetch('/api/admin/clients/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, notes: draftNotes }),
+      });
+      setNotes(draftNotes);
+      setEditingNotes(false);
+      setSavedFlash(true);
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(() => setSavedFlash(false), 2000);
+    } finally {
+      setSavingNotes(false);
+    }
+  }
 
   return (
     <div style={{ paddingBottom: 40 }}>
@@ -123,6 +157,103 @@ export default function ClientProfile({
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Client notes */}
+        <div style={{ marginBottom: 28 }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            marginBottom: 10,
+          }}>
+            <div style={{
+              fontFamily: 'var(--font-body)', fontSize: 10,
+              letterSpacing: '0.1em', textTransform: 'uppercase',
+              color: 'var(--admin-muted)',
+            }}>
+              Client notes
+            </div>
+            {savedFlash && (
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: '#4a9b6f' }}>
+                ✓ Saved
+              </span>
+            )}
+          </div>
+
+          <div style={{
+            background: 'var(--admin-card)',
+            border: '1px solid var(--admin-border)',
+            borderRadius: 10, overflow: 'hidden',
+          }}>
+            {editingNotes ? (
+              <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <textarea
+                  value={draftNotes}
+                  onChange={e => setDraftNotes(e.target.value)}
+                  placeholder="Formula, allergies, preferences…"
+                  autoFocus
+                  rows={5}
+                  style={{
+                    width: '100%', boxSizing: 'border-box',
+                    background: 'var(--admin-btn)', border: '1px solid var(--admin-border)',
+                    borderRadius: 8, padding: '10px 12px',
+                    fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)',
+                    resize: 'vertical', outline: 'none', minHeight: 100,
+                  }}
+                />
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    onClick={saveNotes}
+                    disabled={savingNotes}
+                    style={{
+                      flex: 1, padding: '11px 0', borderRadius: 8, border: 'none',
+                      background: 'var(--admin-btn-primary-bg)', color: 'var(--admin-btn-primary-fg)',
+                      fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 500,
+                      cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
+                    }}
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => { setDraftNotes(notes); setEditingNotes(false); }}
+                    disabled={savingNotes}
+                    style={{
+                      flex: 1, padding: '11px 0', borderRadius: 8,
+                      border: '1px solid var(--admin-border)',
+                      background: 'none', color: 'var(--admin-text2)',
+                      fontFamily: 'var(--font-body)', fontSize: 14,
+                      cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => { setDraftNotes(notes); setEditingNotes(true); }}
+                style={{
+                  width: '100%', textAlign: 'left', background: 'none', border: 'none',
+                  padding: '13px 14px', cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
+                }}
+              >
+                {notes ? (
+                  <span style={{
+                    fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)',
+                    lineHeight: 1.55, whiteSpace: 'pre-wrap', wordBreak: 'break-word', display: 'block',
+                  }}>
+                    {notes}
+                  </span>
+                ) : (
+                  <span style={{
+                    fontFamily: 'var(--font-body)', fontSize: 14,
+                    color: 'var(--admin-muted)', fontStyle: 'italic',
+                  }}>
+                    Tap to add notes…
+                  </span>
+                )}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Appointment history */}

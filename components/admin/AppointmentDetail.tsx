@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import type { Appointment, AppointmentStatus } from '@/lib/admin-mock';
 import { getAppointmentColor } from '@/lib/appointment-colors';
@@ -70,6 +70,38 @@ export default function AppointmentDetail({
   const [adminNote,     setAdminNote]     = useState(initial.adminNotes ?? '');
   const [editingNote,      setEditingNote]      = useState(false);
   const [editingAdminNote, setEditingAdminNote] = useState(false);
+
+  // Client-level persistent notes
+  const [clientNotes,        setClientNotes]        = useState('');
+  const [draftClientNotes,   setDraftClientNotes]   = useState('');
+  const [editingClientNotes, setEditingClientNotes] = useState(false);
+  const [savingClientNotes,  setSavingClientNotes]  = useState(false);
+  const [clientNotesSaved,   setClientNotesSaved]   = useState(false);
+
+  useEffect(() => {
+    if (!initial.clientPhone) return;
+    fetch(`/api/admin/clients/notes?phone=${encodeURIComponent(initial.clientPhone)}`)
+      .then(r => r.json())
+      .then(d => { setClientNotes(d.notes ?? ''); setDraftClientNotes(d.notes ?? ''); })
+      .catch(() => {});
+  }, [initial.clientPhone]);
+
+  async function saveClientNotes() {
+    setSavingClientNotes(true);
+    try {
+      await fetch('/api/admin/clients/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: apt.clientPhone, notes: draftClientNotes }),
+      });
+      setClientNotes(draftClientNotes);
+      setEditingClientNotes(false);
+      setClientNotesSaved(true);
+      setTimeout(() => setClientNotesSaved(false), 2000);
+    } finally {
+      setSavingClientNotes(false);
+    }
+  }
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showReschedule, setShowReschedule] = useState(false);
   const [reschedDate, setReschedDate] = useState(initial.date);
@@ -343,6 +375,56 @@ export default function AppointmentDetail({
           )}
         </Section>
 
+        {/* Client notes — persistent across all appointments */}
+        <Section label={
+          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            Client notes
+            {clientNotesSaved && (
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: '#4a9b6f', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>
+                ✓ Saved
+              </span>
+            )}
+          </span>
+        }>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 10 }}>
+            Carries over to all visits
+          </div>
+          {editingClientNotes ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <textarea
+                value={draftClientNotes}
+                onChange={e => setDraftClientNotes(e.target.value)}
+                placeholder="Formula, allergies, preferences…"
+                autoFocus
+                rows={4}
+                style={{
+                  width: '100%', boxSizing: 'border-box',
+                  background: 'var(--admin-btn)', border: '1px solid var(--admin-border)',
+                  borderRadius: 8, padding: '10px 12px',
+                  fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)',
+                  resize: 'vertical', outline: 'none', minHeight: 80,
+                }}
+              />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <ActionButton onClick={saveClientNotes} variant="primary" disabled={savingClientNotes}>Save</ActionButton>
+                <ActionButton onClick={() => { setDraftClientNotes(clientNotes); setEditingClientNotes(false); }} variant="ghost" disabled={savingClientNotes}>Cancel</ActionButton>
+              </div>
+            </div>
+          ) : (
+            <button onClick={() => { setDraftClientNotes(clientNotes); setEditingClientNotes(true); }} style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
+              {clientNotes ? (
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)', lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word', display: 'block' }}>
+                  {clientNotes}
+                </span>
+              ) : (
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-muted)', fontStyle: 'italic' }}>
+                  Tap to add client notes…
+                </span>
+              )}
+            </button>
+          )}
+        </Section>
+
         {/* Client history */}
         {history.length > 0 && (
           <div style={{ marginTop: 24 }}>
@@ -608,7 +690,7 @@ export default function AppointmentDetail({
   );
 }
 
-function Section({ label, children }: { label?: string; children: React.ReactNode }) {
+function Section({ label, children }: { label?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div style={{ marginTop: 24 }}>
       {label && (
