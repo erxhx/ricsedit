@@ -157,12 +157,14 @@ export async function dbGetAllClients(): Promise<ClientSummary[]> {
   const { data, error } = await db
     .from('appointments')
     .select('client_name, client_email, client_phone, date, service, price, status')
+    .neq('status', 'blocked')   // exclude blocked time (breaks, lunches, etc.)
     .order('date', { ascending: false });
 
   if (error || !data) return [];
 
   const map = new Map<string, ClientSummary>();
   for (const row of data) {
+    if (!row.client_name) continue; // skip any row with no client name
     if (!map.has(row.client_name)) {
       map.set(row.client_name, {
         name:        row.client_name,
