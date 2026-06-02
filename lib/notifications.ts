@@ -113,7 +113,7 @@ function emailLayout(bodyHtml: string): string {
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;">
         <tr>
           <td style="padding-bottom:24px;text-align:center;">
-            <img src="https://www.editstudio.space/assets/ES-LogoHorizontal-Blk.png" alt="Edit Studio" width="160" style="display:inline-block;height:auto;" />
+            <img src="https://www.editstudio.space/assets/logo-black.png" alt="Edit Studio" width="100" style="display:inline-block;height:auto;" />
           </td>
         </tr>
         <tr>
