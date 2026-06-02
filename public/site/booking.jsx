@@ -403,7 +403,7 @@
 
   function StepCategory(props) {
     var cats = [
-      { id: 'barber', num: '01', label: 'Barbering', hint: 'Cuts · shaves · beard work' },
+      { id: 'barber', num: '01', label: 'Barbering', hint: 'Crafted haircuts and beards' },
       { id: 'tan',    num: '02', label: 'Sunless',   hint: 'Custom-blended spray tans'  },
       { id: 'wax',    num: '03', label: 'Waxing',    hint: 'Brow · body · bikini'       },
     ];
