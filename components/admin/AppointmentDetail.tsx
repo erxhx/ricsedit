@@ -205,6 +205,21 @@ export default function AppointmentDetail({
           </span>
         </div>
 
+        {/* Reminder sent badge */}
+        {apt.reminderSent && (
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 5,
+            marginBottom: 16,
+            padding: '5px 10px', borderRadius: 20,
+            background: '#4a9b6f18', border: '1px solid #4a9b6f44',
+          }}>
+            <span style={{ fontSize: 11, color: '#4a9b6f', lineHeight: 1 }}>✓</span>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: '#4a9b6f', letterSpacing: '0.04em' }}>
+              Reminder sent
+            </span>
+          </div>
+        )}
+
         {/* Service + time */}
         <Section>
           <Row label="Service" value={apt.service} />

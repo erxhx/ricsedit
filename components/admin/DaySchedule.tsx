@@ -562,6 +562,15 @@ export default function DaySchedule({
                             ≡
                           </div>
                         )}
+                        {apt.reminderSent && (
+                          <div style={{
+                            position: 'absolute', bottom: 3, right: 5,
+                            fontSize: 8, color: '#4a9b6f', lineHeight: 1,
+                            fontFamily: 'var(--font-body)', fontWeight: 600,
+                          }}>
+                            ✓
+                          </div>
+                        )}
                       </>
                     )}
                   </div>

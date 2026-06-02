@@ -518,6 +518,9 @@ export default function WeekGridView({
                         {apt.notes && (
                           <div style={{ position: 'absolute', top: 3, right: 3, fontSize: 10, color: '#b5824a', lineHeight: 1 }}>≡</div>
                         )}
+                        {apt.reminderSent && (
+                          <div style={{ position: 'absolute', bottom: 3, right: 3, fontSize: 8, color: '#4a9b6f', lineHeight: 1, fontWeight: 600 }}>✓</div>
+                        )}
                       </>
                     )}
                   </div>

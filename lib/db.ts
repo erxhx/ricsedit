@@ -26,6 +26,7 @@ function toApt(row: any): Appointment {
     status:          row.status as AppointmentStatus,
     notes:           row.notes ?? undefined,
     adminNotes:      row.admin_notes ?? undefined,
+    reminderSent:    row.reminder_sent ?? false,
     manageToken:     row.manage_token,
   };
 }

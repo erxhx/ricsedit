@@ -16,9 +16,10 @@ export interface Appointment {
   durationMinutes: number;
   price: number;
   status: AppointmentStatus;
-  notes?: string;       // client-submitted note from booking form
-  adminNotes?: string;  // internal admin note — never shown to the client
-  manageToken: string; // unique token for client self-serve cancel/reschedule
+  notes?: string;         // client-submitted note from booking form
+  adminNotes?: string;    // internal admin note — never shown to the client
+  reminderSent?: boolean; // true once the 24h reminder email/SMS has been dispatched
+  manageToken: string;    // unique token for client self-serve cancel/reschedule
 }
 
 /** Deterministic token derived from appointment id — stable across restarts */
