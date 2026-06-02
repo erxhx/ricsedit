@@ -156,7 +156,7 @@ export default function WeekGridView({
         d.setDate(weekStart.getDate() + i);
         const dateStr = localStr(d);
         const dayApts = apts.filter(
-          (a) => a.date === dateStr && a.status !== 'cancelled' && a.status !== 'blocked',
+          (a) => a.date === dateStr && a.status !== 'cancelled',
         );
         return { dateStr, dateObj: d, dow: d.getDay(), isToday: dateStr === todayStr, isOpen: openDays ? (openDays[d.getDay()] ?? true) : true, apts: dayApts, positions: computePositions(dayApts) };
       })
