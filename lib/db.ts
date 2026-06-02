@@ -282,6 +282,23 @@ export async function dbUpdateAppointment(
   return toApt(row);
 }
 
+// ── Migration helpers ─────────────────────────────────────────────────────────
+
+/** Returns all confirmed future appointments that have a client email address. */
+export async function dbGetUpcomingConfirmedAppointments(fromDate: string): Promise<Appointment[]> {
+  const { data, error } = await db
+    .from('appointments')
+    .select('*')
+    .eq('status', 'confirmed')
+    .gte('date', fromDate)
+    .not('client_email', 'is', null)
+    .neq('client_email', '')
+    .order('date')
+    .order('start_time');
+  if (error || !data) return [];
+  return data.map(toApt);
+}
+
 // ── Client notes ──────────────────────────────────────────────────────────────
 
 export async function dbGetClientNotes(phone: string): Promise<string> {
