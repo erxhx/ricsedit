@@ -159,7 +159,7 @@ export default function AdminHeader({ name }: { name: string }) {
             WebkitBackdropFilter: 'blur(24px) saturate(180%)',
             border: '1px solid var(--admin-glass-dark-border)',
             boxShadow: 'var(--admin-glass-dark-shadow)',
-            color: 'var(--admin-bg)',
+            color: '#ece9e2',
             fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 600,
             letterSpacing: '0.01em',
             textDecoration: 'none',

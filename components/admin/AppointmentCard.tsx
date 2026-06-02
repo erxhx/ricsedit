@@ -14,13 +14,11 @@ export default function AppointmentCard({ apt }: { apt: Appointment }) {
   return (
     <Link href={`/admin/appointments/${apt.id}`} style={{
       display: 'flex',
-      background: 'rgba(252,248,240,0.85)',
-      backdropFilter: 'blur(8px)',
-      WebkitBackdropFilter: 'blur(8px)',
-      border: '1px solid rgba(255,255,255,0.55)',
+      background: 'var(--admin-card)',
+      border: '1px solid var(--admin-border)',
       borderLeft: `3px solid ${color}`,
       borderRadius: 12,
-      boxShadow: '0 1px 8px rgba(0,0,0,0.05)',
+      boxShadow: '0 1px 6px rgba(0,0,0,0.08)',
       padding: '14px 16px',
       gap: 12,
       textDecoration: 'none',
