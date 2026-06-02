@@ -11,8 +11,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   const { id } = await params;
 
-  // `notify` controls reschedule notification; `noShowSms` opts in to SMS on no-show
-  const { notify = true, noShowSms = false, ...patch } = await request.json();
+  // `notify` controls reschedule notification; `noShowSms` opts in to SMS on no-show; `cancellationNote` is an optional message included in admin cancellation emails
+  const { notify = true, noShowSms = false, cancellationNote = '', ...patch } = await request.json();
 
   const existing = await dbGetAppointmentById(id);
   if (!existing) return Response.json({ error: 'Not found' }, { status: 404 });
@@ -26,7 +26,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const isRescheduling = (patch.date      && patch.date      !== existing.date) ||
                          (patch.startTime && patch.startTime !== existing.startTime);
 
-  if (isCancelling)            sendCancellationNotification(existing, 'admin').catch(() => {});
+  if (isCancelling)            sendCancellationNotification(existing, 'admin', cancellationNote || undefined).catch(() => {});
   else if (isNoShow)           sendNoShowNotification(existing, { sms: noShowSms }).catch(() => {});
   else if (isRescheduling && notify) sendRescheduleNotification(updated).catch(() => {});
 

@@ -219,6 +219,7 @@ export async function sendBookingConfirmation(apt: Appointment): Promise<void> {
 export async function sendCancellationNotification(
   apt: Appointment,
   cancelledBy: 'client' | 'admin' = 'client',
+  note?: string,
 ): Promise<void> {
   const isAdmin = cancelledBy === 'admin';
 
@@ -230,15 +231,16 @@ export async function sendCancellationNotification(
         : `Hi ${firstName(apt.clientName)}, your appointment has been cancelled.`}
     </p>
     ${aptDetailsHtml(apt)}
+    ${isAdmin && note ? `<p style="margin:0 0 16px;font-family:'Inter Tight',Helvetica,sans-serif;font-size:14px;color:#4a4540;border-left:3px solid #dbd5c8;padding-left:12px;">${note}</p>` : ''}
     ${isAdmin
-      ? `${muted('Please call or text us at <a href="tel:+17785353348" style="color:#9a9085;">778 535 3348</a> to rebook.')}
-         ${ctaBtn('Book online →', 'https://www.editstudio.space')}`
-      : `${ctaBtn('Book again →', 'https://www.editstudio.space')}
+      ? `${muted('Please call or text us at <a href="tel:+17785353348" style="color:#7a7268;">778 535 3348</a> to rebook.')}
+         ${ctaBtn('Book Online', 'https://www.editstudio.space')}`
+      : `${ctaBtn('Book Again', 'https://www.editstudio.space')}
          ${muted('Questions? Call or text us at 778 535 3348.')}`}
   `);
 
   const clientSms = isAdmin
-    ? `Edit Studio: We've had to cancel your ${apt.service} on ${formatDate(apt.date)}. Sorry for the inconvenience — call us at 778 535 3348 or rebook at editstudio.space`
+    ? `Edit Studio: We've had to cancel your ${apt.service} on ${formatDate(apt.date)}.${note ? ` ${note}` : ''} Sorry for the inconvenience — call us at 778 535 3348 or rebook at editstudio.space`
     : `Edit Studio: Your ${apt.service} on ${formatDate(apt.date)} has been cancelled. Book again at editstudio.space`;
 
   await Promise.all([

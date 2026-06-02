@@ -101,6 +101,7 @@ export default function AppointmentDetail({
     }
   }
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [cancellationNote, setCancellationNote] = useState('');
   const [showReschedule, setShowReschedule] = useState(false);
   const [notifyReschedule, setNotifyReschedule] = useState(true);
   const [reschedDate, setReschedDate] = useState(initial.date);
@@ -151,9 +152,10 @@ export default function AppointmentDetail({
   }
 
   async function cancelAppointment() {
-    const updated = await patchApt({ status: 'cancelled' });
+    const updated = await patchApt({ status: 'cancelled', cancellationNote: cancellationNote.trim() });
     if (updated) setApt(updated);
     setShowCancelConfirm(false);
+    setCancellationNote('');
   }
 
   async function markNoShow() {
@@ -625,13 +627,26 @@ export default function AppointmentDetail({
             <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 500, color: 'var(--admin-text)', marginBottom: 8 }}>
               Cancel appointment?
             </div>
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text3)', marginBottom: 24, lineHeight: 1.5 }}>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text3)', marginBottom: 16, lineHeight: 1.5 }}>
               {apt.clientName}&#39;s {apt.service} on {fmtDate(apt.date)} at {fmtTime(apt.startTime)} will be cancelled.
               {' '}An email and SMS will be sent letting them know.
             </div>
+            <textarea
+              value={cancellationNote}
+              onChange={e => setCancellationNote(e.target.value)}
+              placeholder="Add a note for the client… (optional)"
+              rows={3}
+              style={{
+                width: '100%', boxSizing: 'border-box',
+                background: 'var(--admin-btn)', border: '1px solid var(--admin-border)',
+                borderRadius: 8, padding: '10px 12px', marginBottom: 16,
+                fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)',
+                resize: 'vertical', outline: 'none',
+              }}
+            />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <ActionButton onClick={cancelAppointment} variant="danger" disabled={saving}>Yes, cancel it</ActionButton>
-              <ActionButton onClick={() => setShowCancelConfirm(false)} variant="ghost" disabled={saving}>Keep appointment</ActionButton>
+              <ActionButton onClick={() => { setShowCancelConfirm(false); setCancellationNote(''); }} variant="ghost" disabled={saving}>Keep appointment</ActionButton>
             </div>
           </div>
         </div>
