@@ -159,7 +159,7 @@ export default function ClientProfile({
           ))}
         </div>
 
-        {/* Client notes */}
+        {/* Admin notes */}
         <div style={{ marginBottom: 28 }}>
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -170,7 +170,7 @@ export default function ClientProfile({
               letterSpacing: '0.1em', textTransform: 'uppercase',
               color: 'var(--admin-muted)',
             }}>
-              Client notes
+              Admin notes
             </div>
             {savedFlash && (
               <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: '#4a9b6f' }}>
@@ -189,7 +189,7 @@ export default function ClientProfile({
                 <textarea
                   value={draftNotes}
                   onChange={e => setDraftNotes(e.target.value)}
-                  placeholder="Formula, allergies, preferences…"
+                  placeholder="Formula, allergies, preferences, internal notes…"
                   autoFocus
                   rows={5}
                   style={{

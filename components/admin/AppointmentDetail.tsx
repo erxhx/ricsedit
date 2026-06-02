@@ -67,9 +67,7 @@ export default function AppointmentDetail({
 }) {
   const [apt, setApt] = useState(initial);
   const [note,          setNote]          = useState(initial.notes ?? '');
-  const [adminNote,     setAdminNote]     = useState(initial.adminNotes ?? '');
   const [editingNote,      setEditingNote]      = useState(false);
-  const [editingAdminNote, setEditingAdminNote] = useState(false);
 
   // Client-level persistent notes
   const [clientNotes,        setClientNotes]        = useState('');
@@ -143,13 +141,6 @@ export default function AppointmentDetail({
     const updated = await patchApt({ notes: trimmed ?? null });
     if (updated) setApt(updated);
     setEditingNote(false);
-  }
-
-  async function saveAdminNote() {
-    const trimmed = adminNote.trim() || undefined;
-    const updated = await patchApt({ adminNotes: trimmed ?? null });
-    if (updated) setApt(updated);
-    setEditingAdminNote(false);
   }
 
   async function markComplete() {
@@ -334,51 +325,10 @@ export default function AppointmentDetail({
           )}
         </Section>
 
-        {/* Admin note — internal only, never shown to the client */}
-        <Section label="Admin note">
-          <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 10 }}>
-            Internal only
-          </div>
-          {editingAdminNote ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <textarea
-                value={adminNote}
-                onChange={(e) => setAdminNote(e.target.value)}
-                placeholder="Add an internal note…"
-                autoFocus
-                rows={4}
-                style={{
-                  width: '100%', boxSizing: 'border-box',
-                  background: 'var(--admin-btn)', border: '1px solid var(--admin-border)',
-                  borderRadius: 8, padding: '10px 12px',
-                  fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)',
-                  resize: 'vertical', outline: 'none', minHeight: 80,
-                }}
-              />
-              <div style={{ display: 'flex', gap: 8 }}>
-                <ActionButton onClick={saveAdminNote} variant="primary" disabled={saving}>Save</ActionButton>
-                <ActionButton onClick={() => { setAdminNote(apt.adminNotes ?? ''); setEditingAdminNote(false); }} variant="ghost" disabled={saving}>Cancel</ActionButton>
-              </div>
-            </div>
-          ) : (
-            <button onClick={() => setEditingAdminNote(true)} style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
-              {apt.adminNotes ? (
-                <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)', lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word', display: 'block' }}>
-                  {apt.adminNotes}
-                </span>
-              ) : (
-                <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-muted)', fontStyle: 'italic' }}>
-                  Tap to add an internal note…
-                </span>
-              )}
-            </button>
-          )}
-        </Section>
-
-        {/* Client notes — persistent across all appointments */}
+        {/* Admin notes — persistent across all appointments, internal only */}
         <Section label={
           <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            Client notes
+            Admin notes
             {clientNotesSaved && (
               <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: '#4a9b6f', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>
                 ✓ Saved
@@ -387,14 +337,14 @@ export default function AppointmentDetail({
           </span>
         }>
           <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 10 }}>
-            Carries over to all visits
+            Internal only
           </div>
           {editingClientNotes ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <textarea
                 value={draftClientNotes}
                 onChange={e => setDraftClientNotes(e.target.value)}
-                placeholder="Formula, allergies, preferences…"
+                placeholder="Formula, allergies, preferences, internal notes…"
                 autoFocus
                 rows={4}
                 style={{
