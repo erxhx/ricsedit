@@ -59,45 +59,45 @@ export const THEME_VARS: Record<AdminTheme, Record<string, string>> = {
   },
   dark: {
     '--admin-bg':                '#0d0c0a',
-    '--admin-card':              '#161513',
-    '--admin-sheet':             '#1c1b18',
-    '--admin-border':            '#2a2926',
-    '--admin-border-sub':        '#232220',
-    '--admin-border-faint':      '#1e1d1a',
+    '--admin-card':              '#201e1a', // was #161513 — lifted so cards read as surfaces
+    '--admin-sheet':             '#272420', // was #1c1b18
+    '--admin-border':            '#3a3632', // was #2a2926 — more visible card outlines
+    '--admin-border-sub':        '#2e2b27', // was #232220
+    '--admin-border-faint':      '#252320', // was #1e1d1a
     '--admin-text':              '#ece9e2',
-    '--admin-text2':             '#b8b3a8',
-    '--admin-text3':             '#a09a90',
-    '--admin-muted':             '#8a8480', // #6a6560 was ~3.8:1 on dark bg; #8a8480 = ~5.5:1
-    '--admin-btn':               '#252320',
-    '--admin-btn-border':        '#3a3834',
+    '--admin-text2':             '#cec9be', // was #b8b3a8 — lighter for readability
+    '--admin-text3':             '#b5afa4', // was #a09a90
+    '--admin-muted':             '#908b85', // was #8a8480 — little more lift for captions
+    '--admin-btn':               '#2e2b27', // was #252320
+    '--admin-btn-border':        '#454038',
     '--admin-btn-primary-bg':    '#ece9e2',
     '--admin-btn-primary-fg':    '#0d0c0a',
-    '--admin-blocked':           '#1a1917',
-    '--admin-blocked-border':    '#2a2926',
-    '--admin-today':             '#0f1a0c',
-    '--admin-today-card':        '#1a2218',
-    '--admin-today-card-border': '#2a4028',
-    '--admin-nav-active':        '#1a2010',
-    '--admin-note':              '#1c1a14',
-    '--admin-note-border':       '#2a2618',
-    '--admin-call-bg':           '#0d1a10',
-    '--admin-call-border':       '#1a3a20',
-    '--admin-call-text':         '#5a9a68',
-    '--admin-sms-bg':            '#0d1420',
-    '--admin-sms-border':        '#1a2a40',
-    '--admin-sms-text':          '#5a80a0',
-    '--admin-danger-bg':         '#200d0d',
-    '--admin-danger-border':     '#3a1a1a',
-    '--admin-danger-text':       '#d06060',
-    '--admin-error':             '#d06060',
-    '--admin-link':              '#6a9abb',
-    '--admin-text-tint':         '#ece9e20f',
-    '--admin-glass-bg':          'rgba(28,26,22,0.72)',
-    '--admin-glass-border':      'rgba(255,255,255,0.10)',
-    '--admin-glass-highlight':   'rgba(255,255,255,0.08)',
-    '--admin-glass-shadow':      '0 2px 20px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.08)',
-    '--admin-glass-dark-bg':     'rgba(16,14,12,0.82)',
-    '--admin-glass-dark-border': 'rgba(255,255,255,0.14)',
-    '--admin-glass-dark-shadow': '0 4px 28px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.10)',
+    '--admin-blocked':           '#252220',
+    '--admin-blocked-border':    '#3a3632',
+    '--admin-today':             '#141f10',
+    '--admin-today-card':        '#1e2a1a',
+    '--admin-today-card-border': '#334830',
+    '--admin-nav-active':        '#1e2814',
+    '--admin-note':              '#231f14',
+    '--admin-note-border':       '#38321e',
+    '--admin-call-bg':           '#122018',
+    '--admin-call-border':       '#224830',
+    '--admin-call-text':         '#6ab87a',  // was #5a9a68 — brighter green
+    '--admin-sms-bg':            '#121a2a',
+    '--admin-sms-border':        '#203050',
+    '--admin-sms-text':          '#6a9ac0',  // was #5a80a0
+    '--admin-danger-bg':         '#2a1010',
+    '--admin-danger-border':     '#4a2020',
+    '--admin-danger-text':       '#e07070',  // was #d06060
+    '--admin-error':             '#e07070',
+    '--admin-link':              '#7aaad0',  // was #6a9abb — more visible
+    '--admin-text-tint':         '#ece9e214',
+    '--admin-glass-bg':          'rgba(36,33,28,0.80)', // was 0.72 — more opaque for readability
+    '--admin-glass-border':      'rgba(255,255,255,0.14)', // was 0.10
+    '--admin-glass-highlight':   'rgba(255,255,255,0.10)',
+    '--admin-glass-shadow':      '0 2px 20px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.10)',
+    '--admin-glass-dark-bg':     'rgba(16,14,12,0.88)',
+    '--admin-glass-dark-border': 'rgba(255,255,255,0.18)',
+    '--admin-glass-dark-shadow': '0 4px 28px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.12)',
   },
 };
