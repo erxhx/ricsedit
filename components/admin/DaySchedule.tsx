@@ -114,6 +114,7 @@ export default function DaySchedule({
   const [apts, setApts] = useState(initial);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragConfirm, setDragConfirm] = useState<DragConfirm>(null);
+  const [notifyReschedule, setNotifyReschedule] = useState(true);
   const [slotAction,    setSlotAction]    = useState<SlotAction>(null);
   const [blockSheet,    setBlockSheet]    = useState<BlockSheet>(null);
   const [blockDelSheet, setBlockDelSheet] = useState<BlockDelSheet>(null);
@@ -338,17 +339,19 @@ export default function DaySchedule({
   async function confirmReschedule() {
     if (!dragConfirm) return;
     const { apt, newStartTime, newEndTime } = dragConfirm;
+    const notify = notifyReschedule;
     setApts((prev) =>
       prev.map((a) => a.id === apt.id ? { ...a, startTime: newStartTime, endTime: newEndTime } : a)
     );
     setDragConfirm(null);
+    setNotifyReschedule(true); // reset for next drag
     try {
       await fetch(`/api/admin/appointments/${apt.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ startTime: newStartTime, endTime: newEndTime }),
+        body: JSON.stringify({ startTime: newStartTime, endTime: newEndTime, notify }),
       });
-    } catch { /* mock — fail silently */ }
+    } catch { /* fail silently */ }
   }
 
   async function confirmBlock() {
@@ -624,6 +627,16 @@ export default function DaySchedule({
               </span>
               ?
             </div>
+            {/* Notify client toggle */}
+            <button
+              onClick={() => setNotifyReschedule(n => !n)}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '13px 0', background: 'none', border: 'none', cursor: 'pointer', WebkitTapHighlightColor: 'transparent', marginBottom: 16 }}
+            >
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)' }}>Notify client</span>
+              <span style={{ width: 44, height: 26, borderRadius: 13, background: notifyReschedule ? '#34C759' : 'var(--admin-border)', display: 'flex', alignItems: 'center', padding: '0 3px', transition: 'background 0.2s', justifyContent: notifyReschedule ? 'flex-end' : 'flex-start', flexShrink: 0 }}>
+                <span style={{ width: 20, height: 20, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+              </span>
+            </button>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <SlotBtn
                 label={`Move to ${fmt(dragConfirm.newStartTime)}`}

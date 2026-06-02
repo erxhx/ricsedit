@@ -102,6 +102,7 @@ export default function AppointmentDetail({
   }
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showReschedule, setShowReschedule] = useState(false);
+  const [notifyReschedule, setNotifyReschedule] = useState(true);
   const [reschedDate, setReschedDate] = useState(initial.date);
   const [reschedTime, setReschedTime] = useState(initial.startTime);
   const [linkCopied, setLinkCopied] = useState(false);
@@ -162,9 +163,10 @@ export default function AppointmentDetail({
 
   async function rescheduleAppointment() {
     const newEnd = addMinutes(reschedTime, apt.durationMinutes);
-    const updated = await patchApt({ date: reschedDate, startTime: reschedTime, endTime: newEnd });
+    const updated = await patchApt({ date: reschedDate, startTime: reschedTime, endTime: newEnd, notify: notifyReschedule });
     if (updated) setApt(updated);
     setShowReschedule(false);
+    setNotifyReschedule(true); // reset for next use
   }
 
   return (
@@ -584,6 +586,16 @@ export default function AppointmentDetail({
               {fmtTime(reschedTime)} – {fmtTime(addMinutes(reschedTime, apt.durationMinutes))} · {apt.durationMinutes} min
             </div>
 
+            {/* Notify client toggle */}
+            <button
+              onClick={() => setNotifyReschedule(n => !n)}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '13px 0', background: 'none', border: 'none', cursor: 'pointer', WebkitTapHighlightColor: 'transparent', marginBottom: 16 }}
+            >
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)' }}>Notify client</span>
+              <span style={{ width: 44, height: 26, borderRadius: 13, background: notifyReschedule ? '#34C759' : 'var(--admin-border)', display: 'flex', alignItems: 'center', padding: '0 3px', transition: 'background 0.2s', justifyContent: notifyReschedule ? 'flex-end' : 'flex-start', flexShrink: 0 }}>
+                <span style={{ width: 20, height: 20, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+              </span>
+            </button>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <ActionButton onClick={rescheduleAppointment} variant="primary" disabled={saving}>
                 Move to {fmtDate(reschedDate)} at {fmtTime(reschedTime)}
@@ -613,7 +625,7 @@ export default function AppointmentDetail({
             </div>
             <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text3)', marginBottom: 24, lineHeight: 1.5 }}>
               {apt.clientName}&#39;s {apt.service} on {fmtDate(apt.date)} at {fmtTime(apt.startTime)} will be cancelled.
-              {' '}A cancellation notification will be sent when the database is connected.
+              {' '}An email and SMS will be sent letting them know.
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <ActionButton onClick={cancelAppointment} variant="danger" disabled={saving}>Yes, cancel it</ActionButton>
@@ -642,7 +654,7 @@ export default function AppointmentDetail({
             </div>
             <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text3)', marginBottom: 24, lineHeight: 1.5 }}>
               {apt.clientName} didn't show up for their {apt.service} on {fmtDate(apt.date)} at {fmtTime(apt.startTime)}.
-              {' '}This will be recorded on their history.
+              {' '}A "we missed you" email and SMS will be sent, and this will be recorded on their history.
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <ActionButton onClick={markNoShow} variant="noshow" disabled={saving}>Yes, mark as no-show</ActionButton>

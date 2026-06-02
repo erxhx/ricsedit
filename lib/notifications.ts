@@ -212,23 +212,59 @@ export async function sendBookingConfirmation(apt: Appointment): Promise<void> {
 }
 
 /**
- * Sent when a booking is cancelled (by client or studio).
- * → Client: cancellation confirmation email + SMS
+ * Sent when a booking is cancelled.
+ * cancelledBy 'client' → self-cancellation tone
+ * cancelledBy 'admin'  → studio-initiated tone with apology + contact info
  */
-export async function sendCancellationNotification(apt: Appointment): Promise<void> {
+export async function sendCancellationNotification(
+  apt: Appointment,
+  cancelledBy: 'client' | 'admin' = 'client',
+): Promise<void> {
+  const isAdmin = cancelledBy === 'admin';
+
   const clientHtml = emailLayout(`
     <h1 style="margin:0 0 6px;font-family:'Inter Tight',Helvetica,sans-serif;font-size:22px;font-weight:600;color:#ece4d4;letter-spacing:-0.02em;">Appointment cancelled</h1>
-    <p style="margin:0;font-family:'Inter Tight',Helvetica,sans-serif;font-size:14px;color:#9a9085;">Hi ${firstName(apt.clientName)}, your appointment has been cancelled.</p>
+    <p style="margin:0;font-family:'Inter Tight',Helvetica,sans-serif;font-size:14px;color:#9a9085;">
+      ${isAdmin
+        ? `Hi ${firstName(apt.clientName)}, we've had to cancel your upcoming appointment. We're sorry for any inconvenience.`
+        : `Hi ${firstName(apt.clientName)}, your appointment has been cancelled.`}
+    </p>
     ${aptDetailsHtml(apt)}
-    ${ctaBtn('Book again →', 'https://www.editstudio.space')}
+    ${isAdmin
+      ? `${muted('Please call or text us at <a href="tel:+17785353348" style="color:#9a9085;">778 535 3348</a> to rebook.')}
+         ${ctaBtn('Book online →', 'https://www.editstudio.space')}`
+      : `${ctaBtn('Book again →', 'https://www.editstudio.space')}
+         ${muted('Questions? Call or text us at 778 535 3348.')}`}
+  `);
+
+  const clientSms = isAdmin
+    ? `Edit Studio: We've had to cancel your ${apt.service} on ${formatDate(apt.date)}. Sorry for the inconvenience — call us at 778 535 3348 or rebook at editstudio.space`
+    : `Edit Studio: Your ${apt.service} on ${formatDate(apt.date)} has been cancelled. Book again at editstudio.space`;
+
+  await Promise.all([
+    sendEmail(apt.clientEmail, `Appointment cancelled — ${apt.service}`, clientHtml),
+    sendSms(apt.clientPhone, clientSms),
+  ]);
+}
+
+/**
+ * Sent when a client is marked no-show.
+ * → Client: friendly "we missed you" email + SMS with rebook link
+ */
+export async function sendNoShowNotification(apt: Appointment): Promise<void> {
+  const clientHtml = emailLayout(`
+    <h1 style="margin:0 0 6px;font-family:'Inter Tight',Helvetica,sans-serif;font-size:22px;font-weight:600;color:#ece4d4;letter-spacing:-0.02em;">We missed you.</h1>
+    <p style="margin:0;font-family:'Inter Tight',Helvetica,sans-serif;font-size:14px;color:#9a9085;">Hi ${firstName(apt.clientName)}, we noticed you missed your appointment today — hope everything is okay!</p>
+    ${aptDetailsHtml(apt)}
+    ${ctaBtn('Rebook online →', 'https://www.editstudio.space')}
     ${muted('Questions? Call or text us at 778 535 3348.')}
   `);
 
   const clientSms =
-    `Edit Studio: Your ${apt.service} on ${formatDate(apt.date)} has been cancelled. Book again at editstudio.space`;
+    `Edit Studio: We missed you for your ${apt.service} today at ${formatTime(apt.startTime)}. Hope all is well — rebook anytime at editstudio.space`;
 
   await Promise.all([
-    sendEmail(apt.clientEmail, `Appointment cancelled — ${apt.service}`, clientHtml),
+    sendEmail(apt.clientEmail, `We missed you — ${apt.service}`, clientHtml),
     sendSms(apt.clientPhone, clientSms),
   ]);
 }

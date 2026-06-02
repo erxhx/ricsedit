@@ -14,6 +14,6 @@ export async function POST(
   }
 
   await dbUpdateAppointment(apt.id, { status: 'cancelled' });
-  sendCancellationNotification(apt).catch(() => {});
+  sendCancellationNotification(apt, 'client').catch(() => {});
   return Response.json({ ok: true });
 }
