@@ -251,7 +251,10 @@ export async function sendCancellationNotification(
  * Sent when a client is marked no-show.
  * → Client: friendly "we missed you" email + SMS with rebook link
  */
-export async function sendNoShowNotification(apt: Appointment): Promise<void> {
+export async function sendNoShowNotification(
+  apt: Appointment,
+  { sms = false }: { sms?: boolean } = {},
+): Promise<void> {
   const clientHtml = emailLayout(`
     <h1 style="margin:0 0 6px;font-family:'Inter Tight',Helvetica,sans-serif;font-size:22px;font-weight:600;color:#ece4d4;letter-spacing:-0.02em;">We missed you.</h1>
     <p style="margin:0;font-family:'Inter Tight',Helvetica,sans-serif;font-size:14px;color:#9a9085;">Hi ${firstName(apt.clientName)}, we noticed you missed your appointment today — hope everything is okay!</p>
@@ -260,13 +263,18 @@ export async function sendNoShowNotification(apt: Appointment): Promise<void> {
     ${muted('Questions? Call or text us at 778 535 3348.')}
   `);
 
-  const clientSms =
-    `Edit Studio: We missed you for your ${apt.service} today at ${formatTime(apt.startTime)}. Hope all is well — rebook anytime at editstudio.space`;
-
-  await Promise.all([
+  const promises: Promise<void>[] = [
     sendEmail(apt.clientEmail, `We missed you — ${apt.service}`, clientHtml),
-    sendSms(apt.clientPhone, clientSms),
-  ]);
+  ];
+
+  if (sms) {
+    promises.push(sendSms(
+      apt.clientPhone,
+      `Edit Studio: We missed you for your ${apt.service} today at ${formatTime(apt.startTime)}. Hope all is well — rebook anytime at editstudio.space`,
+    ));
+  }
+
+  await Promise.all(promises);
 }
 
 /**

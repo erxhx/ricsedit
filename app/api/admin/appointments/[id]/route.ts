@@ -11,8 +11,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   const { id } = await params;
 
-  // `notify` controls whether reschedule triggers a client notification (default true)
-  const { notify = true, ...patch } = await request.json();
+  // `notify` controls reschedule notification; `noShowSms` opts in to SMS on no-show
+  const { notify = true, noShowSms = false, ...patch } = await request.json();
 
   const existing = await dbGetAppointmentById(id);
   if (!existing) return Response.json({ error: 'Not found' }, { status: 404 });
@@ -27,7 +27,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
                          (patch.startTime && patch.startTime !== existing.startTime);
 
   if (isCancelling)            sendCancellationNotification(existing, 'admin').catch(() => {});
-  else if (isNoShow)           sendNoShowNotification(existing).catch(() => {});
+  else if (isNoShow)           sendNoShowNotification(existing, { sms: noShowSms }).catch(() => {});
   else if (isRescheduling && notify) sendRescheduleNotification(updated).catch(() => {});
 
   return Response.json(updated);

@@ -108,6 +108,7 @@ export default function AppointmentDetail({
   const [linkCopied, setLinkCopied] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showNoShowConfirm, setShowNoShowConfirm] = useState(false);
+  const [noShowSms, setNoShowSms] = useState(false);
 
   async function patchApt(patch: Record<string, unknown>): Promise<Appointment | null> {
     setSaving(true);
@@ -156,9 +157,10 @@ export default function AppointmentDetail({
   }
 
   async function markNoShow() {
-    const updated = await patchApt({ status: 'no_show' });
+    const updated = await patchApt({ status: 'no_show', noShowSms });
     if (updated) setApt(updated);
     setShowNoShowConfirm(false);
+    setNoShowSms(false); // reset for next use
   }
 
   async function rescheduleAppointment() {
@@ -652,10 +654,20 @@ export default function AppointmentDetail({
             <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 500, color: 'var(--admin-text)', marginBottom: 8 }}>
               Mark as no-show?
             </div>
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text3)', marginBottom: 24, lineHeight: 1.5 }}>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text3)', marginBottom: 20, lineHeight: 1.5 }}>
               {apt.clientName} didn't show up for their {apt.service} on {fmtDate(apt.date)} at {fmtTime(apt.startTime)}.
-              {' '}A "we missed you" email and SMS will be sent, and this will be recorded on their history.
+              {' '}A "we missed you" email will be sent and this will be recorded on their history.
             </div>
+            {/* Also send SMS toggle */}
+            <button
+              onClick={() => setNoShowSms(s => !s)}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '13px 0', background: 'none', border: 'none', cursor: 'pointer', WebkitTapHighlightColor: 'transparent', marginBottom: 16 }}
+            >
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)' }}>Also send SMS</span>
+              <span style={{ width: 44, height: 26, borderRadius: 13, background: noShowSms ? '#34C759' : 'var(--admin-border)', display: 'flex', alignItems: 'center', padding: '0 3px', transition: 'background 0.2s', justifyContent: noShowSms ? 'flex-end' : 'flex-start', flexShrink: 0 }}>
+                <span style={{ width: 20, height: 20, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+              </span>
+            </button>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <ActionButton onClick={markNoShow} variant="noshow" disabled={saving}>Yes, mark as no-show</ActionButton>
               <ActionButton onClick={() => setShowNoShowConfirm(false)} variant="ghost" disabled={saving}>They showed up</ActionButton>
