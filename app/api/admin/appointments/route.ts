@@ -40,14 +40,15 @@ export async function POST(request: Request) {
 
   const body = await request.json() as Omit<Appointment, 'id' | 'manageToken'>;
 
-  if (!body.date || !body.startTime || !body.staff || !body.service || !body.clientName) {
+  const isBlock = body.status === 'blocked';
+  if (!body.date || !body.startTime || !body.staff || !body.service || (!isBlock && !body.clientName)) {
     return Response.json({ error: 'Missing required fields' }, { status: 400 });
   }
 
   try {
     const apt = await dbCreateAppointment(body);
-    // Send confirmation to the client (fire-and-forget — never fails the response)
-    await sendBookingConfirmation(apt).catch(() => {});
+    // Send confirmation to the client (fire-and-forget — skip for blocks)
+    if (!isBlock) await sendBookingConfirmation(apt).catch(() => {});
     return Response.json(apt, { status: 201 });
   } catch (e) {
     return Response.json({ error: e instanceof Error ? e.message : 'Failed to create' }, { status: 500 });
