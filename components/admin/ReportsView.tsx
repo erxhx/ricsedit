@@ -1,23 +1,43 @@
 'use client';
+import { useState, useEffect } from 'react';
 import type { Appointment } from '@/lib/admin-mock';
 import { SERVICE_COLORS } from '@/lib/appointment-colors';
 
-// ── helpers ──────────────────────────────────────────────────────────────────
+// ── types ─────────────────────────────────────────────────────────────────────
+type Range = 'today' | 'week' | 'month' | '3months';
+
+const RANGE_LABELS: Record<Range, string> = {
+  today:   'Today',
+  week:    'This Week',
+  month:   'Last 30 Days',
+  '3months': 'Last 3 Months',
+};
+
+// ── helpers ───────────────────────────────────────────────────────────────────
 
 function fmtMoney(n: number): string {
   return `$${n.toLocaleString('en-US')}`;
 }
 
 function isoWeekStart(d: Date): Date {
-  const day = d.getDay(); // 0=Sun
   const result = new Date(d);
-  result.setDate(d.getDate() - day);
+  result.setDate(d.getDate() - d.getDay());
   result.setHours(0, 0, 0, 0);
   return result;
 }
 
 function localDateStr(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return d.toLocaleDateString('en-CA', { timeZone: 'America/Vancouver' });
+}
+
+function getRangeStart(range: Range, today: Date): Date {
+  const d = new Date(today);
+  switch (range) {
+    case 'today':   return d;
+    case 'week':    d.setDate(d.getDate() - d.getDay()); return d;
+    case 'month':   d.setDate(d.getDate() - 29); return d;
+    case '3months': d.setDate(d.getDate() - 89); return d;
+  }
 }
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -53,54 +73,71 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
+function StatRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)' }}>{label}</span>
+      <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-text)', fontWeight: 500 }}>{value}</span>
+    </div>
+  );
+}
+
 // ── main component ────────────────────────────────────────────────────────────
 
-export default function ReportsView({ appointments }: { appointments: Appointment[] }) {
-  const active = appointments.filter(a => a.status !== 'cancelled' && a.status !== 'blocked');
+export default function ReportsView({ appointments: initialAppointments }: { appointments: Appointment[] }) {
+  const [range, setRange]   = useState<Range>('month');
+  const [apts,  setApts]    = useState<Appointment[]>(initialAppointments);
+  const [loading, setLoading] = useState(false);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // ── Week-over-week revenue ────────────────────────────────────────────────
-  const thisWeekStart = isoWeekStart(today);
-  const lastWeekStart = new Date(thisWeekStart);
-  lastWeekStart.setDate(thisWeekStart.getDate() - 7);
-  const lastWeekEnd = new Date(thisWeekStart);
-  lastWeekEnd.setDate(thisWeekStart.getDate() - 1);
+  // Fetch new data whenever range changes (skip initial 'month' — already have server data)
+  useEffect(() => {
+    if (range === 'month' && apts === initialAppointments) return;
+    const start = getRangeStart(range, today);
+    setLoading(true);
+    fetch(`/api/admin/appointments?start=${localDateStr(start)}&end=${localDateStr(today)}`)
+      .then(r => r.json())
+      .then(data => setApts(Array.isArray(data) ? data : []))
+      .catch(() => setApts([]))
+      .finally(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [range]);
 
-  const thisWeekStr = localDateStr(thisWeekStart);
+  const active = apts.filter(a => a.status !== 'cancelled' && a.status !== 'blocked');
+
+  // ── Week-over-week (always based on current/last week, shown for month & 3months) ──
+  const thisWeekStart    = isoWeekStart(today);
+  const lastWeekStart    = new Date(thisWeekStart); lastWeekStart.setDate(thisWeekStart.getDate() - 7);
+  const lastWeekEnd      = new Date(thisWeekStart); lastWeekEnd.setDate(thisWeekStart.getDate() - 1);
+  const thisWeekStr      = localDateStr(thisWeekStart);
   const lastWeekStartStr = localDateStr(lastWeekStart);
-  const lastWeekEndStr = localDateStr(lastWeekEnd);
+  const lastWeekEndStr   = localDateStr(lastWeekEnd);
 
-  let thisWeekRevenue = 0;
-  let lastWeekRevenue = 0;
+  let thisWeekRevenue = 0, lastWeekRevenue = 0;
   for (const a of active) {
     if (a.date >= thisWeekStr) thisWeekRevenue += a.price;
     else if (a.date >= lastWeekStartStr && a.date <= lastWeekEndStr) lastWeekRevenue += a.price;
   }
-
   const wowChange = lastWeekRevenue > 0
     ? Math.round((thisWeekRevenue - lastWeekRevenue) / lastWeekRevenue * 100)
     : null;
 
-  // ── 30-day total revenue ──────────────────────────────────────────────────
-  const thirtyDayRevenue = active.reduce((s, a) => s + a.price, 0);
+  // ── Total revenue ─────────────────────────────────────────────────────────
+  const totalRevenue = active.reduce((s, a) => s + a.price, 0);
 
-  // ── Revenue by day of week (bar chart) ───────────────────────────────────
+  // ── Revenue by day of week ────────────────────────────────────────────────
   const revenueByDow: number[] = [0, 0, 0, 0, 0, 0, 0];
   for (const a of active) {
     const [y, mo, d] = a.date.split('-').map(Number);
-    const dow = new Date(y, mo - 1, d).getDay();
-    revenueByDow[dow] += a.price;
+    revenueByDow[new Date(y, mo - 1, d).getDay()] += a.price;
   }
   const maxDowRevenue = Math.max(...revenueByDow, 1);
 
-  // ── Staff utilization ─────────────────────────────────────────────────────
-  // Count distinct working days (days with at least one active apt) per staff
-  const ericDays = new Set<string>();
-  const liviDays = new Set<string>();
-  let ericApts = 0, liviApts = 0;
-  let ericRevenue = 0, liviRevenue = 0;
+  // ── Staff stats ───────────────────────────────────────────────────────────
+  const ericDays = new Set<string>(), liviDays = new Set<string>();
+  let ericApts = 0, liviApts = 0, ericRevenue = 0, liviRevenue = 0;
   for (const a of active) {
     if (a.staff === 'eric') { ericDays.add(a.date); ericApts++; ericRevenue += a.price; }
     if (a.staff === 'livi') { liviDays.add(a.date); liviApts++; liviRevenue += a.price; }
@@ -121,34 +158,25 @@ export default function ReportsView({ appointments }: { appointments: Appointmen
   const maxServiceCount = Math.max(...topServices.map(([, v]) => v.count), 1);
 
   // ── New vs returning ──────────────────────────────────────────────────────
-  // Look at all 30-day clients; clients whose first appointment is also in the 30-day window are "new"
-  const startDateStr = localDateStr(new Date(today.getFullYear(), today.getMonth(), today.getDate() - 29));
-  const clientFirstSeen: Record<string, string> = {};
-  // We only have 30-day data here — so "new" = clients who appear exactly once in the period
-  // with no prior visits detectable. We approximate: count unique clients in this 30-day window.
   const clientDates: Record<string, string[]> = {};
   for (const a of active) {
     if (!clientDates[a.clientName]) clientDates[a.clientName] = [];
     clientDates[a.clientName].push(a.date);
   }
-
-  // A client is "new" if their first date in this window equals their earliest known date
-  // (since we only have 30 days of data, we flag clients with only one distinct date as potentially new)
   let newClients = 0, returningClients = 0;
   for (const [, dates] of Object.entries(clientDates)) {
     const sorted = [...new Set(dates)].sort();
-    // If the earliest visit is at the very start of the 30-day window it's likely a returning client,
-    // but we can't know for sure without full history. Use visit frequency as proxy:
-    // clients with only 1 visit in the window are "new", 2+ are "returning".
     if (sorted.length === 1) newClients++;
     else returningClients++;
   }
   const totalUniqueClients = newClients + returningClients;
 
   // ── Cancellation rate ─────────────────────────────────────────────────────
-  const cancelled = appointments.filter(a => a.status === 'cancelled').length;
-  const totalApts = appointments.length;
+  const cancelled  = apts.filter(a => a.status === 'cancelled').length;
+  const totalApts  = apts.filter(a => a.status !== 'blocked').length;
   const cancelRate = totalApts > 0 ? Math.round(cancelled / totalApts * 100) : 0;
+
+  const showWoW = range === 'month' || range === '3months';
 
   return (
     <div style={{ padding: '24px 20px 120px' }}>
@@ -156,176 +184,204 @@ export default function ReportsView({ appointments }: { appointments: Appointmen
       {/* Heading */}
       <h1 style={{
         fontFamily: 'var(--font-body)', fontSize: 22, fontWeight: 400,
-        color: 'var(--admin-text)', margin: '0 0 4px', letterSpacing: '-0.01em',
+        color: 'var(--admin-text)', margin: '0 0 16px', letterSpacing: '-0.01em',
       }}>
         Reports
       </h1>
-      <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-muted)', marginBottom: 24, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-        Last 30 days
+
+      {/* ── Range selector ────────────────────────────────────────────────── */}
+      <div style={{ display: 'flex', gap: 6, marginBottom: 24 }}>
+        {(['today', 'week', 'month', '3months'] as Range[]).map((r) => {
+          const active = range === r;
+          return (
+            <button
+              key={r}
+              onClick={() => setRange(r)}
+              style={{
+                flex: 1,
+                padding: '9px 0',
+                borderRadius: 10,
+                border: active ? '1.5px solid var(--admin-text)' : '1px solid var(--admin-border)',
+                background: active ? 'var(--admin-text-tint)' : 'var(--admin-card)',
+                fontFamily: 'var(--font-body)', fontSize: 12,
+                fontWeight: active ? 600 : 400,
+                color: active ? 'var(--admin-text)' : 'var(--admin-text2)',
+                cursor: 'pointer',
+                WebkitTapHighlightColor: 'transparent',
+                transition: 'background 0.15s, border-color 0.15s',
+              }}
+            >
+              {RANGE_LABELS[r]}
+            </button>
+          );
+        })}
       </div>
 
-      {/* ── Week over week ────────────────────────────────────────────────── */}
-      <SectionTitle>Revenue — This Week vs Last Week</SectionTitle>
-      <Card style={{ marginBottom: 20 }}>
-        <div style={{ display: 'flex', gap: 0 }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
-              This week
+      {/* Loading overlay */}
+      {loading && (
+        <div style={{ textAlign: 'center', padding: '40px 0', fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-muted)' }}>
+          Loading…
+        </div>
+      )}
+
+      {!loading && (
+        <>
+          {/* ── Week over week (month / 3months only) ─────────────────────── */}
+          {showWoW && (
+            <>
+              <SectionTitle>Revenue — This Week vs Last Week</SectionTitle>
+              <Card style={{ marginBottom: 20 }}>
+                <div style={{ display: 'flex', gap: 0 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>This week</div>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 28, fontWeight: 500, color: 'var(--admin-text)', letterSpacing: '-0.02em' }}>{fmtMoney(thisWeekRevenue)}</div>
+                    {wowChange !== null && (
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, marginTop: 4, color: wowChange >= 0 ? '#4a9b6f' : '#b03030' }}>
+                        {wowChange >= 0 ? '+' : ''}{wowChange}% vs last week
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ width: 1, background: 'var(--admin-border)', margin: '0 20px' }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>Last week</div>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 28, fontWeight: 500, color: 'var(--admin-text)', letterSpacing: '-0.02em' }}>{fmtMoney(lastWeekRevenue)}</div>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-muted)', marginTop: 4 }}>
+                      {RANGE_LABELS[range]} total: {fmtMoney(totalRevenue)}
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </>
+          )}
+
+          {/* ── Total revenue (today / week only) ─────────────────────────── */}
+          {!showWoW && (
+            <>
+              <SectionTitle>Revenue — {RANGE_LABELS[range]}</SectionTitle>
+              <Card style={{ marginBottom: 20 }}>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 36, fontWeight: 500, color: 'var(--admin-text)', letterSpacing: '-0.02em' }}>
+                  {fmtMoney(totalRevenue)}
+                </div>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)', marginTop: 6 }}>
+                  {active.length} appointment{active.length !== 1 ? 's' : ''}
+                </div>
+              </Card>
+            </>
+          )}
+
+          {/* ── Revenue by day of week ────────────────────────────────────── */}
+          <SectionTitle>Revenue by Day of Week</SectionTitle>
+          <Card style={{ marginBottom: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 80 }}>
+              {DAY_LABELS.map((label, dow) => {
+                const pct = revenueByDow[dow] / maxDowRevenue;
+                const isToday = today.getDay() === dow;
+                return (
+                  <div key={dow} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, height: '100%', justifyContent: 'flex-end' }}>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: isToday ? 'var(--admin-text)' : 'var(--admin-muted)', letterSpacing: '0.04em' }}>
+                      {revenueByDow[dow] > 0 ? `$${revenueByDow[dow]}` : ''}
+                    </div>
+                    <div style={{
+                      width: '100%', borderRadius: 3,
+                      height: `${Math.max(pct * 52, revenueByDow[dow] > 0 ? 4 : 0)}px`,
+                      background: isToday ? SERVICE_COLORS.ericBarber : 'var(--admin-border)',
+                      transition: 'height 0.3s ease',
+                    }} />
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: isToday ? 'var(--admin-text)' : 'var(--admin-muted)', letterSpacing: '0.04em', fontWeight: isToday ? 600 : 400 }}>
+                      {label}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: 28, fontWeight: 500, color: 'var(--admin-text)', letterSpacing: '-0.02em' }}>
-              {fmtMoney(thisWeekRevenue)}
+          </Card>
+
+          {/* ── Staff stats ───────────────────────────────────────────────── */}
+          <SectionTitle>Staff — {RANGE_LABELS[range]}</SectionTitle>
+          <Card style={{ marginBottom: 20 }}>
+            <div style={{ display: 'flex', gap: 0 }}>
+              {[
+                { label: 'Eric', color: SERVICE_COLORS.ericBarber, days: ericDays.size, apts: ericApts, revenue: ericRevenue, aptsPerDay: ericAptsPerDay },
+                { label: 'Livi', color: SERVICE_COLORS.liviWax,    days: liviDays.size, apts: liviApts, revenue: liviRevenue, aptsPerDay: liviAptsPerDay },
+              ].map(({ label, color, days, apts, revenue, aptsPerDay }, i) => (
+                <div key={label} style={{ flex: 1, paddingLeft: i === 1 ? 20 : 0 }}>
+                  {i === 1 && <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: 1, background: 'var(--admin-border)' }} />}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+                    <div style={{ width: 7, height: 7, borderRadius: '50%', background: color, flexShrink: 0 }} />
+                    <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 500, color: 'var(--admin-text)' }}>{label}</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <StatRow label="Revenue"      value={fmtMoney(revenue)} />
+                    <StatRow label="Appointments" value={String(apts)} />
+                    <StatRow label="Working days" value={String(days)} />
+                    <StatRow label="Apts / day"   value={aptsPerDay} />
+                  </div>
+                </div>
+              ))}
             </div>
-            {wowChange !== null && (
-              <div style={{
-                fontFamily: 'var(--font-body)', fontSize: 11, marginTop: 4,
-                color: wowChange >= 0 ? '#4a9b6f' : '#b03030',
-              }}>
-                {wowChange >= 0 ? '+' : ''}{wowChange}% vs last week
+          </Card>
+
+          {/* ── Top services ──────────────────────────────────────────────── */}
+          <SectionTitle>Top Services</SectionTitle>
+          <Card style={{ marginBottom: 20 }}>
+            {topServices.length === 0 ? (
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-muted)' }}>No data</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {topServices.map(([name, { count, revenue }]) => {
+                  const barPct = count / maxServiceCount * 100;
+                  return (
+                    <div key={name}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
+                        <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, marginRight: 8 }}>
+                          {name}
+                        </span>
+                        <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-muted)', flexShrink: 0 }}>
+                          {count}× · {fmtMoney(revenue)}
+                        </span>
+                      </div>
+                      <div style={{ height: 4, borderRadius: 2, background: 'var(--admin-border)', overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: `${barPct}%`, background: 'var(--admin-text)', borderRadius: 2, transition: 'width 0.3s ease' }} />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
-          </div>
-          <div style={{ width: 1, background: 'var(--admin-border)', margin: '0 20px' }} />
-          <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
-              Last week
-            </div>
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: 28, fontWeight: 500, color: 'var(--admin-text)', letterSpacing: '-0.02em' }}>
-              {fmtMoney(lastWeekRevenue)}
-            </div>
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-muted)', marginTop: 4 }}>
-              30-day total: {fmtMoney(thirtyDayRevenue)}
-            </div>
-          </div>
-        </div>
-      </Card>
+          </Card>
 
-      {/* ── Revenue by day of week ────────────────────────────────────────── */}
-      <SectionTitle>Revenue by Day of Week (30 days)</SectionTitle>
-      <Card style={{ marginBottom: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 80 }}>
-          {DAY_LABELS.map((label, dow) => {
-            const pct = revenueByDow[dow] / maxDowRevenue;
-            const isToday = today.getDay() === dow;
-            return (
-              <div key={dow} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, height: '100%', justifyContent: 'flex-end' }}>
-                <div style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: isToday ? 'var(--admin-text)' : 'var(--admin-muted)', letterSpacing: '0.04em' }}>
-                  {revenueByDow[dow] > 0 ? `$${revenueByDow[dow]}` : ''}
-                </div>
-                <div style={{
-                  width: '100%', borderRadius: 3,
-                  height: `${Math.max(pct * 52, revenueByDow[dow] > 0 ? 4 : 0)}px`,
-                  background: isToday ? SERVICE_COLORS.ericBarber : 'var(--admin-border)',
-                  transition: 'height 0.3s ease',
-                }} />
-                <div style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: isToday ? 'var(--admin-text)' : 'var(--admin-muted)', letterSpacing: '0.04em', fontWeight: isToday ? 600 : 400 }}>
-                  {label}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </Card>
-
-      {/* ── Staff utilization ─────────────────────────────────────────────── */}
-      <SectionTitle>Staff — Last 30 Days</SectionTitle>
-      <Card style={{ marginBottom: 20 }}>
-        <div style={{ display: 'flex', gap: 0 }}>
-          {[
-            { label: 'Eric', color: SERVICE_COLORS.ericBarber, days: ericDays.size, apts: ericApts, revenue: ericRevenue, aptsPerDay: ericAptsPerDay },
-            { label: 'Livi', color: SERVICE_COLORS.liviWax,    days: liviDays.size, apts: liviApts, revenue: liviRevenue, aptsPerDay: liviAptsPerDay },
-          ].map(({ label, color, days, apts, revenue, aptsPerDay }, i) => (
-            <div key={label} style={{ flex: 1, paddingLeft: i === 1 ? 20 : 0 }}>
-              {i === 1 && <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: 1, background: 'var(--admin-border)' }} />}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-                <div style={{ width: 7, height: 7, borderRadius: '50%', background: color, flexShrink: 0 }} />
-                <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 500, color: 'var(--admin-text)' }}>{label}</span>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <StatRow label="Revenue" value={fmtMoney(revenue)} />
-                <StatRow label="Appointments" value={String(apts)} />
-                <StatRow label="Working days" value={String(days)} />
-                <StatRow label="Apts/day" value={aptsPerDay} />
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      {/* ── Top services ──────────────────────────────────────────────────── */}
-      <SectionTitle>Top Services</SectionTitle>
-      <Card style={{ marginBottom: 20 }}>
-        {topServices.length === 0 ? (
-          <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-muted)' }}>No data</div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {topServices.map(([name, { count, revenue }]) => {
-              const barPct = count / maxServiceCount * 100;
-              return (
-                <div key={name}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
-                    <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, marginRight: 8 }}>
-                      {name}
-                    </span>
-                    <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-muted)', flexShrink: 0 }}>
-                      {count}× · {fmtMoney(revenue)}
-                    </span>
+          {/* ── Clients ───────────────────────────────────────────────────── */}
+          <SectionTitle>Clients</SectionTitle>
+          <Card style={{ marginBottom: 20 }}>
+            <div style={{ display: 'flex', gap: 0 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>Unique clients</div>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 24, fontWeight: 500, color: 'var(--admin-text)' }}>{totalUniqueClients}</div>
+                <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+                  <div>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>New</div>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 500, color: '#4a9b6f' }}>{newClients}</div>
                   </div>
-                  <div style={{ height: 4, borderRadius: 2, background: 'var(--admin-border)', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${barPct}%`, background: 'var(--admin-text)', borderRadius: 2, transition: 'width 0.3s ease' }} />
+                  <div>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Returning</div>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 500, color: 'var(--admin-text)' }}>{returningClients}</div>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </Card>
-
-      {/* ── New vs returning clients + cancel rate ────────────────────────── */}
-      <SectionTitle>Clients</SectionTitle>
-      <Card style={{ marginBottom: 20 }}>
-        <div style={{ display: 'flex', gap: 0 }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
-              Unique clients
-            </div>
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: 24, fontWeight: 500, color: 'var(--admin-text)' }}>
-              {totalUniqueClients}
-            </div>
-            <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
-              <div>
-                <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>New</div>
-                <div style={{ fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 500, color: '#4a9b6f' }}>{newClients}</div>
               </div>
-              <div>
-                <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Returning</div>
-                <div style={{ fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 500, color: 'var(--admin-text)' }}>{returningClients}</div>
+              <div style={{ width: 1, background: 'var(--admin-border)', margin: '0 20px' }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>Cancellation rate</div>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 24, fontWeight: 500, color: cancelRate >= 20 ? '#b03030' : cancelRate >= 10 ? '#b5824a' : 'var(--admin-text)' }}>
+                  {cancelRate}%
+                </div>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-muted)', marginTop: 8 }}>
+                  {cancelled} of {totalApts} apts
+                </div>
               </div>
             </div>
-          </div>
-          <div style={{ width: 1, background: 'var(--admin-border)', margin: '0 20px' }} />
-          <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
-              Cancellation rate
-            </div>
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: 24, fontWeight: 500, color: cancelRate >= 20 ? '#b03030' : cancelRate >= 10 ? '#b5824a' : 'var(--admin-text)' }}>
-              {cancelRate}%
-            </div>
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-muted)', marginTop: 8 }}>
-              {cancelled} of {totalApts} apts
-            </div>
-          </div>
-        </div>
-      </Card>
-
-    </div>
-  );
-}
-
-function StatRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)' }}>{label}</span>
-      <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-text)', fontWeight: 500 }}>{value}</span>
+          </Card>
+        </>
+      )}
     </div>
   );
 }
