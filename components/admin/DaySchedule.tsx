@@ -59,8 +59,28 @@ type DragConfirm = {
   newEndTime: string;
 } | null;
 
-type SlotAction = { staff: 'eric' | 'livi'; time: string } | null;
-type BlockSheet = { staff: 'eric' | 'livi'; time: string } | null;
+type SlotAction    = { staff: 'eric' | 'livi'; time: string } | null;
+type BlockSheet    = { staff: 'eric' | 'livi'; time: string } | null;
+type BlockDelSheet = Appointment | null;
+
+const QUICK_LABELS = ['Lunch', 'Break', 'Personal', 'Studio closed'] as const;
+
+function timeDiff(start: string, end: string): number {
+  const [sh, sm] = start.split(':').map(Number);
+  const [eh, em] = end.split(':').map(Number);
+  return (eh * 60 + em) - (sh * 60 + sm);
+}
+
+// Generate 15-min end-time options after a given start
+function endTimeOptions(startTime: string): string[] {
+  const [sh, sm] = startTime.split(':').map(Number);
+  const startMin = sh * 60 + sm;
+  const opts: string[] = [];
+  for (let m = startMin + 15; m <= H1 * 60; m += 15) {
+    opts.push(`${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`);
+  }
+  return opts;
+}
 
 function fmtDateNav(dateStr: string): string {
   const [y, mo, d] = dateStr.split('-').map(Number);
@@ -94,9 +114,14 @@ export default function DaySchedule({
   const [apts, setApts] = useState(initial);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragConfirm, setDragConfirm] = useState<DragConfirm>(null);
-  const [slotAction, setSlotAction] = useState<SlotAction>(null);
-  const [blockSheet, setBlockSheet] = useState<BlockSheet>(null);
-  const [blockDur, setBlockDur] = useState(60);
+  const [slotAction,    setSlotAction]    = useState<SlotAction>(null);
+  const [blockSheet,    setBlockSheet]    = useState<BlockSheet>(null);
+  const [blockDelSheet, setBlockDelSheet] = useState<BlockDelSheet>(null);
+  const [blockDur,      setBlockDur]      = useState(60);
+  const [blockLabel,    setBlockLabel]    = useState('');
+  const [blockBoth,     setBlockBoth]     = useState(false);
+  const [useCustomEnd,  setUseCustomEnd]  = useState(false);
+  const [customEndTime, setCustomEndTime] = useState('');
   const [nowMin, setNowMin] = useState(() => {
     const d = new Date();
     return (d.getHours() - H0) * 60 + d.getMinutes();
@@ -231,13 +256,13 @@ export default function DaySchedule({
 
     // Was a tap (finger lifted before long press, no meaningful movement)
     if (!drag.longPressReady && !drag.hasMoved) {
-      router.push(`/admin/appointments/${apt.id}`);
+      if (apt.status === 'blocked') { setBlockDelSheet(apt); } else { router.push(`/admin/appointments/${apt.id}`); }
       return;
     }
 
     // Long press fired but user didn't actually move — treat as detail tap
     if (drag.longPressReady && !drag.hasMoved) {
-      router.push(`/admin/appointments/${apt.id}`);
+      if (apt.status === 'blocked') { setBlockDelSheet(apt); } else { router.push(`/admin/appointments/${apt.id}`); }
       return;
     }
 
@@ -275,23 +300,41 @@ export default function DaySchedule({
 
   async function confirmBlock() {
     if (!blockSheet) return;
-    const endTime = addMin(blockSheet.time, blockDur);
-    try {
-      const res = await fetch('/api/admin/appointments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          date, startTime: blockSheet.time, endTime,
-          staff: blockSheet.staff, clientName: '', clientEmail: '', clientPhone: '',
-          service: 'Blocked', durationMinutes: blockDur, price: 0, status: 'blocked',
-        }),
-      });
-      if (res.ok) {
-        const apt = await res.json();
-        setApts((prev) => [...prev, apt]);
-      }
-    } catch { /* mock */ }
+    const label    = blockLabel.trim() || 'Blocked';
+    const endTime  = useCustomEnd ? customEndTime : addMin(blockSheet.time, blockDur);
+    const dur      = useCustomEnd ? timeDiff(blockSheet.time, customEndTime) : blockDur;
+    if (dur <= 0) return;
+    const staffList = blockBoth ? (['eric', 'livi'] as const) : [blockSheet.staff];
+    const results = await Promise.all(
+      staffList.map((staff) =>
+        fetch('/api/admin/appointments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            date, startTime: blockSheet.time, endTime,
+            staff, clientName: '', clientEmail: '', clientPhone: '',
+            service: label, durationMinutes: dur, price: 0, status: 'blocked',
+          }),
+        }).then((r) => (r.ok ? r.json() : null)).catch(() => null)
+      )
+    );
+    setApts((prev) => [...prev, ...results.filter(Boolean)]);
     setBlockSheet(null);
+    setBlockLabel('');
+    setBlockBoth(false);
+    setUseCustomEnd(false);
+  }
+
+  async function deleteBlock(apt: Appointment) {
+    setApts((prev) => prev.filter((a) => a.id !== apt.id));
+    setBlockDelSheet(null);
+    try {
+      await fetch(`/api/admin/appointments/${apt.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'cancelled' }),
+      });
+    } catch { /* silent */ }
   }
 
   const visible = apts.filter((a) => a.status !== 'cancelled');
@@ -431,7 +474,7 @@ export default function DaySchedule({
                     onTouchStart={(e) => onAptTouchStart(e, apt)}
                     onTouchEnd={(e) => onAptTouchEnd(e, apt)}
                     onTouchCancel={() => onAptTouchCancel(apt)}
-                    onClick={() => router.push(`/admin/appointments/${apt.id}`)}
+                    onClick={() => apt.status === 'blocked' ? setBlockDelSheet(apt) : router.push(`/admin/appointments/${apt.id}`)}
                     style={{
                       position: 'absolute', top: topPx, left: 3, right: 3, height: hPx,
                       background: blocked ? 'var(--admin-blocked)' : completed ? `${col}18` : `${col}22`,
@@ -444,7 +487,9 @@ export default function DaySchedule({
                     }}
                   >
                     {blocked ? (
-                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', fontStyle: 'italic' }}>Blocked</div>
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', fontStyle: 'italic' }}>
+                        {apt.service && apt.service !== 'Blocked' ? apt.service : 'Blocked'}
+                      </div>
                     ) : (
                       <>
                         <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500, color: 'var(--admin-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: apt.notes ? 14 : 0 }}>
@@ -566,6 +611,10 @@ export default function DaySchedule({
                 onClick={() => {
                   setBlockSheet({ staff: slotAction.staff, time: slotAction.time });
                   setBlockDur(60);
+                  setBlockLabel('');
+                  setBlockBoth(false);
+                  setUseCustomEnd(false);
+                  setCustomEndTime(addMin(slotAction.time, 60));
                   setSlotAction(null);
                 }}
               />
@@ -576,45 +625,96 @@ export default function DaySchedule({
 
       {/* ── block-time sheet ─────────────────────────────────────────────── */}
       {blockSheet && (
-        <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 60 }}
-          onClick={() => setBlockSheet(null)}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              position: 'fixed', bottom: 0, left: 0, right: 0,
-              background: 'var(--admin-sheet)', borderRadius: '16px 16px 0 0',
-              padding: '24px 20px 44px',
-            }}
-          >
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 500, color: 'var(--admin-text)', marginBottom: 4 }}>
-              Block time off
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 60 }} onClick={() => setBlockSheet(null)}>
+          <div onClick={(e) => e.stopPropagation()} style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'var(--admin-sheet)', borderRadius: '16px 16px 0 0', padding: '24px 20px 44px', overflowY: 'auto', maxHeight: '90vh' }}>
+
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 500, color: 'var(--admin-text)', marginBottom: 2 }}>Block time off</div>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-text3)', marginBottom: 20 }}>
+              {blockBoth ? 'Eric & Livi' : blockSheet.staff === 'eric' ? 'Eric' : 'Livi'} · {fmt(blockSheet.time)} – {fmt(useCustomEnd && customEndTime ? customEndTime : addMin(blockSheet.time, blockDur))}
             </div>
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text3)', marginBottom: 20 }}>
-              {blockSheet.staff === 'eric' ? 'Eric' : 'Livi'} · {fmt(blockSheet.time)} – {fmt(addMin(blockSheet.time, blockDur))}
+
+            {/* Label chips */}
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--admin-muted)', marginBottom: 8 }}>Label</div>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+              {QUICK_LABELS.map((lbl) => {
+                const active = blockLabel === lbl;
+                return (
+                  <button key={lbl} onClick={() => setBlockLabel(active ? '' : lbl)} style={{ padding: '7px 12px', borderRadius: 20, border: active ? '1.5px solid var(--admin-text)' : '1px solid var(--admin-border)', background: active ? 'var(--admin-text-tint)' : 'none', fontFamily: 'var(--font-body)', fontSize: 13, color: active ? 'var(--admin-text)' : 'var(--admin-text2)', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
+                    {lbl}
+                  </button>
+                );
+              })}
             </div>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-              {[30, 60, 90, 120].map((d) => (
-                <button
-                  key={d}
-                  onClick={() => setBlockDur(d)}
-                  style={{
-                    flex: 1, padding: '10px 0', borderRadius: 8,
-                    border: blockDur === d ? `1.5px solid var(--admin-text)` : '1px solid var(--admin-border)',
-                    background: blockDur === d ? 'var(--admin-text-tint)' : 'none',
-                    fontFamily: 'var(--font-body)', fontSize: 13,
-                    color: blockDur === d ? 'var(--admin-text)' : 'var(--admin-text2)',
-                    cursor: 'pointer',
-                  }}
+            <input
+              type="text"
+              value={blockLabel}
+              onChange={(e) => setBlockLabel(e.target.value)}
+              placeholder="Custom label…"
+              style={{ width: '100%', boxSizing: 'border-box', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--admin-border)', background: 'var(--admin-btn)', fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)', outline: 'none', marginBottom: 20 }}
+            />
+
+            {/* Duration */}
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--admin-muted)', marginBottom: 8 }}>Duration</div>
+            <div style={{ display: 'flex', gap: 6, marginBottom: useCustomEnd ? 10 : 20 }}>
+              {[30, 60, 90, 120, 180].map((d) => {
+                const active = !useCustomEnd && blockDur === d;
+                return (
+                  <button key={d} onClick={() => { setUseCustomEnd(false); setBlockDur(d); }} style={{ flex: 1, padding: '10px 0', borderRadius: 8, border: active ? '1.5px solid var(--admin-text)' : '1px solid var(--admin-border)', background: active ? 'var(--admin-text-tint)' : 'none', fontFamily: 'var(--font-body)', fontSize: 12, color: active ? 'var(--admin-text)' : 'var(--admin-text2)', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
+                    {d < 60 ? `${d}m` : d % 60 === 0 ? `${d / 60}h` : `${Math.floor(d / 60)}h${d % 60}`}
+                  </button>
+                );
+              })}
+              <button onClick={() => setUseCustomEnd(true)} style={{ flex: 1, padding: '10px 0', borderRadius: 8, border: useCustomEnd ? '1.5px solid var(--admin-text)' : '1px solid var(--admin-border)', background: useCustomEnd ? 'var(--admin-text-tint)' : 'none', fontFamily: 'var(--font-body)', fontSize: 12, color: useCustomEnd ? 'var(--admin-text)' : 'var(--admin-text2)', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
+                Custom
+              </button>
+            </div>
+            {useCustomEnd && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-muted)', marginBottom: 6 }}>End time</div>
+                <select
+                  value={customEndTime}
+                  onChange={(e) => setCustomEndTime(e.target.value)}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--admin-border)', background: 'var(--admin-btn)', fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)', outline: 'none' }}
                 >
-                  {d < 60 ? `${d}m` : `${d / 60}h`}
-                </button>
-              ))}
-            </div>
+                  {endTimeOptions(blockSheet.time).map((t) => (
+                    <option key={t} value={t}>{fmt(t)}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Block both toggle */}
+            <button
+              onClick={() => setBlockBoth((b) => !b)}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '13px 14px', borderRadius: 10, border: '1px solid var(--admin-border)', background: 'none', cursor: 'pointer', WebkitTapHighlightColor: 'transparent', marginBottom: 20 }}
+            >
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)' }}>Block both Eric & Livi</span>
+              <span style={{ width: 44, height: 26, borderRadius: 13, background: blockBoth ? '#34C759' : 'var(--admin-border)', display: 'flex', alignItems: 'center', padding: '0 3px', transition: 'background 0.2s', justifyContent: blockBoth ? 'flex-end' : 'flex-start', flexShrink: 0 }}>
+                <span style={{ width: 20, height: 20, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+              </span>
+            </button>
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <SlotBtn label="Block" variant="muted" onClick={confirmBlock} />
               <SlotBtn label="Cancel" variant="ghost" onClick={() => setBlockSheet(null)} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── block delete sheet ───────────────────────────────────────────── */}
+      {blockDelSheet && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 60 }} onClick={() => setBlockDelSheet(null)}>
+          <div onClick={(e) => e.stopPropagation()} style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'var(--admin-sheet)', borderRadius: '16px 16px 0 0', padding: '24px 20px 44px' }}>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 500, color: 'var(--admin-text)', marginBottom: 2 }}>
+              {blockDelSheet.service && blockDelSheet.service !== 'Blocked' ? blockDelSheet.service : 'Blocked'}
+            </div>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-text3)', marginBottom: 24 }}>
+              {blockDelSheet.staff === 'eric' ? 'Eric' : 'Livi'} · {fmt(blockDelSheet.startTime)} – {fmt(blockDelSheet.endTime)}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <SlotBtn label="Remove block" variant="danger" onClick={() => deleteBlock(blockDelSheet)} />
+              <SlotBtn label="Keep it" variant="ghost" onClick={() => setBlockDelSheet(null)} />
             </div>
           </div>
         </div>
@@ -623,9 +723,9 @@ export default function DaySchedule({
   );
 }
 
-function SlotBtn({ label, variant, onClick }: { label: string; variant: 'primary' | 'ghost' | 'muted'; onClick: () => void }) {
-  const bg = variant === 'primary' ? 'var(--admin-btn-primary-bg)' : variant === 'muted' ? 'var(--admin-btn)' : 'none';
-  const fg = variant === 'primary' ? 'var(--admin-btn-primary-fg)' : variant === 'muted' ? 'var(--admin-text)' : 'var(--admin-text2)';
+function SlotBtn({ label, variant, onClick }: { label: string; variant: 'primary' | 'ghost' | 'muted' | 'danger'; onClick: () => void }) {
+  const bg = variant === 'primary' ? 'var(--admin-btn-primary-bg)' : variant === 'muted' ? 'var(--admin-btn)' : variant === 'danger' ? '#FF3B30' : 'none';
+  const fg = variant === 'primary' ? 'var(--admin-btn-primary-fg)' : variant === 'muted' ? 'var(--admin-text)' : variant === 'danger' ? '#fff' : 'var(--admin-text2)';
   const border = variant === 'ghost' ? '1px solid var(--admin-border)' : 'none';
   return (
     <button

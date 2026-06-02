@@ -78,8 +78,26 @@ type DragRef = {
   scrollCancelled: boolean;
 };
 
-type DragConfirm = { apt: Appointment; newStartTime: string; newEndTime: string } | null;
-type SlotAction  = { date: string; time: string } | null;
+type DragConfirm  = { apt: Appointment; newStartTime: string; newEndTime: string } | null;
+type SlotAction   = { date: string; time: string } | null;
+type WGBlockSheet = { date: string; time: string; staff: 'eric' | 'livi' | 'both' } | null;
+
+const QUICK_LABELS_WG = ['Lunch', 'Break', 'Personal', 'Studio closed'] as const;
+
+function timeDiffWG(start: string, end: string): number {
+  const [sh, sm] = start.split(':').map(Number);
+  const [eh, em] = end.split(':').map(Number);
+  return (eh * 60 + em) - (sh * 60 + sm);
+}
+function endTimeOptionsWG(startTime: string): string[] {
+  const [sh, sm] = startTime.split(':').map(Number);
+  const startMin = sh * 60 + sm;
+  const opts: string[] = [];
+  for (let m = startMin + 15; m <= H1 * 60; m += 15) {
+    opts.push(`${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`);
+  }
+  return opts;
+}
 
 // ── component ─────────────────────────────────────────────────────────────────
 export default function WeekGridView({
@@ -108,11 +126,17 @@ export default function WeekGridView({
   const aptEls    = useRef<Map<string, HTMLElement>>(new Map());
   const nowRef    = useRef<HTMLDivElement>(null);
 
-  const [apts,         setApts]         = useState(initial);
-  const [draggingId,   setDraggingId]   = useState<string | null>(null);
-  const [draggingDate, setDraggingDate] = useState<string | null>(null);
-  const [dragConfirm,  setDragConfirm]  = useState<DragConfirm>(null);
-  const [slotAction,   setSlotAction]   = useState<SlotAction>(null);
+  const [apts,          setApts]          = useState(initial);
+  const [draggingId,    setDraggingId]    = useState<string | null>(null);
+  const [draggingDate,  setDraggingDate]  = useState<string | null>(null);
+  const [dragConfirm,   setDragConfirm]   = useState<DragConfirm>(null);
+  const [slotAction,    setSlotAction]    = useState<SlotAction>(null);
+  const [blockSheet,    setBlockSheet]    = useState<WGBlockSheet>(null);
+  const [blockDelSheet, setBlockDelSheet] = useState<Appointment | null>(null);
+  const [blockLabel,    setBlockLabel]    = useState('');
+  const [blockDur,      setBlockDur]      = useState(60);
+  const [useCustomEnd,  setUseCustomEnd]  = useState(false);
+  const [customEndTime, setCustomEndTime] = useState('');
 
   const today    = new Date();
   const todayStr = localStr(today);
@@ -212,8 +236,8 @@ export default function WeekGridView({
     setDraggingDate(null);
     if (!drag) return;
     if (drag.scrollCancelled) return;
-    if (!drag.longPressReady && !drag.hasMoved) { router.push(`/admin/appointments/${apt.id}`); return; }
-    if (drag.longPressReady && !drag.hasMoved) { router.push(`/admin/appointments/${apt.id}`); return; }
+    if (!drag.longPressReady && !drag.hasMoved) { if (apt.status === 'blocked') { setBlockDelSheet(apt); } else { router.push(`/admin/appointments/${apt.id}`); } return; }
+    if (drag.longPressReady && !drag.hasMoved) { if (apt.status === 'blocked') { setBlockDelSheet(apt); } else { router.push(`/admin/appointments/${apt.id}`); } return; }
     if (drag.longPressReady && drag.hasMoved) {
       const newStart = m2t(Math.round(drag.currentTopPx / PPM / 15) * 15);
       const newEnd   = addMin(newStart, apt.durationMinutes);
@@ -273,7 +297,7 @@ export default function WeekGridView({
       setDraggingId(null);
       setDraggingDate(null);
       if (!drag) return;
-      if (!drag.hasMoved) { router.push(`/admin/appointments/${apt.id}`); return; }
+      if (!drag.hasMoved) { if (apt.status === 'blocked') { setBlockDelSheet(apt); } else { router.push(`/admin/appointments/${apt.id}`); } return; }
       const newStart = m2t(Math.round(drag.currentTopPx / PPM / 15) * 15);
       setDragConfirm({ apt, newStartTime: newStart, newEndTime: addMin(newStart, apt.durationMinutes) });
     }
@@ -294,6 +318,44 @@ export default function WeekGridView({
         body: JSON.stringify({ startTime: newStartTime, endTime: newEndTime }),
       });
     } catch { /* fail silently */ }
+  }
+
+  async function confirmBlock() {
+    if (!blockSheet) return;
+    const label   = blockLabel.trim() || 'Blocked';
+    const endTime = useCustomEnd ? customEndTime : addMin(blockSheet.time, blockDur);
+    const dur     = useCustomEnd ? timeDiffWG(blockSheet.time, customEndTime) : blockDur;
+    if (dur <= 0) return;
+    const staffList = blockSheet.staff === 'both' ? (['eric', 'livi'] as const) : [blockSheet.staff];
+    const results = await Promise.all(
+      staffList.map((staff) =>
+        fetch('/api/admin/appointments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            date: blockSheet.date, startTime: blockSheet.time, endTime,
+            staff, clientName: '', clientEmail: '', clientPhone: '',
+            service: label, durationMinutes: dur, price: 0, status: 'blocked',
+          }),
+        }).then((r) => (r.ok ? r.json() : null)).catch(() => null)
+      )
+    );
+    setApts((prev) => [...prev, ...results.filter(Boolean)]);
+    setBlockSheet(null);
+    setBlockLabel('');
+    setUseCustomEnd(false);
+  }
+
+  async function deleteBlock(apt: Appointment) {
+    setApts((prev) => prev.filter((a) => a.id !== apt.id));
+    setBlockDelSheet(null);
+    try {
+      await fetch(`/api/admin/appointments/${apt.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'cancelled' }),
+      });
+    } catch { /* silent */ }
   }
 
   const navArrow: React.CSSProperties = {
@@ -438,16 +500,24 @@ export default function WeekGridView({
                       boxSizing: 'border-box',
                     }}
                   >
-                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500, color: 'var(--admin-text)', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: apt.notes ? 10 : 0 }}>
-                      {apt.clientName}
-                    </div>
-                    {hPx > 36 && (
-                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-text3)', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}>
-                        {apt.service}
+                    {apt.status === 'blocked' ? (
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', fontStyle: 'italic', lineHeight: 1.2 }}>
+                        {apt.service && apt.service !== 'Blocked' ? apt.service : 'Blocked'}
                       </div>
-                    )}
-                    {apt.notes && (
-                      <div style={{ position: 'absolute', top: 3, right: 3, fontSize: 10, color: '#b5824a', lineHeight: 1 }}>≡</div>
+                    ) : (
+                      <>
+                        <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500, color: 'var(--admin-text)', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: apt.notes ? 10 : 0 }}>
+                          {apt.clientName}
+                        </div>
+                        {hPx > 36 && (
+                          <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-text3)', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}>
+                            {apt.service}
+                          </div>
+                        )}
+                        {apt.notes && (
+                          <div style={{ position: 'absolute', top: 3, right: 3, fontSize: 10, color: '#b5824a', lineHeight: 1 }}>≡</div>
+                        )}
+                      </>
                     )}
                   </div>
                 );
@@ -508,7 +578,94 @@ export default function WeekGridView({
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <SlotBtn label="Book Eric" variant="primary" onClick={() => { const { date, time } = slotAction; setSlotAction(null); router.push(`/admin/new-booking?date=${date}&staff=eric&time=${time}`); }} />
               <SlotBtn label="Book Livi" variant="primary" onClick={() => { const { date, time } = slotAction; setSlotAction(null); router.push(`/admin/new-booking?date=${date}&staff=livi&time=${time}`); }} />
+              <SlotBtn label="Block time off" variant="ghost" onClick={() => {
+                const { date, time } = slotAction;
+                setSlotAction(null);
+                setBlockSheet({ date, time, staff: 'eric' });
+                setBlockLabel('');
+                setBlockDur(60);
+                setUseCustomEnd(false);
+                setCustomEndTime(addMin(time, 60));
+              }} />
               <SlotBtn label="Cancel" variant="ghost" onClick={() => setSlotAction(null)} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── block-time sheet ──────────────────────────────────────────────── */}
+      {blockSheet && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 60 }} onClick={() => setBlockSheet(null)}>
+          <div onClick={(e) => e.stopPropagation()} style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'var(--admin-sheet)', borderRadius: '16px 16px 0 0', padding: '24px 20px 44px', overflowY: 'auto', maxHeight: '90vh' }}>
+
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 500, color: 'var(--admin-text)', marginBottom: 2 }}>Block time off</div>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-text3)', marginBottom: 16 }}>
+              {fmtDateShort(blockSheet.date)} · {fmt(blockSheet.time)} – {fmt(useCustomEnd && customEndTime ? customEndTime : addMin(blockSheet.time, blockDur))}
+            </div>
+
+            {/* Staff picker */}
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--admin-muted)', marginBottom: 8 }}>Staff</div>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
+              {(['eric', 'livi', 'both'] as const).map((s) => (
+                <button key={s} onClick={() => setBlockSheet({ ...blockSheet, staff: s })} style={{ flex: 1, padding: '10px 0', borderRadius: 8, border: blockSheet.staff === s ? '1.5px solid var(--admin-text)' : '1px solid var(--admin-border)', background: blockSheet.staff === s ? 'var(--admin-text-tint)' : 'none', fontFamily: 'var(--font-body)', fontSize: 13, color: blockSheet.staff === s ? 'var(--admin-text)' : 'var(--admin-text2)', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
+                  {s === 'both' ? 'Both' : s === 'eric' ? 'Eric' : 'Livi'}
+                </button>
+              ))}
+            </div>
+
+            {/* Label chips */}
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--admin-muted)', marginBottom: 8 }}>Label</div>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+              {QUICK_LABELS_WG.map((lbl) => {
+                const active = blockLabel === lbl;
+                return (
+                  <button key={lbl} onClick={() => setBlockLabel(active ? '' : lbl)} style={{ padding: '7px 12px', borderRadius: 20, border: active ? '1.5px solid var(--admin-text)' : '1px solid var(--admin-border)', background: active ? 'var(--admin-text-tint)' : 'none', fontFamily: 'var(--font-body)', fontSize: 13, color: active ? 'var(--admin-text)' : 'var(--admin-text2)', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
+                    {lbl}
+                  </button>
+                );
+              })}
+            </div>
+            <input type="text" value={blockLabel} onChange={(e) => setBlockLabel(e.target.value)} placeholder="Custom label…" style={{ width: '100%', boxSizing: 'border-box', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--admin-border)', background: 'var(--admin-btn)', fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)', outline: 'none', marginBottom: 20 }} />
+
+            {/* Duration */}
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--admin-muted)', marginBottom: 8 }}>Duration</div>
+            <div style={{ display: 'flex', gap: 6, marginBottom: useCustomEnd ? 10 : 20 }}>
+              {[30, 60, 90, 120, 180].map((d) => {
+                const active = !useCustomEnd && blockDur === d;
+                return <button key={d} onClick={() => { setUseCustomEnd(false); setBlockDur(d); }} style={{ flex: 1, padding: '10px 0', borderRadius: 8, border: active ? '1.5px solid var(--admin-text)' : '1px solid var(--admin-border)', background: active ? 'var(--admin-text-tint)' : 'none', fontFamily: 'var(--font-body)', fontSize: 12, color: active ? 'var(--admin-text)' : 'var(--admin-text2)', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>{d < 60 ? `${d}m` : d % 60 === 0 ? `${d / 60}h` : `${Math.floor(d / 60)}h${d % 60}`}</button>;
+              })}
+              <button onClick={() => setUseCustomEnd(true)} style={{ flex: 1, padding: '10px 0', borderRadius: 8, border: useCustomEnd ? '1.5px solid var(--admin-text)' : '1px solid var(--admin-border)', background: useCustomEnd ? 'var(--admin-text-tint)' : 'none', fontFamily: 'var(--font-body)', fontSize: 12, color: useCustomEnd ? 'var(--admin-text)' : 'var(--admin-text2)', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>Custom</button>
+            </div>
+            {useCustomEnd && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-muted)', marginBottom: 6 }}>End time</div>
+                <select value={customEndTime} onChange={(e) => setCustomEndTime(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--admin-border)', background: 'var(--admin-btn)', fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)', outline: 'none' }}>
+                  {endTimeOptionsWG(blockSheet.time).map((t) => <option key={t} value={t}>{fmt(t)}</option>)}
+                </select>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <SlotBtn label="Block" variant="muted" onClick={confirmBlock} />
+              <SlotBtn label="Cancel" variant="ghost" onClick={() => setBlockSheet(null)} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── block delete sheet ────────────────────────────────────────────── */}
+      {blockDelSheet && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 60 }} onClick={() => setBlockDelSheet(null)}>
+          <div onClick={(e) => e.stopPropagation()} style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'var(--admin-sheet)', borderRadius: '16px 16px 0 0', padding: '24px 20px 44px' }}>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 500, color: 'var(--admin-text)', marginBottom: 2 }}>
+              {blockDelSheet.service && blockDelSheet.service !== 'Blocked' ? blockDelSheet.service : 'Blocked'}
+            </div>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-text3)', marginBottom: 24 }}>
+              {blockDelSheet.staff === 'eric' ? 'Eric' : 'Livi'} · {fmt(blockDelSheet.startTime)} – {fmt(blockDelSheet.endTime)}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <SlotBtn label="Remove block" variant="danger" onClick={() => deleteBlock(blockDelSheet)} />
+              <SlotBtn label="Keep it" variant="ghost" onClick={() => setBlockDelSheet(null)} />
             </div>
           </div>
         </div>
@@ -517,9 +674,9 @@ export default function WeekGridView({
   );
 }
 
-function SlotBtn({ label, variant, onClick }: { label: string; variant: 'primary' | 'ghost'; onClick: () => void }) {
-  const bg     = variant === 'primary' ? 'var(--admin-btn-primary-bg)' : 'none';
-  const fg     = variant === 'primary' ? 'var(--admin-btn-primary-fg)' : 'var(--admin-text2)';
+function SlotBtn({ label, variant, onClick }: { label: string; variant: 'primary' | 'ghost' | 'muted' | 'danger'; onClick: () => void }) {
+  const bg     = variant === 'primary' ? 'var(--admin-btn-primary-bg)' : variant === 'muted' ? 'var(--admin-btn)' : variant === 'danger' ? '#FF3B30' : 'none';
+  const fg     = variant === 'primary' ? 'var(--admin-btn-primary-fg)' : variant === 'muted' ? 'var(--admin-text)' : variant === 'danger' ? '#fff' : 'var(--admin-text2)';
   const border = variant === 'ghost'   ? '1px solid var(--admin-border)' : 'none';
   return (
     <button onClick={onClick} style={{ width: '100%', padding: '14px', borderRadius: 10, border, background: bg, color: fg, fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: variant === 'primary' ? 500 : 400, cursor: 'pointer' }}>
