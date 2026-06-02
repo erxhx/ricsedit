@@ -67,7 +67,7 @@ export const THEME_VARS: Record<AdminTheme, Record<string, string>> = {
     '--admin-text':              '#ece9e2',
     '--admin-text2':             '#b8b3a8',
     '--admin-text3':             '#a09a90',
-    '--admin-muted':             '#6a6560',
+    '--admin-muted':             '#8a8480', // #6a6560 was ~3.8:1 on dark bg; #8a8480 = ~5.5:1
     '--admin-btn':               '#252320',
     '--admin-btn-border':        '#3a3834',
     '--admin-btn-primary-bg':    '#ece9e2',
