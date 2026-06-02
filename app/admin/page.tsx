@@ -7,7 +7,7 @@ import AdminHeader from '@/components/admin/AdminHeader';
 import DashboardTabs from '@/components/admin/DashboardTabs';
 
 function localDateStr(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return d.toLocaleDateString('en-CA', { timeZone: 'America/Vancouver' });
 }
 
 export default async function AdminPage({

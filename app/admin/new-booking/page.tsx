@@ -16,7 +16,7 @@ export default async function NewBookingPage({
   if (!session) redirect('/admin/login');
 
   const { date, staff, time } = await searchParams;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Vancouver' });
   const servicesData = getServicesStore();
 
   return (
