@@ -947,6 +947,132 @@
 
 
 
+  // ── Step: Intake Form ────────────────────────────────────────────────────────
+
+  function StepIntakeForm(props) {
+    var { useState } = React;
+    var form = props.form;
+    var [responses, setResponses] = useState({});
+    var [showErrors, setShowErrors] = useState(false);
+
+    function setResp(id, value) {
+      setResponses(function(r) { return Object.assign({}, r, { [id]: value }); });
+    }
+
+    function toggleCheck(id, opt) {
+      var cur = responses[id] || [];
+      var next = cur.indexOf(opt) >= 0
+        ? cur.filter(function(o) { return o !== opt; })
+        : cur.concat([opt]);
+      setResp(id, next);
+    }
+
+    function isValid() {
+      return (form.fields || []).every(function(f) {
+        if (!f.required) return true;
+        var v = responses[f.id];
+        if (!v) return false;
+        if (Array.isArray(v)) return v.length > 0;
+        return v.toString().trim() !== '';
+      });
+    }
+
+    function missing(id) {
+      if (!showErrors) return false;
+      var f = (form.fields || []).find(function(x) { return x.id === id; });
+      if (!f || !f.required) return false;
+      var v = responses[id];
+      if (!v) return true;
+      if (Array.isArray(v)) return v.length === 0;
+      return v.toString().trim() === '';
+    }
+
+    var INP = { width: '100%', boxSizing: 'border-box', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--rule)', background: 'var(--paper)', fontFamily: 'var(--body)', fontSize: 14, color: 'var(--ink)', outline: 'none', marginTop: 6 };
+
+    function renderField(f) {
+      var err = missing(f.id);
+      var errBorder = err ? { borderColor: '#c0392b' } : {};
+      var label = React.createElement('div', { style: { fontFamily: 'var(--body)', fontSize: 13, color: err ? '#c0392b' : 'var(--ink)', marginBottom: 0 } },
+        f.label, f.required && React.createElement('span', { style: { color: '#c0392b', marginLeft: 2 } }, '*')
+      );
+
+      if (f.type === 'yes_no') {
+        var val = responses[f.id];
+        return React.createElement('div', { key: f.id, style: { marginBottom: 20 } },
+          label,
+          React.createElement('div', { style: { display: 'flex', gap: 8, marginTop: 8 } },
+            ['Yes', 'No'].map(function(opt) {
+              var sel = val === opt.toLowerCase();
+              return React.createElement('button', {
+                key: opt, type: 'button',
+                onClick: function() { setResp(f.id, opt.toLowerCase()); },
+                style: { flex: 1, padding: '10px 0', borderRadius: 8, border: '1px solid ' + (sel ? 'var(--ink)' : (err ? '#c0392b' : 'var(--rule)')), background: sel ? 'var(--ink)' : 'transparent', color: sel ? 'var(--bg)' : 'var(--ink)', fontFamily: 'var(--body)', fontSize: 14, cursor: 'pointer', transition: 'all 0.12s' }
+              }, opt);
+            })
+          )
+        );
+      }
+
+      if (f.type === 'checkbox_group') {
+        return React.createElement('div', { key: f.id, style: { marginBottom: 20 } },
+          label,
+          React.createElement('div', { style: { display: 'flex', flexWrap: 'wrap', gap: '6px 16px', marginTop: 8 } },
+            (f.options || []).map(function(opt) {
+              var sel = (responses[f.id] || []).indexOf(opt) >= 0;
+              return React.createElement('label', { key: opt, style: { display: 'flex', alignItems: 'center', gap: 7, cursor: 'pointer', fontFamily: 'var(--body)', fontSize: 13, color: 'var(--ink-soft)', userSelect: 'none', minWidth: '45%' } },
+                React.createElement('span', { onClick: function() { toggleCheck(f.id, opt); }, style: { flex: '0 0 auto', width: 18, height: 18, borderRadius: 3, border: '1px solid ' + (sel ? 'var(--ink)' : 'var(--rule)'), background: sel ? 'var(--ink)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.12s' } },
+                  sel && React.createElement('span', { style: { color: 'var(--bg)', fontSize: 11, fontWeight: 700 } }, '✓')
+                ),
+                React.createElement('span', { onClick: function() { toggleCheck(f.id, opt); } }, opt)
+              );
+            })
+          )
+        );
+      }
+
+      if (f.type === 'signature') {
+        return React.createElement('div', { key: f.id, style: { marginBottom: 20 } },
+          label,
+          React.createElement('input', { type: 'text', placeholder: 'Type your full name', value: responses[f.id] || '', onChange: function(e) { setResp(f.id, e.target.value); }, style: Object.assign({}, INP, errBorder, { fontStyle: 'italic', fontSize: 16 }) })
+        );
+      }
+
+      if (f.type === 'textarea') {
+        return React.createElement('div', { key: f.id, style: { marginBottom: 20 } },
+          label,
+          React.createElement('textarea', { value: responses[f.id] || '', onChange: function(e) { setResp(f.id, e.target.value); }, rows: 3, style: Object.assign({}, INP, errBorder, { resize: 'vertical', lineHeight: 1.5 }) })
+        );
+      }
+
+      var inputType = f.type === 'email' ? 'email' : f.type === 'phone' ? 'tel' : f.type === 'date' ? 'date' : 'text';
+      return React.createElement('div', { key: f.id, style: { marginBottom: 20 } },
+        label,
+        React.createElement('input', { type: inputType, value: responses[f.id] || '', onChange: function(e) { setResp(f.id, e.target.value); }, style: Object.assign({}, INP, errBorder) })
+      );
+    }
+
+    if (!form) {
+      return React.createElement('div', { style: { padding: '40px 0', textAlign: 'center', color: 'var(--ink-soft)', fontFamily: 'var(--body)', fontSize: 13 } }, 'Loading form…');
+    }
+
+    return React.createElement('div', null,
+      React.createElement(BkBack, { onClick: props.onBack }),
+      React.createElement(BkEyebrow, { left: 'Intake form', right: 'Required before your appointment' }),
+      React.createElement('h3', { style: { fontFamily: 'var(--display)', fontWeight: 300, fontStyle: 'italic', fontSize: 'clamp(24px,4vw,32px)', margin: '0 0 8px', letterSpacing: '-0.01em', lineHeight: 1.1 } }, form.title),
+      form.description && React.createElement('p', { style: { fontFamily: 'var(--body)', fontSize: 13, lineHeight: 1.65, color: 'var(--ink-soft)', marginBottom: 24, maxWidth: '56ch' } }, form.description),
+      React.createElement('div', { style: { marginBottom: 8 } },
+        (form.fields || []).map(function(f) { return renderField(f); })
+      ),
+      showErrors && !isValid() && React.createElement('p', { style: { fontFamily: 'var(--body)', fontSize: 12, color: '#c0392b', marginBottom: 16 } }, 'Please fill in all required fields (marked with *).'),
+      React.createElement(BkBtn, {
+        onClick: function() {
+          if (!isValid()) { setShowErrors(true); return; }
+          props.onNext(responses);
+        }
+      }, 'Review booking')
+    );
+  }
+
   // ── Step: Confirm ──────────────────────────────────────────────────────────
 
   function StepConfirm(props) {
