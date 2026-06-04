@@ -220,21 +220,17 @@
       }
       return result;
     }
-    var BK_WAIVERS = {
-      tan: { enabled: true, text: "I confirm I have no known allergies to the ingredients in NUDA spray tan solutions, and that I have followed the preparation guidelines \u2014 including exfoliating 24\u201348 hours prior and avoiding oils, lotions, and deodorant on the day of. I understand that results vary by skin type and preparation, and that Edit Studio is not liable for reactions resulting from undisclosed allergies or failure to follow prep guidelines.", checkboxLabel: "I have read and agree to the above." },
-      wax: { enabled: true, text: "I confirm I have not applied retinol, AHA/BHA exfoliants, or received direct sun exposure on the areas to be waxed within 24 hours prior to my appointment. I understand that waxing results vary by skin type and hair growth cycle, and that Edit Studio is not liable for reactions resulting from undisclosed skin conditions or failure to follow aftercare instructions.", checkboxLabel: "I have read and agree to the above." }
-    };
+    var BK_INTAKE_FORMS = { tan: null, wax: null };
     (function() {
       var endpoint = (window.__booking || {}).endpoint || "";
       var base = endpoint.replace(/\/api\/booking\/create$/, "") || window.location.origin;
-      if (!base) return;
-      fetch(base + "/api/booking/waivers").then(function(r) {
-        return r.ok ? r.json() : null;
-      }).then(function(d) {
-        if (!d) return;
-        if (d.tan) BK_WAIVERS.tan = d.tan;
-        if (d.wax) BK_WAIVERS.wax = d.wax;
-      }).catch(function() {
+      ["tan", "wax"].forEach(function(cat) {
+        fetch(base + "/api/booking/intake-form?category=" + cat).then(function(r) {
+          return r.ok ? r.json() : null;
+        }).then(function(d) {
+          if (d) BK_INTAKE_FORMS[cat] = d;
+        }).catch(function() {
+        });
       });
     })();
     var BK_CONTACTS_KEY = "es-contacts";
@@ -243,34 +239,6 @@
         return JSON.parse(localStorage.getItem(BK_CONTACTS_KEY) || "[]");
       } catch (e) {
         return [];
-      }
-    }
-    var BK_WAIVERS_KEY = "es-waivers-v1";
-    function bkHasSignedWaiver(phone, category) {
-      try {
-        var digits = phone.replace(/\D/g, "");
-        if (!digits) return false;
-        var signed = JSON.parse(localStorage.getItem(BK_WAIVERS_KEY) || "[]");
-        var cutoff = /* @__PURE__ */ new Date();
-        cutoff.setFullYear(cutoff.getFullYear() - 1);
-        return signed.some(function(w) {
-          return w.phone === digits && w.category === category && new Date(w.signedAt) > cutoff;
-        });
-      } catch (e) {
-        return false;
-      }
-    }
-    function bkSaveWaiverSigning(phone, category) {
-      try {
-        var digits = phone.replace(/\D/g, "");
-        if (!digits) return;
-        var signed = JSON.parse(localStorage.getItem(BK_WAIVERS_KEY) || "[]");
-        signed = signed.filter(function(w) {
-          return !(w.phone === digits && w.category === category);
-        });
-        signed.push({ phone: digits, category, signedAt: (/* @__PURE__ */ new Date()).toISOString() });
-        localStorage.setItem(BK_WAIVERS_KEY, JSON.stringify(signed.slice(-50)));
-      } catch (e) {
       }
     }
     function bkSaveContact(form) {
@@ -844,46 +812,6 @@
         } }, "Continue")))
       ));
     }
-    function StepWaiver(props) {
-      var { useState } = React;
-      var [agreed, setAgreed] = useState(false);
-      var category = props.category;
-      var waiver = category === "tan" ? BK_WAIVERS.tan : BK_WAIVERS.wax;
-      var text = waiver.text;
-      var checkboxLabel = waiver.checkboxLabel;
-      return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement(BkBack, { onClick: props.onBack }), /* @__PURE__ */ React.createElement(BkEyebrow, { left: "Service waiver", right: "Read carefully" }), /* @__PURE__ */ React.createElement("h3", { style: { fontFamily: "var(--display)", fontWeight: 300, fontStyle: "italic", fontSize: "clamp(24px,4vw,32px)", margin: "0 0 18px", letterSpacing: "-0.01em", lineHeight: 1.1 } }, "Before we confirm."), /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "var(--body)", fontSize: 13, lineHeight: 1.65, color: "var(--ink-soft)", marginBottom: 28, maxWidth: "56ch" } }, text), /* @__PURE__ */ React.createElement(
-        "label",
-        {
-          style: { display: "flex", alignItems: "flex-start", gap: 14, cursor: "pointer", marginBottom: 28 },
-          onClick: function() {
-            setAgreed(function(a) {
-              return !a;
-            });
-          }
-        },
-        /* @__PURE__ */ React.createElement("span", { style: {
-          flex: "0 0 auto",
-          width: 20,
-          height: 20,
-          borderRadius: 2,
-          marginTop: 1,
-          border: "1px solid " + (agreed ? "var(--ink)" : "var(--rule)"),
-          background: agreed ? "var(--ink)" : "transparent",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          transition: "background 0.15s ease, border-color 0.15s ease"
-        } }, agreed && /* @__PURE__ */ React.createElement("span", { style: { color: "var(--bg)", fontSize: 12, lineHeight: 1, fontWeight: 700 } }, "\u2713")),
-        /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--body)", fontSize: 13, lineHeight: 1.5, color: "var(--ink-soft)", userSelect: "none" } }, checkboxLabel)
-      ), /* @__PURE__ */ React.createElement(BkBtn, { onClick: function() {
-        if (agreed) {
-          if (props.client && props.client.phone) {
-            bkSaveWaiverSigning(props.client.phone, category);
-          }
-          props.onNext();
-        }
-      }, disabled: !agreed }, "Review booking"));
-    }
     function StepConfirm(props) {
       var all = props.services.concat(props.addons);
       var total = bkTotalPrice(all);
@@ -975,6 +903,7 @@
       var [time, setTime] = useState(null);
       var [client, setClient] = useState(null);
       var [submitting, setSubmitting] = useState(false);
+      var [intakeResponses, setIntakeResponses] = useState({});
       var [error, setError] = useState(null);
       var [manageToken, setManageToken] = useState(null);
       var [prefillActive, setPrefillActive] = useState(false);
@@ -984,12 +913,10 @@
       var PROGRESS = { category: 0, service: 0.15, datetime: 0.38, client: 0.58, waiver: 0.75, confirm: 0.88, done: 1 };
       var progress = PROGRESS[step] || 0;
       var catLabel = category === "barber" ? "Barbering" : category === "tan" ? "Sunless" : category === "wax" ? "Waxing" : "Book now";
-      function needsWaiver(cat, clientInfo) {
+      function needsIntakeForm(cat) {
         if (cat !== "tan" && cat !== "wax") return false;
-        var cfg = cat === "tan" ? BK_WAIVERS.tan : BK_WAIVERS.wax;
-        if (!cfg.enabled) return false;
-        if (clientInfo && clientInfo.phone && bkHasSignedWaiver(clientInfo.phone, cat)) return false;
-        return true;
+        var form = cat === "tan" ? BK_INTAKE_FORMS.tan : BK_INTAKE_FORMS.wax;
+        return form && form.fields && form.fields.length > 0;
       }
       async function handleConfirm() {
         setSubmitting(true);
@@ -1000,7 +927,7 @@
             var res = await fetch(endpoint, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ category, services, addons, date: date.toISOString(), time, client })
+              body: JSON.stringify({ category, services, addons, date: date.toISOString(), time, client, intakeResponses })
             });
             if (!res.ok) throw new Error("Booking failed. Please try again or call us at 778 535 3348.");
             var data = await res.json();
@@ -1104,22 +1031,23 @@
           savedContacts,
           onNext: function(info) {
             setClient(info);
-            setStep(needsWaiver(category, info) ? "waiver" : "confirm");
+            setStep(needsIntakeForm(category) ? "waiver" : "confirm");
           },
           onBack: function() {
             setStep(prefillActive ? "service" : "datetime");
           }
         }
       ), step === "waiver" && /* @__PURE__ */ React.createElement(
-        StepWaiver,
+        StepIntakeForm,
         {
+          form: category === "tan" ? BK_INTAKE_FORMS.tan : BK_INTAKE_FORMS.wax,
           category,
-          client,
-          onNext: function() {
-            setStep("confirm");
-          },
           onBack: function() {
             setStep("client");
+          },
+          onNext: function(r) {
+            setIntakeResponses(r);
+            setStep("confirm");
           }
         }
       ), step === "confirm" && /* @__PURE__ */ React.createElement(
@@ -1133,7 +1061,7 @@
           client,
           onConfirm: handleConfirm,
           onBack: function() {
-            setStep(needsWaiver(category, client) ? "waiver" : "client");
+            setStep(needsIntakeForm(category) ? "waiver" : "client");
           },
           submitting,
           error
