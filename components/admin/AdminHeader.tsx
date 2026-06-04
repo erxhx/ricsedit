@@ -25,7 +25,8 @@ const NAV: NavItem[] = [
   { label: 'Clients',            href: '/admin/clients',        icon: '⌘' },
   { label: 'Services & Pricing', href: '/admin/services',       icon: '✦' },
   { label: 'Availability',       href: '/admin/availability',   icon: '◷' },
-  { label: 'Intake Forms',       href: '/admin/waivers',        icon: '✎' },
+  { label: 'Intake Forms',       href: '/admin/forms',          icon: '✎' },
+  { label: 'Consent Waivers',   href: '/admin/waivers',        icon: '⊡' },
   { label: 'Live site',          href: '/admin/site',           icon: '⌁' },
   { label: 'Settings',           href: '/admin/settings',       icon: '◎' },
 ];
