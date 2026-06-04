@@ -78,7 +78,7 @@ export default function MonthView({
   // Pad to complete final row
   while (cells.length % 7 !== 0) cells.push(null);
 
-  const canPrevMonth = !(year === new Date(todayStr).getFullYear() && month === new Date(todayStr).getMonth());
+  const canPrevMonth = true; // allow navigating into past months
 
   // Busyness tint
   function cellTint(day: DayInfo): string {
