@@ -41,7 +41,7 @@ function todayPacific(): string {
   }).format(new Date());
 }
 
-/** GET — preview: returns count of unsent upcoming appointments */
+/** GET — returns full appointment list with sent status for each */
 export async function GET() {
   if (!await auth()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -50,12 +50,22 @@ export async function GET() {
     getSentIds(),
   ]);
 
-  const unsent = appointments.filter(a => !sentIds.has(a.id));
+  const rows = appointments.map(a => ({
+    id:          a.id,
+    clientName:  a.clientName,
+    clientEmail: a.clientEmail,
+    service:     a.service,
+    date:        a.date,
+    startTime:   a.startTime,
+    staff:       a.staff,
+    sent:        sentIds.has(a.id),
+  }));
 
   return NextResponse.json({
-    total: appointments.length,
-    unsent: unsent.length,
-    alreadySent: sentIds.size,
+    appointments: rows,
+    total:       rows.length,
+    unsent:      rows.filter(r => !r.sent).length,
+    alreadySent: rows.filter(r =>  r.sent).length,
   });
 }
 

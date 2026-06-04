@@ -1,39 +1,96 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAdminTheme } from './AdminThemeProvider';
 
-type MigrationState = 'idle' | 'loading' | 'previewed' | 'sending' | 'done' | 'error';
+// ── Migration types ───────────────────────────────────────────────────────────
+
+type MigApt = {
+  id: string;
+  clientName: string;
+  clientEmail: string;
+  service: string;
+  date: string;
+  startTime: string;
+  staff: string;
+  sent: boolean;
+};
+
+type MigData = {
+  appointments: MigApt[];
+  total: number;
+  unsent: number;
+  alreadySent: number;
+};
+
+type MigState = 'idle' | 'loading' | 'ready' | 'sending' | 'done' | 'error';
+
+// ── Formatters ────────────────────────────────────────────────────────────────
+
+function fmtDate(s: string): string {
+  const [y, m, d] = s.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('en-CA', {
+    weekday: 'short', month: 'short', day: 'numeric',
+  });
+}
+function fmtTime(t: string): string {
+  const [h, m] = t.split(':').map(Number);
+  const p = h >= 12 ? 'pm' : 'am';
+  const hr = h > 12 ? h - 12 : h === 0 ? 12 : h;
+  return `${hr}:${String(m).padStart(2, '0')} ${p}`;
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
 
 export default function SettingsPanel() {
   const { theme, toggle } = useAdminTheme();
 
-  const [migState,   setMigState]   = useState<MigrationState>('idle');
-  const [migPreview, setMigPreview] = useState<{ total: number; unsent: number; alreadySent: number } | null>(null);
-  const [migResult,  setMigResult]  = useState<{ sent: number; failed: number } | null>(null);
+  const [migState,  setMigState]  = useState<MigState>('idle');
+  const [migData,   setMigData]   = useState<MigData | null>(null);
+  const [sentCount, setSentCount] = useState(0);
+  const [failCount, setFailCount] = useState(0);
+  const [tab,       setTab]       = useState<'pending' | 'sent'>('pending');
 
-  async function previewMigration() {
+  async function loadList() {
     setMigState('loading');
     try {
-      const res = await fetch('/api/admin/migration-emails');
-      const data = await res.json();
-      setMigPreview(data);
-      setMigState('previewed');
+      const res  = await fetch('/api/admin/migration-emails');
+      const data = await res.json() as MigData;
+      setMigData(data);
+      setTab(data.unsent > 0 ? 'pending' : 'sent');
+      setMigState('ready');
     } catch {
       setMigState('error');
     }
   }
 
-  async function sendMigrationEmails() {
+  async function sendEmails() {
     setMigState('sending');
     try {
-      const res = await fetch('/api/admin/migration-emails', { method: 'POST' });
-      const data = await res.json();
-      setMigResult(data);
+      const res  = await fetch('/api/admin/migration-emails', { method: 'POST' });
+      const data = await res.json() as { sent: number; failed: number };
+      setSentCount(data.sent);
+      setFailCount(data.failed);
+      // Refresh the list so statuses update
+      const refreshed = await fetch('/api/admin/migration-emails').then(r => r.json()) as MigData;
+      setMigData(refreshed);
+      setTab('sent');
       setMigState('done');
     } catch {
       setMigState('error');
     }
   }
+
+  function reset() {
+    setMigState('idle');
+    setMigData(null);
+    setSentCount(0);
+    setFailCount(0);
+    setTab('pending');
+  }
+
+  const pendingApts = migData?.appointments.filter(a => !a.sent) ?? [];
+  const sentApts    = migData?.appointments.filter(a =>  a.sent) ?? [];
+  const listApts    = tab === 'pending' ? pendingApts : sentApts;
 
   return (
     <div style={{ padding: '24px 20px 48px' }}>
@@ -45,7 +102,7 @@ export default function SettingsPanel() {
         Settings
       </h1>
 
-      {/* Appearance section */}
+      {/* ── Appearance ───────────────────────────────────────────────── */}
       <div style={{
         fontFamily: 'var(--font-body)', fontSize: 10, letterSpacing: '0.12em',
         textTransform: 'uppercase', color: 'var(--admin-muted)', marginBottom: 12,
@@ -57,53 +114,24 @@ export default function SettingsPanel() {
         background: 'var(--admin-card)', border: '1px solid var(--admin-border)',
         borderRadius: 12, overflow: 'hidden',
       }}>
-        {/* Row label */}
-        <div style={{
-          padding: '14px 16px',
-          borderBottom: '1px solid var(--admin-border-sub)',
-        }}>
-          <div style={{
-            fontFamily: 'var(--font-body)', fontSize: 15,
-            color: 'var(--admin-text)', marginBottom: 3,
-          }}>
+        <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--admin-border-sub)' }}>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: 15, color: 'var(--admin-text)', marginBottom: 3 }}>
             Theme
           </div>
-          <div style={{
-            fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)',
-          }}>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)' }}>
             {theme === 'light' ? 'Light mode' : 'Dark mode'} · tap to switch
           </div>
         </div>
-
-        {/* Theme toggle buttons */}
         <div style={{ display: 'flex', gap: 0 }}>
-          <ThemeBtn
-            label="Light"
-            icon="☀︎"
-            active={theme === 'light'}
-            onClick={theme === 'dark' ? toggle : undefined}
-            position="left"
-          />
-          <ThemeBtn
-            label="Dark"
-            icon="☽"
-            active={theme === 'dark'}
-            onClick={theme === 'light' ? toggle : undefined}
-            position="right"
-          />
+          <ThemeBtn label="Light" icon="☀︎" active={theme === 'light'} onClick={theme === 'dark' ? toggle : undefined} position="left" />
+          <ThemeBtn label="Dark"  icon="☽"  active={theme === 'dark'}  onClick={theme === 'light' ? toggle : undefined} position="right" />
         </div>
       </div>
-
-      {/* Brief description */}
-      <div style={{
-        marginTop: 10,
-        fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)',
-        lineHeight: 1.5,
-      }}>
+      <div style={{ marginTop: 10, fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)', lineHeight: 1.5 }}>
         Your preference is saved and will persist across sessions.
       </div>
 
-      {/* ── Migration emails ──────────────────────────────────────────── */}
+      {/* ── Booking system migration ──────────────────────────────────── */}
       <div style={{
         fontFamily: 'var(--font-body)', fontSize: 10, letterSpacing: '0.12em',
         textTransform: 'uppercase', color: 'var(--admin-muted)',
@@ -114,109 +142,182 @@ export default function SettingsPanel() {
 
       <div style={{
         background: 'var(--admin-card)', border: '1px solid var(--admin-border)',
-        borderRadius: 12, padding: '16px',
+        borderRadius: 12, overflow: 'hidden',
       }}>
-        <div style={{
-          fontFamily: 'var(--font-body)', fontSize: 15,
-          color: 'var(--admin-text)', marginBottom: 6,
-        }}>
-          Send migration emails
-        </div>
-        <div style={{
-          fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)',
-          lineHeight: 1.55, marginBottom: 16,
-        }}>
-          Notifies clients with upcoming confirmed appointments that the booking system has been upgraded and gives them their new manage link. Each appointment is only emailed once.
-        </div>
 
-        {/* States */}
-        {migState === 'idle' && (
-          <SettingsBtn onClick={previewMigration}>Preview</SettingsBtn>
-        )}
-
-        {migState === 'loading' && (
-          <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-muted)' }}>
-            Checking appointments…
+        {/* Header */}
+        <div style={{ padding: '16px 16px 0' }}>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: 15, color: 'var(--admin-text)', marginBottom: 6 }}>
+            Send migration emails
           </div>
-        )}
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)', lineHeight: 1.55, marginBottom: 16 }}>
+            Notifies clients with upcoming confirmed appointments that the booking system has been upgraded and sends them their new manage link. Each appointment is only emailed once.
+          </div>
 
-        {migState === 'previewed' && migPreview && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{
-              background: 'var(--admin-btn)', border: '1px solid var(--admin-border)',
-              borderRadius: 8, padding: '12px 14px',
-              display: 'flex', flexDirection: 'column', gap: 4,
-            }}>
-              <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-text)' }}>
-                <strong>{migPreview.unsent}</strong> email{migPreview.unsent !== 1 ? 's' : ''} to send
+          {/* Idle */}
+          {migState === 'idle' && (
+            <div style={{ paddingBottom: 16 }}>
+              <SettingsBtn onClick={loadList} variant="primary">Load appointment list</SettingsBtn>
+            </div>
+          )}
+
+          {/* Loading */}
+          {migState === 'loading' && (
+            <div style={{ paddingBottom: 16, fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-muted)' }}>
+              Loading appointments…
+            </div>
+          )}
+
+          {/* Error */}
+          {migState === 'error' && (
+            <div style={{ paddingBottom: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-danger-text)' }}>
+                Something went wrong. Please try again.
               </div>
-              {migPreview.alreadySent > 0 && (
-                <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)' }}>
-                  {migPreview.alreadySent} already sent previously
+              <SettingsBtn onClick={reset}>Retry</SettingsBtn>
+            </div>
+          )}
+
+          {/* Done banner */}
+          {migState === 'done' && (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              background: '#4a9b6f18', border: '1px solid #4a9b6f44',
+              borderRadius: 8, padding: '10px 12px', marginBottom: 16,
+            }}>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: '#4a9b6f' }}>
+                ✓ {sentCount} email{sentCount !== 1 ? 's' : ''} sent
+                {failCount > 0 && <span style={{ color: 'var(--admin-danger-text)' }}> · {failCount} failed</span>}
+              </span>
+              <button onClick={reset} style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>
+                Reset
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Tabs + list */}
+        {(migState === 'ready' || migState === 'done' || migState === 'sending') && migData && (
+          <>
+            {/* Tab bar */}
+            <div style={{ display: 'flex', borderBottom: '1px solid var(--admin-border)', paddingLeft: 16 }}>
+              {(['pending', 'sent'] as const).map(t => (
+                <button
+                  key={t}
+                  onClick={() => setTab(t)}
+                  style={{
+                    fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: tab === t ? 500 : 400,
+                    color: tab === t ? 'var(--admin-text)' : 'var(--admin-muted)',
+                    background: 'none', border: 'none',
+                    borderBottom: tab === t ? '2px solid var(--admin-text)' : '2px solid transparent',
+                    padding: '10px 12px 10px 0', marginRight: 8,
+                    cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
+                  }}
+                >
+                  {t === 'pending'
+                    ? `Pending (${pendingApts.length})`
+                    : `Sent (${sentApts.length})`}
+                </button>
+              ))}
+            </div>
+
+            {/* Appointment rows */}
+            <div style={{ maxHeight: 340, overflowY: 'auto' }}>
+              {listApts.length === 0 ? (
+                <div style={{ padding: '20px 16px', fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-muted)', textAlign: 'center' }}>
+                  {tab === 'pending' ? 'No pending appointments.' : 'No emails sent yet.'}
                 </div>
-              )}
-              {migPreview.unsent === 0 && (
-                <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#4a9b6f' }}>
-                  All upcoming clients have already been notified.
-                </div>
+              ) : (
+                listApts.map((apt, i) => (
+                  <div
+                    key={apt.id}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 12,
+                      padding: '12px 16px',
+                      borderBottom: i < listApts.length - 1 ? '1px solid var(--admin-border-sub)' : 'none',
+                    }}
+                  >
+                    {/* Staff dot */}
+                    <div style={{
+                      width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
+                      background: apt.staff === 'eric' ? '#7db83e' : '#c4956a',
+                    }} />
+
+                    {/* Client + service */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 500, color: 'var(--admin-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {apt.clientName}
+                      </div>
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-muted)', marginTop: 1 }}>
+                        {apt.service}
+                      </div>
+                    </div>
+
+                    {/* Date + time */}
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-text2)' }}>
+                        {fmtDate(apt.date)}
+                      </div>
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-muted)', marginTop: 1 }}>
+                        {fmtTime(apt.startTime)}
+                      </div>
+                    </div>
+
+                    {/* Email / status */}
+                    <div style={{ flexShrink: 0, textAlign: 'right', minWidth: 48 }}>
+                      {apt.sent ? (
+                        <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: '#4a9b6f' }}>✓ sent</span>
+                      ) : (
+                        <span style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', letterSpacing: '0.04em' }}>
+                          {apt.clientEmail ? apt.clientEmail.split('@')[1] ? `@${apt.clientEmail.split('@')[1]}` : '—' : '—'}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))
               )}
             </div>
-            {migPreview.unsent > 0 && (
-              <div style={{ display: 'flex', gap: 8 }}>
-                <SettingsBtn onClick={sendMigrationEmails} variant="primary">
-                  Send {migPreview.unsent} email{migPreview.unsent !== 1 ? 's' : ''}
-                </SettingsBtn>
-                <SettingsBtn onClick={() => { setMigState('idle'); setMigPreview(null); }}>
-                  Cancel
-                </SettingsBtn>
+
+            {/* Footer action */}
+            {(migState === 'ready' || migState === 'sending') && pendingApts.length > 0 && (
+              <div style={{ padding: '14px 16px', borderTop: '1px solid var(--admin-border)' }}>
+                {migState === 'sending' ? (
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-muted)' }}>
+                    Sending…
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <SettingsBtn onClick={sendEmails} variant="primary">
+                      Send {pendingApts.length} email{pendingApts.length !== 1 ? 's' : ''}
+                    </SettingsBtn>
+                    <SettingsBtn onClick={reset}>Cancel</SettingsBtn>
+                  </div>
+                )}
               </div>
             )}
-          </div>
-        )}
 
-        {migState === 'sending' && (
-          <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-muted)' }}>
-            Sending emails…
-          </div>
-        )}
-
-        {migState === 'done' && migResult && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: '#4a9b6f' }}>
-              ✓ {migResult.sent} email{migResult.sent !== 1 ? 's' : ''} sent successfully
-              {migResult.failed > 0 && ` · ${migResult.failed} failed`}
-            </div>
-            <SettingsBtn onClick={() => { setMigState('idle'); setMigPreview(null); setMigResult(null); }}>
-              Done
-            </SettingsBtn>
-          </div>
-        )}
-
-        {migState === 'error' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-danger-text)' }}>
-              Something went wrong. Please try again.
-            </div>
-            <SettingsBtn onClick={() => setMigState('idle')}>Retry</SettingsBtn>
-          </div>
+            {(migState === 'ready' || migState === 'done') && pendingApts.length === 0 && (
+              <div style={{ padding: '14px 16px', borderTop: '1px solid var(--admin-border)' }}>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#4a9b6f' }}>
+                  All upcoming clients have been notified.
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 
-      <div style={{
-        marginTop: 10,
-        fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)',
-        lineHeight: 1.5,
-      }}>
+      <div style={{ marginTop: 10, fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)', lineHeight: 1.5 }}>
         Safe to run multiple times — appointments that have already been emailed are skipped.
       </div>
     </div>
   );
 }
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
 function SettingsBtn({
-  children,
-  onClick,
-  variant = 'ghost',
+  children, onClick, variant = 'ghost',
 }: {
   children: React.ReactNode;
   onClick?: () => void;
@@ -240,25 +341,17 @@ function SettingsBtn({
 }
 
 function ThemeBtn({
-  label,
-  icon,
-  active,
-  onClick,
-  position,
+  label, icon, active, onClick, position,
 }: {
-  label: string;
-  icon: string;
-  active: boolean;
-  onClick?: () => void;
-  position: 'left' | 'right';
+  label: string; icon: string; active: boolean;
+  onClick?: () => void; position: 'left' | 'right';
 }) {
   return (
     <button
       onClick={onClick}
       disabled={active}
       style={{
-        flex: 1,
-        display: 'flex', flexDirection: 'column',
+        flex: 1, display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
         gap: 6, padding: '20px 0',
         background: active ? 'var(--admin-nav-active)' : 'none',
@@ -269,27 +362,13 @@ function ThemeBtn({
         transition: 'background 0.15s',
       }}
     >
-      <span style={{
-        fontSize: 22, lineHeight: 1,
-        color: active ? '#7db83e' : 'var(--admin-muted)',
-        transition: 'color 0.15s',
-      }}>
+      <span style={{ fontSize: 22, lineHeight: 1, color: active ? '#7db83e' : 'var(--admin-muted)', transition: 'color 0.15s' }}>
         {icon}
       </span>
-      <span style={{
-        fontFamily: 'var(--font-body)', fontSize: 13,
-        fontWeight: active ? 500 : 400,
-        color: active ? 'var(--admin-text)' : 'var(--admin-muted)',
-        transition: 'color 0.15s',
-      }}>
+      <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: active ? 500 : 400, color: active ? 'var(--admin-text)' : 'var(--admin-muted)', transition: 'color 0.15s' }}>
         {label}
       </span>
-      {active && (
-        <span style={{
-          width: 5, height: 5, borderRadius: '50%',
-          background: '#7db83e',
-        }} />
-      )}
+      {active && <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#7db83e' }} />}
     </button>
   );
 }
