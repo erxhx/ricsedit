@@ -457,7 +457,6 @@ export default function ManageBooking({
         </p>
       </div>
       <AppointmentCard apt={apt} />
-      <a href="/book" style={{ fontSize: 13, opacity: 0.4, textDecoration: 'none' }}>Book another appointment →</a>
     </div>
   );
 
@@ -469,7 +468,7 @@ export default function ManageBooking({
         <h1 style={{ fontFamily: 'var(--font-display, Georgia, serif)', fontSize: 26, fontWeight: 300, margin: '0 0 4px' }}>Appointment cancelled</h1>
         <p style={{ fontSize: 13, opacity: 0.5, margin: 0 }}>Your {apt.service} on {fmtDate(apt.date)} has been cancelled.</p>
       </div>
-      <a href="/book" style={{ fontSize: 13, opacity: 0.4, textDecoration: 'none' }}>Book a new appointment →</a>
+      <a href="https://www.editstudio.space" style={{ fontSize: 13, opacity: 0.4, textDecoration: 'none' }}>Book a new appointment →</a>
     </div>
   );
 
