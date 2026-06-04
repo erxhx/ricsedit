@@ -312,7 +312,7 @@ export async function sendMigrationNotification(apt: Appointment): Promise<void>
 
   const clientHtml = emailLayout(`
     <h1 style="margin:0 0 6px;font-family:'Inter Tight',Helvetica,sans-serif;font-size:22px;font-weight:600;color:#141210;letter-spacing:-0.02em;">We've upgraded our booking system.</h1>
-    <p style="margin:0 0 0;font-family:'Inter Tight',Helvetica,sans-serif;font-size:14px;color:#4a4540;">Hi ${firstName(apt.clientName)}, your upcoming appointment is confirmed and nothing has changed — we've just moved to a new system.</p>
+    <p style="margin:0 0 0;font-family:'Inter Tight',Helvetica,sans-serif;font-size:14px;color:#4a4540;">Hi ${firstName(apt.clientName)}, we've made a few improvements to our booking platform behind the scenes. Your appointment is confirmed — your manage link below has been updated.</p>
     ${aptDetailsHtml(apt)}
     ${ctaBtn('Manage your appointment →', url)}
     ${muted('Use the link above to cancel or reschedule up to 24 hours before your appointment. Your previous booking link is no longer active.')}
