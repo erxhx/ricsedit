@@ -49,6 +49,8 @@ export default function SettingsPanel() {
   const [sentCount, setSentCount] = useState(0);
   const [failCount, setFailCount] = useState(0);
   const [tab,       setTab]       = useState<'pending' | 'sent'>('pending');
+  // Per-row resend state: id → 'sending' | 'done' | 'error'
+  const [rowState,  setRowState]  = useState<Record<string, 'sending' | 'done' | 'error'>>({});
 
   async function loadList() {
     setMigState('loading');
@@ -86,6 +88,33 @@ export default function SettingsPanel() {
     setSentCount(0);
     setFailCount(0);
     setTab('pending');
+    setRowState({});
+  }
+
+  async function resendOne(id: string) {
+    setRowState(s => ({ ...s, [id]: 'sending' }));
+    try {
+      const res = await fetch('/api/admin/migration-emails', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      const data = await res.json() as { sent: number; failed: number };
+      setRowState(s => ({ ...s, [id]: data.sent > 0 ? 'done' : 'error' }));
+      // Mark row as sent in local data too
+      if (data.sent > 0) {
+        setMigData(prev => prev ? {
+          ...prev,
+          appointments: prev.appointments.map(a => a.id === id ? { ...a, sent: true } : a),
+          unsent: Math.max(0, prev.unsent - 1),
+          alreadySent: prev.alreadySent + 1,
+        } : prev);
+      }
+      // Clear the row state after 2s
+      setTimeout(() => setRowState(s => { const n = { ...s }; delete n[id]; return n; }), 2000);
+    } catch {
+      setRowState(s => ({ ...s, [id]: 'error' }));
+    }
   }
 
   const pendingApts = migData?.appointments.filter(a => !a.sent) ?? [];
@@ -263,13 +292,29 @@ export default function SettingsPanel() {
                       </div>
                     </div>
 
-                    {/* Email / status */}
-                    <div style={{ flexShrink: 0, textAlign: 'right', minWidth: 48 }}>
-                      {apt.sent ? (
+                    {/* Status / resend */}
+                    <div style={{ flexShrink: 0, textAlign: 'right' }}>
+                      {rowState[apt.id] === 'sending' ? (
+                        <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-muted)' }}>sending…</span>
+                      ) : rowState[apt.id] === 'done' ? (
                         <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: '#4a9b6f' }}>✓ sent</span>
+                      ) : rowState[apt.id] === 'error' ? (
+                        <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-danger-text)' }}>failed</span>
+                      ) : apt.sent ? (
+                        <button
+                          onClick={() => resendOne(apt.id)}
+                          style={{
+                            fontFamily: 'var(--font-body)', fontSize: 11,
+                            color: 'var(--admin-link)', background: 'none',
+                            border: 'none', cursor: 'pointer', padding: 0,
+                            WebkitTapHighlightColor: 'transparent',
+                          }}
+                        >
+                          Resend
+                        </button>
                       ) : (
                         <span style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', letterSpacing: '0.04em' }}>
-                          {apt.clientEmail ? apt.clientEmail.split('@')[1] ? `@${apt.clientEmail.split('@')[1]}` : '—' : '—'}
+                          {apt.clientEmail?.split('@')[1] ? `@${apt.clientEmail.split('@')[1]}` : '—'}
                         </span>
                       )}
                     </div>
@@ -297,10 +342,35 @@ export default function SettingsPanel() {
             )}
 
             {(migState === 'ready' || migState === 'done') && pendingApts.length === 0 && (
-              <div style={{ padding: '14px 16px', borderTop: '1px solid var(--admin-border)' }}>
+              <div style={{ padding: '14px 16px', borderTop: '1px solid var(--admin-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#4a9b6f' }}>
                   All upcoming clients have been notified.
                 </div>
+                {sentApts.length > 0 && (
+                  <button
+                    onClick={async () => {
+                      setMigState('sending');
+                      const res = await fetch('/api/admin/migration-emails', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ force: true }),
+                      }).then(r => r.json()) as { sent: number; failed: number };
+                      setSentCount(res.sent);
+                      setFailCount(res.failed);
+                      const refreshed = await fetch('/api/admin/migration-emails').then(r => r.json()) as MigData;
+                      setMigData(refreshed);
+                      setMigState('done');
+                    }}
+                    style={{
+                      fontFamily: 'var(--font-body)', fontSize: 12,
+                      color: 'var(--admin-link)', background: 'none',
+                      border: 'none', cursor: 'pointer', padding: 0,
+                      WebkitTapHighlightColor: 'transparent',
+                    }}
+                  >
+                    Resend all
+                  </button>
+                )}
               </div>
             )}
           </>

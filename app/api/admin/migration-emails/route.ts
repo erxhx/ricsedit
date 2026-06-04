@@ -69,21 +69,48 @@ export async function GET() {
   });
 }
 
-/** POST — send migration emails to all unsent upcoming confirmed appointments */
-export async function POST() {
+/** POST — send migration emails.
+ *  Body: {} → send all unsent
+ *  Body: { id: string, force: true } → resend a single appointment regardless of sent status
+ */
+export async function POST(req: Request) {
   if (!await auth()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+  const body = await req.json().catch(() => ({})) as { id?: string; force?: boolean };
+
+  // ── Single resend ──────────────────────────────────────────────────────────
+  if (body.id) {
+    const appointments = await dbGetUpcomingConfirmedAppointments(todayPacific());
+    // Also check all confirmed (not just future) in case the test apt is today
+    const apt = appointments.find(a => a.id === body.id);
+    if (!apt) return NextResponse.json({ error: 'Appointment not found' }, { status: 404 });
+
+    try {
+      await sendMigrationNotification(apt);
+      // Mark as sent if not already
+      const sentIds = await getSentIds();
+      sentIds.add(apt.id);
+      await saveSentIds(sentIds);
+      return NextResponse.json({ sent: 1, failed: 0 });
+    } catch {
+      return NextResponse.json({ sent: 0, failed: 1 });
+    }
+  }
+
+  // ── Bulk send (all unsent) ─────────────────────────────────────────────────
   const [appointments, sentIds] = await Promise.all([
     dbGetUpcomingConfirmedAppointments(todayPacific()),
     getSentIds(),
   ]);
 
-  const unsent = appointments.filter(a => !sentIds.has(a.id));
+  const targets = body.force
+    ? appointments                                  // force=true → resend everyone
+    : appointments.filter(a => !sentIds.has(a.id)); // default → unsent only
 
   let sent = 0;
   const failed: string[] = [];
 
-  for (const apt of unsent) {
+  for (const apt of targets) {
     try {
       await sendMigrationNotification(apt);
       sentIds.add(apt.id);
@@ -93,8 +120,7 @@ export async function POST() {
     }
   }
 
-  // Persist sent IDs even if some failed
   if (sent > 0) await saveSentIds(sentIds);
 
-  return NextResponse.json({ sent, failed: failed.length, skipped: sentIds.size - sent });
+  return NextResponse.json({ sent, failed: failed.length, skipped: appointments.length - targets.length });
 }
