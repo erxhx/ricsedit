@@ -25,8 +25,7 @@ await build({
   outdir:      join(root, 'public', 'site'),
   bundle:      false,   // no bundling
   format:      'iife',  // wrap each file in its own scope
-  minify:      true,
-  keepNames:   true,    // preserve names used as window globals (HomeAnim, BarberingContent etc)
+  minify:      false,   // keepNames doesn't fully protect window globals in shorthand assignments
   jsx:         'transform',
   jsxFactory:  'React.createElement',
   jsxFragment: 'React.Fragment',
