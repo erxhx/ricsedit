@@ -181,6 +181,16 @@ export async function POST(req: NextRequest) {
     );
   } catch (e) {
     console.error('[booking/create]', e);
+
+    // PostgreSQL unique constraint violation (23505) = slot was just taken
+    const msg = e instanceof Error ? e.message : '';
+    if (msg.includes('23505') || msg.toLowerCase().includes('unique') || msg.toLowerCase().includes('duplicate')) {
+      return Response.json(
+        { error: 'That time slot was just booked by someone else. Please go back and choose a different time.' },
+        { status: 409, headers: CORS },
+      );
+    }
+
     return Response.json(
       { error: e instanceof Error ? e.message : 'Booking failed' },
       { status: 500, headers: CORS },

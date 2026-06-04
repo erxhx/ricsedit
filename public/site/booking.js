@@ -1102,7 +1102,12 @@
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ category, services, addons, date: date.toISOString(), time, client, intakeResponses, _hp: document.getElementById("bk-hp") ? document.getElementById("bk-hp").value : "" })
             });
-            if (!res.ok) throw new Error("Booking failed. Please try again or call us at 778 535 3348.");
+            if (!res.ok) {
+              var errData = await res.json().catch(function() {
+                return {};
+              });
+              throw new Error(errData.error || "Booking failed. Please try again or call us at 778 535 3348.");
+            }
             var data = await res.json();
             if (data.manageToken) setManageToken(data.manageToken);
           } else {
