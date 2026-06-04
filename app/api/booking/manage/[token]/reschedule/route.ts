@@ -24,8 +24,11 @@ export async function POST(
     return Response.json({ error: 'date and startTime are required' }, { status: 400 });
   }
 
-  const today = new Date().toISOString().slice(0, 10);
-  if (body.date < today) {
+  const todayPacific = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Vancouver',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date());
+  if (body.date < todayPacific) {
     return Response.json({ error: 'Cannot reschedule to a past date' }, { status: 400 });
   }
 
