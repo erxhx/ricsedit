@@ -37,7 +37,7 @@ const OWNER_EMAIL = process.env.OWNER_EMAIL ?? '';
 const OWNER_PHONE = process.env.OWNER_PHONE ?? '';
 
 function siteUrl(): string {
-  return (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://book.editstudio.space').replace(/\/$/, '');
+  return (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.editstudio.space').replace(/\/$/, '');
 }
 
 // ── Formatters ────────────────────────────────────────────────────────────────
