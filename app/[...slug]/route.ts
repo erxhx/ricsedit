@@ -26,11 +26,11 @@ async function serveApp() {
   const patched = html
     .replace(/href="styles\.css"/g,          'href="/site/styles.css"')
     .replace(/href="manifest\.json"/g,        'href="/site/manifest.json"')
-    .replace(/src="tweaks-panel\.jsx"/g,      'src="/site/tweaks-panel.jsx"')
-    .replace(/src="animations\.jsx"/g,        'src="/site/animations.jsx"')
-    .replace(/src="content\.jsx"/g,           'src="/site/content.jsx"')
-    .replace(/src="booking\.jsx"/g,           'src="/site/booking.jsx"')
-    .replace(/src="app\.jsx"/g,              'src="/site/app.jsx"')
+    .replace(/src="tweaks-panel\.jsx"/g,      'src="/site/tweaks-panel.js"')
+    .replace(/src="animations\.jsx"/g,        'src="/site/animations.js"')
+    .replace(/src="content\.jsx"/g,           'src="/site/content.js"')
+    .replace(/src="booking\.jsx"/g,           'src="/site/booking.js"')
+    .replace(/src="app\.jsx"/g,              'src="/site/app.js"')
     .replace(
       /'https:\/\/ricsedit\.vercel\.app\/api\/booking\/create'/g,
       "'/api/booking/create'",
