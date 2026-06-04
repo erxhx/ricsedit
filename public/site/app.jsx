@@ -215,7 +215,7 @@ const ERIC_HOURS = { ...STUDIO_HOURS };
 // (NextAvailableBarber) in place so they reflect any admin changes after page load.
 (function () {
   const endpoint = (window.__booking || {}).endpoint || '';
-  const base = endpoint.replace(/\/api\/booking\/create$/, '');
+  const base = endpoint.replace(/\/api\/booking\/create$/, '') || window.location.origin;
   if (!base) return;
   fetch(base + '/api/booking/hours')
     .then(r => r.ok ? r.json() : null)
