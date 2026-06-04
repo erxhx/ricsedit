@@ -24,10 +24,9 @@ await build({
   entryPoints: files.map(f => join(root, 'editstudio.space', `${f}.jsx`)),
   outdir:      join(root, 'public', 'site'),
   bundle:      false,   // no bundling
-  format:      'iife',  // wrap each file in its own scope — prevents `const x` re-declaration
-                        // errors when multiple files declare the same names at top level.
-                        // All exports use explicit window.xxx so IIFE scope is safe.
-  minify:      false,
+  format:      'iife',  // wrap each file in its own scope
+  minify:      true,
+  keepNames:   true,    // preserve names used as window globals (HomeAnim, BarberingContent etc)
   jsx:         'transform',
   jsxFactory:  'React.createElement',
   jsxFragment: 'React.Fragment',
