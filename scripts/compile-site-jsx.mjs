@@ -25,6 +25,8 @@ await build({
   outdir:      join(root, 'public', 'site'),
   bundle:      false,   // no bundling — files share global scope at runtime
   minify:      true,
+  keepNames:   true,    // preserve function/var names — globals like HomeAnim, BarberingContent
+                        // are accessed by name via window[x] so must not be renamed
   jsx:         'transform',
   jsxFactory:  'React.createElement',
   jsxFragment: 'React.Fragment',
