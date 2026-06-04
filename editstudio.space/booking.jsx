@@ -78,7 +78,7 @@
   // Fetch current services from the admin app and update the BK_ arrays in place.
   (function () {
     var endpoint = (window.__booking || {}).endpoint || '';
-    var base = endpoint.replace(/\/api\/booking\/create$/, '');
+    var base = endpoint.replace(/\/api\/booking\/create$/, '') || window.location.origin;
     if (!base) return;
     fetch(base + '/api/booking/services')
       .then(function (r) { return r.ok ? r.json() : null; })
@@ -123,7 +123,7 @@
   // Fetch current hours from the admin app and update in place.
   (function () {
     var endpoint = (window.__booking || {}).endpoint || '';
-    var base = endpoint.replace(/\/api\/booking\/create$/, '');
+    var base = endpoint.replace(/\/api\/booking\/create$/, '') || window.location.origin;
     if (!base) return;
     fetch(base + '/api/booking/hours')
       .then(function (r) { return r.ok ? r.json() : null; })
@@ -264,7 +264,7 @@
 
   (function() {
     var endpoint = (window.__booking || {}).endpoint || '';
-    var base = endpoint.replace(/\/api\/booking\/create$/, '');
+    var base = endpoint.replace(/\/api\/booking\/create$/, '') || window.location.origin;
     if (!base) return;
     fetch(base + '/api/booking/waivers')
       .then(function(r) { return r.ok ? r.json() : null; })
