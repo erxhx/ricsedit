@@ -30,6 +30,9 @@ await build({
   jsxFragment: 'React.Fragment',
   target:      'es2019',
   logLevel:    'warning',
+  // Override the project tsconfig "jsx": "react-jsx" (automatic transform)
+  // — these files use global React from CDN, not module imports.
+  tsconfigRaw: '{"compilerOptions":{"jsx":"react"}}',
 });
 
 console.log(`✓ Compiled ${files.length} files → public/site/*.js`);
