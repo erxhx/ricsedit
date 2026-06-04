@@ -1,4 +1,5 @@
-const __TWEAKS_STYLE = `
+(() => {
+  const __TWEAKS_STYLE = `
   .twk-panel{position:fixed;right:16px;bottom:16px;z-index:2147483646;width:280px;
     max-height:calc(100vh - 32px);display:flex;flex-direction:column;
     background:rgba(250,249,247,.78);color:#29261b;
@@ -90,275 +91,276 @@ const __TWEAKS_STYLE = `
   .twk-swatch::-webkit-color-swatch{border:0;border-radius:5.5px}
   .twk-swatch::-moz-color-swatch{border:0;border-radius:5.5px}
 `;
-function useTweaks(defaults) {
-  const [values, setValues] = React.useState(defaults);
-  const setTweak = React.useCallback((keyOrEdits, val) => {
-    const edits = typeof keyOrEdits === "object" && keyOrEdits !== null ? keyOrEdits : { [keyOrEdits]: val };
-    setValues((prev) => ({ ...prev, ...edits }));
-    window.parent.postMessage({ type: "__edit_mode_set_keys", edits }, "*");
-  }, []);
-  return [values, setTweak];
-}
-function TweaksPanel({ title = "Tweaks", children }) {
-  const [open, setOpen] = React.useState(false);
-  const dragRef = React.useRef(null);
-  const offsetRef = React.useRef({ x: 16, y: 16 });
-  const PAD = 16;
-  const clampToViewport = React.useCallback(() => {
-    const panel = dragRef.current;
-    if (!panel) return;
-    const w = panel.offsetWidth, h = panel.offsetHeight;
-    const maxRight = Math.max(PAD, window.innerWidth - w - PAD);
-    const maxBottom = Math.max(PAD, window.innerHeight - h - PAD);
-    offsetRef.current = {
-      x: Math.min(maxRight, Math.max(PAD, offsetRef.current.x)),
-      y: Math.min(maxBottom, Math.max(PAD, offsetRef.current.y))
-    };
-    panel.style.right = offsetRef.current.x + "px";
-    panel.style.bottom = offsetRef.current.y + "px";
-  }, []);
-  React.useEffect(() => {
-    if (!open) return;
-    clampToViewport();
-    if (typeof ResizeObserver === "undefined") {
-      window.addEventListener("resize", clampToViewport);
-      return () => window.removeEventListener("resize", clampToViewport);
-    }
-    const ro = new ResizeObserver(clampToViewport);
-    ro.observe(document.documentElement);
-    return () => ro.disconnect();
-  }, [open, clampToViewport]);
-  React.useEffect(() => {
-    const onMsg = (e) => {
-      var _a;
-      const t = (_a = e == null ? void 0 : e.data) == null ? void 0 : _a.type;
-      if (t === "__activate_edit_mode") setOpen(true);
-      else if (t === "__deactivate_edit_mode") setOpen(false);
-    };
-    window.addEventListener("message", onMsg);
-    window.parent.postMessage({ type: "__edit_mode_available" }, "*");
-    return () => window.removeEventListener("message", onMsg);
-  }, []);
-  const dismiss = () => {
-    setOpen(false);
-    window.parent.postMessage({ type: "__edit_mode_dismissed" }, "*");
-  };
-  const onDragStart = (e) => {
-    const panel = dragRef.current;
-    if (!panel) return;
-    const r = panel.getBoundingClientRect();
-    const sx = e.clientX, sy = e.clientY;
-    const startRight = window.innerWidth - r.right;
-    const startBottom = window.innerHeight - r.bottom;
-    const move = (ev) => {
+  function useTweaks(defaults) {
+    const [values, setValues] = React.useState(defaults);
+    const setTweak = React.useCallback((keyOrEdits, val) => {
+      const edits = typeof keyOrEdits === "object" && keyOrEdits !== null ? keyOrEdits : { [keyOrEdits]: val };
+      setValues((prev) => ({ ...prev, ...edits }));
+      window.parent.postMessage({ type: "__edit_mode_set_keys", edits }, "*");
+    }, []);
+    return [values, setTweak];
+  }
+  function TweaksPanel({ title = "Tweaks", children }) {
+    const [open, setOpen] = React.useState(false);
+    const dragRef = React.useRef(null);
+    const offsetRef = React.useRef({ x: 16, y: 16 });
+    const PAD = 16;
+    const clampToViewport = React.useCallback(() => {
+      const panel = dragRef.current;
+      if (!panel) return;
+      const w = panel.offsetWidth, h = panel.offsetHeight;
+      const maxRight = Math.max(PAD, window.innerWidth - w - PAD);
+      const maxBottom = Math.max(PAD, window.innerHeight - h - PAD);
       offsetRef.current = {
-        x: startRight - (ev.clientX - sx),
-        y: startBottom - (ev.clientY - sy)
+        x: Math.min(maxRight, Math.max(PAD, offsetRef.current.x)),
+        y: Math.min(maxBottom, Math.max(PAD, offsetRef.current.y))
       };
+      panel.style.right = offsetRef.current.x + "px";
+      panel.style.bottom = offsetRef.current.y + "px";
+    }, []);
+    React.useEffect(() => {
+      if (!open) return;
       clampToViewport();
+      if (typeof ResizeObserver === "undefined") {
+        window.addEventListener("resize", clampToViewport);
+        return () => window.removeEventListener("resize", clampToViewport);
+      }
+      const ro = new ResizeObserver(clampToViewport);
+      ro.observe(document.documentElement);
+      return () => ro.disconnect();
+    }, [open, clampToViewport]);
+    React.useEffect(() => {
+      const onMsg = (e) => {
+        var _a;
+        const t = (_a = e == null ? void 0 : e.data) == null ? void 0 : _a.type;
+        if (t === "__activate_edit_mode") setOpen(true);
+        else if (t === "__deactivate_edit_mode") setOpen(false);
+      };
+      window.addEventListener("message", onMsg);
+      window.parent.postMessage({ type: "__edit_mode_available" }, "*");
+      return () => window.removeEventListener("message", onMsg);
+    }, []);
+    const dismiss = () => {
+      setOpen(false);
+      window.parent.postMessage({ type: "__edit_mode_dismissed" }, "*");
     };
-    const up = () => {
-      window.removeEventListener("mousemove", move);
-      window.removeEventListener("mouseup", up);
+    const onDragStart = (e) => {
+      const panel = dragRef.current;
+      if (!panel) return;
+      const r = panel.getBoundingClientRect();
+      const sx = e.clientX, sy = e.clientY;
+      const startRight = window.innerWidth - r.right;
+      const startBottom = window.innerHeight - r.bottom;
+      const move = (ev) => {
+        offsetRef.current = {
+          x: startRight - (ev.clientX - sx),
+          y: startBottom - (ev.clientY - sy)
+        };
+        clampToViewport();
+      };
+      const up = () => {
+        window.removeEventListener("mousemove", move);
+        window.removeEventListener("mouseup", up);
+      };
+      window.addEventListener("mousemove", move);
+      window.addEventListener("mouseup", up);
     };
-    window.addEventListener("mousemove", move);
-    window.addEventListener("mouseup", up);
-  };
-  if (!open) return null;
-  return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("style", null, __TWEAKS_STYLE), /* @__PURE__ */ React.createElement(
-    "div",
-    {
-      ref: dragRef,
-      className: "twk-panel",
-      style: { right: offsetRef.current.x, bottom: offsetRef.current.y }
-    },
-    /* @__PURE__ */ React.createElement("div", { className: "twk-hd", onMouseDown: onDragStart }, /* @__PURE__ */ React.createElement("b", null, title), /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        className: "twk-x",
-        "aria-label": "Close tweaks",
-        onMouseDown: (e) => e.stopPropagation(),
-        onClick: dismiss
-      },
-      "\u2715"
-    )),
-    /* @__PURE__ */ React.createElement("div", { className: "twk-body" }, children)
-  ));
-}
-function TweakSection({ label, children }) {
-  return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "twk-sect" }, label), children);
-}
-function TweakRow({ label, value, children, inline = false }) {
-  return /* @__PURE__ */ React.createElement("div", { className: inline ? "twk-row twk-row-h" : "twk-row" }, /* @__PURE__ */ React.createElement("div", { className: "twk-lbl" }, /* @__PURE__ */ React.createElement("span", null, label), value != null && /* @__PURE__ */ React.createElement("span", { className: "twk-val" }, value)), children);
-}
-function TweakSlider({ label, value, min = 0, max = 100, step = 1, unit = "", onChange }) {
-  return /* @__PURE__ */ React.createElement(TweakRow, { label, value: `${value}${unit}` }, /* @__PURE__ */ React.createElement(
-    "input",
-    {
-      type: "range",
-      className: "twk-slider",
-      min,
-      max,
-      step,
-      value,
-      onChange: (e) => onChange(Number(e.target.value))
-    }
-  ));
-}
-function TweakToggle({ label, value, onChange }) {
-  return /* @__PURE__ */ React.createElement("div", { className: "twk-row twk-row-h" }, /* @__PURE__ */ React.createElement("div", { className: "twk-lbl" }, /* @__PURE__ */ React.createElement("span", null, label)), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      className: "twk-toggle",
-      "data-on": value ? "1" : "0",
-      role: "switch",
-      "aria-checked": !!value,
-      onClick: () => onChange(!value)
-    },
-    /* @__PURE__ */ React.createElement("i", null)
-  ));
-}
-function TweakRadio({ label, value, options, onChange }) {
-  const trackRef = React.useRef(null);
-  const [dragging, setDragging] = React.useState(false);
-  const opts = options.map((o) => typeof o === "object" ? o : { value: o, label: o });
-  const idx = Math.max(0, opts.findIndex((o) => o.value === value));
-  const n = opts.length;
-  const valueRef = React.useRef(value);
-  valueRef.current = value;
-  const segAt = (clientX) => {
-    const r = trackRef.current.getBoundingClientRect();
-    const inner = r.width - 4;
-    const i = Math.floor((clientX - r.left - 2) / inner * n);
-    return opts[Math.max(0, Math.min(n - 1, i))].value;
-  };
-  const onPointerDown = (e) => {
-    setDragging(true);
-    const v0 = segAt(e.clientX);
-    if (v0 !== valueRef.current) onChange(v0);
-    const move = (ev) => {
-      if (!trackRef.current) return;
-      const v = segAt(ev.clientX);
-      if (v !== valueRef.current) onChange(v);
-    };
-    const up = () => {
-      setDragging(false);
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
-    };
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up);
-  };
-  return /* @__PURE__ */ React.createElement(TweakRow, { label }, /* @__PURE__ */ React.createElement(
-    "div",
-    {
-      ref: trackRef,
-      role: "radiogroup",
-      onPointerDown,
-      className: dragging ? "twk-seg dragging" : "twk-seg"
-    },
-    /* @__PURE__ */ React.createElement(
+    if (!open) return null;
+    return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("style", null, __TWEAKS_STYLE), /* @__PURE__ */ React.createElement(
       "div",
       {
-        className: "twk-seg-thumb",
-        style: {
-          left: `calc(2px + ${idx} * (100% - 4px) / ${n})`,
-          width: `calc((100% - 4px) / ${n})`
-        }
+        ref: dragRef,
+        className: "twk-panel",
+        style: { right: offsetRef.current.x, bottom: offsetRef.current.y }
+      },
+      /* @__PURE__ */ React.createElement("div", { className: "twk-hd", onMouseDown: onDragStart }, /* @__PURE__ */ React.createElement("b", null, title), /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          className: "twk-x",
+          "aria-label": "Close tweaks",
+          onMouseDown: (e) => e.stopPropagation(),
+          onClick: dismiss
+        },
+        "\u2715"
+      )),
+      /* @__PURE__ */ React.createElement("div", { className: "twk-body" }, children)
+    ));
+  }
+  function TweakSection({ label, children }) {
+    return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "twk-sect" }, label), children);
+  }
+  function TweakRow({ label, value, children, inline = false }) {
+    return /* @__PURE__ */ React.createElement("div", { className: inline ? "twk-row twk-row-h" : "twk-row" }, /* @__PURE__ */ React.createElement("div", { className: "twk-lbl" }, /* @__PURE__ */ React.createElement("span", null, label), value != null && /* @__PURE__ */ React.createElement("span", { className: "twk-val" }, value)), children);
+  }
+  function TweakSlider({ label, value, min = 0, max = 100, step = 1, unit = "", onChange }) {
+    return /* @__PURE__ */ React.createElement(TweakRow, { label, value: `${value}${unit}` }, /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        type: "range",
+        className: "twk-slider",
+        min,
+        max,
+        step,
+        value,
+        onChange: (e) => onChange(Number(e.target.value))
       }
-    ),
-    opts.map((o) => /* @__PURE__ */ React.createElement("button", { key: o.value, type: "button", role: "radio", "aria-checked": o.value === value }, o.label))
-  ));
-}
-function TweakSelect({ label, value, options, onChange }) {
-  return /* @__PURE__ */ React.createElement(TweakRow, { label }, /* @__PURE__ */ React.createElement("select", { className: "twk-field", value, onChange: (e) => onChange(e.target.value) }, options.map((o) => {
-    const v = typeof o === "object" ? o.value : o;
-    const l = typeof o === "object" ? o.label : o;
-    return /* @__PURE__ */ React.createElement("option", { key: v, value: v }, l);
-  })));
-}
-function TweakText({ label, value, placeholder, onChange }) {
-  return /* @__PURE__ */ React.createElement(TweakRow, { label }, /* @__PURE__ */ React.createElement(
-    "input",
-    {
-      className: "twk-field",
-      type: "text",
-      value,
-      placeholder,
-      onChange: (e) => onChange(e.target.value)
-    }
-  ));
-}
-function TweakNumber({ label, value, min, max, step = 1, unit = "", onChange }) {
-  const clamp = (n) => {
-    if (min != null && n < min) return min;
-    if (max != null && n > max) return max;
-    return n;
-  };
-  const startRef = React.useRef({ x: 0, val: 0 });
-  const onScrubStart = (e) => {
-    e.preventDefault();
-    startRef.current = { x: e.clientX, val: value };
-    const decimals = (String(step).split(".")[1] || "").length;
-    const move = (ev) => {
-      const dx = ev.clientX - startRef.current.x;
-      const raw = startRef.current.val + dx * step;
-      const snapped = Math.round(raw / step) * step;
-      onChange(clamp(Number(snapped.toFixed(decimals))));
+    ));
+  }
+  function TweakToggle({ label, value, onChange }) {
+    return /* @__PURE__ */ React.createElement("div", { className: "twk-row twk-row-h" }, /* @__PURE__ */ React.createElement("div", { className: "twk-lbl" }, /* @__PURE__ */ React.createElement("span", null, label)), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        className: "twk-toggle",
+        "data-on": value ? "1" : "0",
+        role: "switch",
+        "aria-checked": !!value,
+        onClick: () => onChange(!value)
+      },
+      /* @__PURE__ */ React.createElement("i", null)
+    ));
+  }
+  function TweakRadio({ label, value, options, onChange }) {
+    const trackRef = React.useRef(null);
+    const [dragging, setDragging] = React.useState(false);
+    const opts = options.map((o) => typeof o === "object" ? o : { value: o, label: o });
+    const idx = Math.max(0, opts.findIndex((o) => o.value === value));
+    const n = opts.length;
+    const valueRef = React.useRef(value);
+    valueRef.current = value;
+    const segAt = (clientX) => {
+      const r = trackRef.current.getBoundingClientRect();
+      const inner = r.width - 4;
+      const i = Math.floor((clientX - r.left - 2) / inner * n);
+      return opts[Math.max(0, Math.min(n - 1, i))].value;
     };
-    const up = () => {
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
+    const onPointerDown = (e) => {
+      setDragging(true);
+      const v0 = segAt(e.clientX);
+      if (v0 !== valueRef.current) onChange(v0);
+      const move = (ev) => {
+        if (!trackRef.current) return;
+        const v = segAt(ev.clientX);
+        if (v !== valueRef.current) onChange(v);
+      };
+      const up = () => {
+        setDragging(false);
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", up);
+      };
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", up);
     };
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up);
-  };
-  return /* @__PURE__ */ React.createElement("div", { className: "twk-num" }, /* @__PURE__ */ React.createElement("span", { className: "twk-num-lbl", onPointerDown: onScrubStart }, label), /* @__PURE__ */ React.createElement(
-    "input",
-    {
-      type: "number",
-      value,
-      min,
-      max,
-      step,
-      onChange: (e) => onChange(clamp(Number(e.target.value)))
-    }
-  ), unit && /* @__PURE__ */ React.createElement("span", { className: "twk-num-unit" }, unit));
-}
-function TweakColor({ label, value, onChange }) {
-  return /* @__PURE__ */ React.createElement("div", { className: "twk-row twk-row-h" }, /* @__PURE__ */ React.createElement("div", { className: "twk-lbl" }, /* @__PURE__ */ React.createElement("span", null, label)), /* @__PURE__ */ React.createElement(
-    "input",
-    {
-      type: "color",
-      className: "twk-swatch",
-      value,
-      onChange: (e) => onChange(e.target.value)
-    }
-  ));
-}
-function TweakButton({ label, onClick, secondary = false }) {
-  return /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      className: secondary ? "twk-btn secondary" : "twk-btn",
-      onClick
-    },
-    label
-  );
-}
-Object.assign(window, {
-  useTweaks,
-  TweaksPanel,
-  TweakSection,
-  TweakRow,
-  TweakSlider,
-  TweakToggle,
-  TweakRadio,
-  TweakSelect,
-  TweakText,
-  TweakNumber,
-  TweakColor,
-  TweakButton
-});
+    return /* @__PURE__ */ React.createElement(TweakRow, { label }, /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        ref: trackRef,
+        role: "radiogroup",
+        onPointerDown,
+        className: dragging ? "twk-seg dragging" : "twk-seg"
+      },
+      /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          className: "twk-seg-thumb",
+          style: {
+            left: `calc(2px + ${idx} * (100% - 4px) / ${n})`,
+            width: `calc((100% - 4px) / ${n})`
+          }
+        }
+      ),
+      opts.map((o) => /* @__PURE__ */ React.createElement("button", { key: o.value, type: "button", role: "radio", "aria-checked": o.value === value }, o.label))
+    ));
+  }
+  function TweakSelect({ label, value, options, onChange }) {
+    return /* @__PURE__ */ React.createElement(TweakRow, { label }, /* @__PURE__ */ React.createElement("select", { className: "twk-field", value, onChange: (e) => onChange(e.target.value) }, options.map((o) => {
+      const v = typeof o === "object" ? o.value : o;
+      const l = typeof o === "object" ? o.label : o;
+      return /* @__PURE__ */ React.createElement("option", { key: v, value: v }, l);
+    })));
+  }
+  function TweakText({ label, value, placeholder, onChange }) {
+    return /* @__PURE__ */ React.createElement(TweakRow, { label }, /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        className: "twk-field",
+        type: "text",
+        value,
+        placeholder,
+        onChange: (e) => onChange(e.target.value)
+      }
+    ));
+  }
+  function TweakNumber({ label, value, min, max, step = 1, unit = "", onChange }) {
+    const clamp = (n) => {
+      if (min != null && n < min) return min;
+      if (max != null && n > max) return max;
+      return n;
+    };
+    const startRef = React.useRef({ x: 0, val: 0 });
+    const onScrubStart = (e) => {
+      e.preventDefault();
+      startRef.current = { x: e.clientX, val: value };
+      const decimals = (String(step).split(".")[1] || "").length;
+      const move = (ev) => {
+        const dx = ev.clientX - startRef.current.x;
+        const raw = startRef.current.val + dx * step;
+        const snapped = Math.round(raw / step) * step;
+        onChange(clamp(Number(snapped.toFixed(decimals))));
+      };
+      const up = () => {
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", up);
+      };
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", up);
+    };
+    return /* @__PURE__ */ React.createElement("div", { className: "twk-num" }, /* @__PURE__ */ React.createElement("span", { className: "twk-num-lbl", onPointerDown: onScrubStart }, label), /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        type: "number",
+        value,
+        min,
+        max,
+        step,
+        onChange: (e) => onChange(clamp(Number(e.target.value)))
+      }
+    ), unit && /* @__PURE__ */ React.createElement("span", { className: "twk-num-unit" }, unit));
+  }
+  function TweakColor({ label, value, onChange }) {
+    return /* @__PURE__ */ React.createElement("div", { className: "twk-row twk-row-h" }, /* @__PURE__ */ React.createElement("div", { className: "twk-lbl" }, /* @__PURE__ */ React.createElement("span", null, label)), /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        type: "color",
+        className: "twk-swatch",
+        value,
+        onChange: (e) => onChange(e.target.value)
+      }
+    ));
+  }
+  function TweakButton({ label, onClick, secondary = false }) {
+    return /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        className: secondary ? "twk-btn secondary" : "twk-btn",
+        onClick
+      },
+      label
+    );
+  }
+  Object.assign(window, {
+    useTweaks,
+    TweaksPanel,
+    TweakSection,
+    TweakRow,
+    TweakSlider,
+    TweakToggle,
+    TweakRadio,
+    TweakSelect,
+    TweakText,
+    TweakNumber,
+    TweakColor,
+    TweakButton
+  });
+})();

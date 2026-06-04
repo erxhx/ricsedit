@@ -23,8 +23,11 @@ console.log('Compiling site JSX…');
 await build({
   entryPoints: files.map(f => join(root, 'editstudio.space', `${f}.jsx`)),
   outdir:      join(root, 'public', 'site'),
-  bundle:      false,   // no bundling — files share global scope at runtime
-  minify:      false,   // keep unminified — functions are accessed by name as window globals
+  bundle:      false,   // no bundling
+  format:      'iife',  // wrap each file in its own scope — prevents `const x` re-declaration
+                        // errors when multiple files declare the same names at top level.
+                        // All exports use explicit window.xxx so IIFE scope is safe.
+  minify:      false,
   jsx:         'transform',
   jsxFactory:  'React.createElement',
   jsxFragment: 'React.Fragment',
