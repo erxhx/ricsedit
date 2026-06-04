@@ -240,6 +240,7 @@ export default function DashboardTabs({
           onDayTap={(dateStr) => { setViewDate(strToLocalDate(dateStr)); setOverviewMode('day'); }}
           onPrevMonth={prevMonth}
           onNextMonth={nextMonth}
+          onRefresh={() => setViewMonthStart(d => new Date(d))}
           isLoading={loadingMonth}
         />
       )}
@@ -254,6 +255,7 @@ export default function DashboardTabs({
           onDayTap={handleMonthDayTap}
           onPrevMonth={prevMonth}
           onNextMonth={nextMonth}
+          onRefresh={() => setViewMonthStart(d => new Date(d))}
           isLoading={loadingMonth}
         />
       )}

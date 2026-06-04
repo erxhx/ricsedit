@@ -69,6 +69,9 @@ type DragRef = {
   aptDate: string;
   color: string;
   startTouchY: number;
+  startClientX: number;  // for cross-day detection
+  origDayIdx: number;    // which column the drag started in
+  targetDayIdx: number;  // which column we're currently over
   origTopPx: number;
   durationPx: number;
   currentTopPx: number;
@@ -78,7 +81,7 @@ type DragRef = {
   scrollCancelled: boolean;
 };
 
-type DragConfirm  = { apt: Appointment; newStartTime: string; newEndTime: string } | null;
+type DragConfirm  = { apt: Appointment; newStartTime: string; newEndTime: string; newDate: string } | null;
 type SlotAction   = { date: string; time: string } | null;
 type WGBlockSheet = { date: string; time: string; staff: 'eric' | 'livi' | 'both' } | null;
 
@@ -183,27 +186,36 @@ export default function WeekGridView({
       const drag = dragRef.current;
       if (!drag) return;
       const dy = e.touches[0].clientY - drag.startTouchY;
+      const dx = e.touches[0].clientX - drag.startClientX;
       if (!drag.longPressReady) {
-        if (Math.abs(dy) > 12) {
+        // Only cancel for vertical scroll — horizontal means cross-day intent
+        if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx)) {
           if (drag.longPressTimer) { clearTimeout(drag.longPressTimer); drag.longPressTimer = null; }
           drag.scrollCancelled = true;
         }
         return;
       }
       e.preventDefault();
-      if (!drag.hasMoved && Math.abs(dy) > 8) {
+      if (!drag.hasMoved && (Math.abs(dy) > 8 || Math.abs(dx) > 8)) {
         drag.hasMoved = true;
         const el = aptEls.current.get(drag.aptId);
         if (el) { el.style.opacity = '0.25'; el.style.transform = 'none'; el.style.boxShadow = 'none'; el.style.transition = 'none'; }
         setDraggingId(drag.aptId);
         setDraggingDate(drag.aptDate);
       }
-      if (drag.hasMoved) {
+      if (drag.hasMoved && gridRef.current) {
         const maxPx = TOTAL_PX - drag.durationPx;
-        const raw = drag.origTopPx + dy;
-        const snp = Math.round(Math.max(0, Math.min(maxPx, raw)) / (15 * PPM)) * (15 * PPM);
+        const snp = Math.round(Math.max(0, Math.min(maxPx, drag.origTopPx + dy)) / (15 * PPM)) * (15 * PPM);
         drag.currentTopPx = snp;
-        if (ghostRef.current) ghostRef.current.style.top = `${snp}px`;
+        // Cross-day: compute which column the finger is over
+        const colWidth = (gridRef.current.clientWidth - TW) / 7;
+        const newIdx = Math.max(0, Math.min(6, drag.origDayIdx + Math.round(dx / colWidth)));
+        drag.targetDayIdx = newIdx;
+        if (ghostRef.current) {
+          ghostRef.current.style.top  = `${snp}px`;
+          ghostRef.current.style.left = `${TW + newIdx * colWidth}px`;
+          ghostRef.current.style.width = `${colWidth - 2}px`;
+        }
       }
     }
     grid.addEventListener('touchmove', onMove, { passive: false });
@@ -225,7 +237,8 @@ export default function WeekGridView({
       const el = aptEls.current.get(apt.id);
       if (el) { el.style.transform = 'scale(1.04)'; el.style.boxShadow = `0 4px 16px rgba(20,18,16,0.2), 0 0 0 1.5px ${col}`; el.style.zIndex = '5'; el.style.transition = 'transform 0.12s ease, box-shadow 0.12s ease'; }
     }, 450);
-    dragRef.current = { aptId: apt.id, aptDate: apt.date, color: col, startTouchY: e.touches[0].clientY, origTopPx, durationPx: apt.durationMinutes * PPM, currentTopPx: origTopPx, hasMoved: false, longPressReady: false, longPressTimer: timer, scrollCancelled: false };
+    const origDayIdx = days.findIndex(d => d.dateStr === apt.date);
+    dragRef.current = { aptId: apt.id, aptDate: apt.date, color: col, startTouchY: e.touches[0].clientY, startClientX: e.touches[0].clientX, origDayIdx: origDayIdx >= 0 ? origDayIdx : 0, targetDayIdx: origDayIdx >= 0 ? origDayIdx : 0, origTopPx, durationPx: apt.durationMinutes * PPM, currentTopPx: origTopPx, hasMoved: false, longPressReady: false, longPressTimer: timer, scrollCancelled: false };
   }
 
   function onAptTouchEnd(e: React.TouchEvent, apt: Appointment) {
@@ -242,7 +255,8 @@ export default function WeekGridView({
     if (drag.longPressReady && drag.hasMoved) {
       const newStart = m2t(Math.round(drag.currentTopPx / PPM / 15) * 15);
       const newEnd   = addMin(newStart, apt.durationMinutes);
-      setDragConfirm({ apt, newStartTime: newStart, newEndTime: newEnd });
+      const newDate  = days[drag.targetDayIdx]?.dateStr ?? apt.date;
+      setDragConfirm({ apt, newStartTime: newStart, newEndTime: newEnd, newDate });
     }
   }
 
@@ -261,12 +275,16 @@ export default function WeekGridView({
 
     const origTopPx = t2m(apt.startTime) * PPM;
     const col = getAppointmentColor(apt.staff, apt.service);
+    const origDayIdx = days.findIndex(d => d.dateStr === apt.date);
     dragRef.current = {
       aptId: apt.id, aptDate: apt.date, color: col,
-      startTouchY: e.clientY, origTopPx,
+      startTouchY: e.clientY, startClientX: e.clientX,
+      origDayIdx: origDayIdx >= 0 ? origDayIdx : 0,
+      targetDayIdx: origDayIdx >= 0 ? origDayIdx : 0,
+      origTopPx,
       durationPx: apt.durationMinutes * PPM,
       currentTopPx: origTopPx,
-      hasMoved: false, longPressReady: true, // no long-press for mouse
+      hasMoved: false, longPressReady: true,
       longPressTimer: null, scrollCancelled: false,
     };
 
@@ -274,18 +292,26 @@ export default function WeekGridView({
       const drag = dragRef.current;
       if (!drag) return;
       const dy = ev.clientY - drag.startTouchY;
-      if (!drag.hasMoved && Math.abs(dy) > 4) {
+      const dx = ev.clientX - drag.startClientX;
+      if (!drag.hasMoved && (Math.abs(dy) > 4 || Math.abs(dx) > 4)) {
         drag.hasMoved = true;
         const el = aptEls.current.get(drag.aptId);
         if (el) { el.style.opacity = '0.25'; el.style.transform = 'none'; el.style.boxShadow = 'none'; el.style.transition = 'none'; }
         setDraggingId(drag.aptId);
         setDraggingDate(drag.aptDate);
       }
-      if (drag.hasMoved) {
+      if (drag.hasMoved && gridRef.current) {
         const maxPx = TOTAL_PX - drag.durationPx;
         const snp = Math.round(Math.max(0, Math.min(maxPx, drag.origTopPx + dy)) / (15 * PPM)) * (15 * PPM);
         drag.currentTopPx = snp;
-        if (ghostRef.current) ghostRef.current.style.top = `${snp}px`;
+        const colWidth = (gridRef.current.clientWidth - TW) / 7;
+        const newIdx = Math.max(0, Math.min(6, drag.origDayIdx + Math.round(dx / colWidth)));
+        drag.targetDayIdx = newIdx;
+        if (ghostRef.current) {
+          ghostRef.current.style.top  = `${snp}px`;
+          ghostRef.current.style.left = `${TW + newIdx * colWidth}px`;
+          ghostRef.current.style.width = `${colWidth - 2}px`;
+        }
       }
     }
 
@@ -300,7 +326,8 @@ export default function WeekGridView({
       if (!drag) return;
       if (!drag.hasMoved) { if (apt.status === 'blocked') { setBlockDelSheet(apt); } else { router.push(`/admin/appointments/${apt.id}`); } return; }
       const newStart = m2t(Math.round(drag.currentTopPx / PPM / 15) * 15);
-      setDragConfirm({ apt, newStartTime: newStart, newEndTime: addMin(newStart, apt.durationMinutes) });
+      const newDate  = days[drag.targetDayIdx]?.dateStr ?? apt.date;
+      setDragConfirm({ apt, newStartTime: newStart, newEndTime: addMin(newStart, apt.durationMinutes), newDate });
     }
 
     window.addEventListener('mousemove', onMouseMove);
@@ -309,16 +336,19 @@ export default function WeekGridView({
 
   async function confirmReschedule() {
     if (!dragConfirm) return;
-    const { apt, newStartTime, newEndTime } = dragConfirm;
+    const { apt, newStartTime, newEndTime, newDate } = dragConfirm;
     const notify = notifyReschedule;
-    setApts((prev) => prev.map((a) => a.id === apt.id ? { ...a, startTime: newStartTime, endTime: newEndTime } : a));
+    setApts((prev) => prev.map((a) => a.id === apt.id
+      ? { ...a, date: newDate, startTime: newStartTime, endTime: newEndTime }
+      : a
+    ));
     setDragConfirm(null);
-    setNotifyReschedule(true); // reset for next drag
+    setNotifyReschedule(true);
     try {
       await fetch(`/api/admin/appointments/${apt.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ startTime: newStartTime, endTime: newEndTime, notify }),
+        body: JSON.stringify({ date: newDate, startTime: newStartTime, endTime: newEndTime, notify }),
       });
     } catch { /* fail silently */ }
   }
@@ -436,10 +466,35 @@ export default function WeekGridView({
           </div>
         )}
 
+        {/* Grid-level drag ghost — floats across day columns */}
+        {draggingId && (() => {
+          const ghostApt = apts.find(a => a.id === draggingId);
+          if (!ghostApt) return null;
+          const ghostCol = getAppointmentColor(ghostApt.staff, ghostApt.service);
+          const colWidth = gridRef.current ? (gridRef.current.clientWidth - TW) / 7 : 100;
+          const origIdx  = days.findIndex(d => d.dateStr === ghostApt.date);
+          return (
+            <div
+              ref={ghostRef}
+              style={{
+                position: 'absolute',
+                top: t2m(ghostApt.startTime) * PPM,
+                left: TW + Math.max(0, origIdx) * colWidth,
+                width: colWidth - 2,
+                height: Math.max(ghostApt.durationMinutes * PPM - 1, 14),
+                background: `${ghostCol}28`,
+                border: `1.5px dashed ${ghostCol}`,
+                borderRadius: 3,
+                pointerEvents: 'none',
+                zIndex: 10,
+                boxSizing: 'border-box',
+              }}
+            />
+          );
+        })()}
+
         {/* Day columns */}
         {days.map((day) => {
-          const isActiveGhost = draggingDate === day.dateStr;
-          const ghostApt = isActiveGhost ? apts.find((a) => a.id === draggingId) ?? null : null;
 
           return (
             <div
@@ -530,29 +585,7 @@ export default function WeekGridView({
                 );
               })}
 
-              {/* Drag ghost */}
-              {ghostApt && (() => {
-                const ghostCol = getAppointmentColor(ghostApt.staff, ghostApt.service);
-                const pos = day.positions.get(ghostApt.id) ?? { leftPct: 0, widthPct: 100 };
-                return (
-                  <div
-                    ref={ghostRef}
-                    style={{
-                      position: 'absolute',
-                      top: t2m(ghostApt.startTime) * PPM,
-                      left: `calc(${pos.leftPct}% + 1px)`,
-                      width: `calc(${pos.widthPct}% - 2px)`,
-                      height: Math.max(ghostApt.durationMinutes * PPM - 1, 14),
-                      background: `${ghostCol}28`,
-                      border: `1.5px dashed ${ghostCol}`,
-                      borderRadius: 3,
-                      pointerEvents: 'none',
-                      zIndex: 10,
-                      boxSizing: 'border-box',
-                    }}
-                  />
-                );
-              })()}
+              {/* Ghost now at grid level — removed per-day ghost */}
             </div>
           );
         })}
@@ -565,7 +598,11 @@ export default function WeekGridView({
             <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 500, color: 'var(--admin-text)', marginBottom: 4 }}>Reschedule</div>
             <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text3)', marginBottom: 20 }}>
               Move {dragConfirm.apt.clientName} to{' '}
-              <span style={{ color: 'var(--admin-text)' }}>{fmtDateShort(dragConfirm.apt.date)} · {fmt(dragConfirm.newStartTime)} – {fmt(dragConfirm.newEndTime)}</span>?
+              <span style={{ color: 'var(--admin-text)' }}>
+                {dragConfirm.newDate !== dragConfirm.apt.date
+                  ? `${fmtDateShort(dragConfirm.newDate)} · `
+                  : ''}{fmt(dragConfirm.newStartTime)} – {fmt(dragConfirm.newEndTime)}
+              </span>?
             </div>
             {/* Notify client toggle */}
             <button
@@ -578,7 +615,11 @@ export default function WeekGridView({
               </span>
             </button>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <SlotBtn label={`Move to ${fmt(dragConfirm.newStartTime)}`} variant="primary" onClick={confirmReschedule} />
+              <SlotBtn
+                label={dragConfirm.newDate !== dragConfirm.apt.date
+                  ? `Move to ${fmtDateShort(dragConfirm.newDate)} at ${fmt(dragConfirm.newStartTime)}`
+                  : `Move to ${fmt(dragConfirm.newStartTime)}`}
+                variant="primary" onClick={confirmReschedule} />
               <SlotBtn label="Cancel" variant="ghost" onClick={() => setDragConfirm(null)} />
             </div>
           </div>

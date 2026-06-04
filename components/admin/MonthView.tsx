@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import type { Appointment } from '@/lib/admin-mock';
 import { SERVICE_COLORS } from '@/lib/appointment-colors';
 import StatsBox from './StatsBox';
@@ -24,6 +25,8 @@ interface DayInfo {
   total: number;
 }
 
+const QUICK_LABELS_MV = ['Lunch', 'Break', 'Personal', 'Studio closed'] as const;
+
 export default function MonthView({
   appointments,
   monthStart,
@@ -32,6 +35,7 @@ export default function MonthView({
   onDayTap,
   onPrevMonth,
   onNextMonth,
+  onRefresh,
   isLoading,
 }: {
   appointments: Appointment[];
@@ -41,6 +45,7 @@ export default function MonthView({
   onDayTap:     (dateStr: string) => void;
   onPrevMonth:  () => void;
   onNextMonth:  () => void;
+  onRefresh?:   () => void;
   isLoading?:   boolean;
 }) {
   const year  = monthStart.getFullYear();
@@ -78,7 +83,58 @@ export default function MonthView({
   // Pad to complete final row
   while (cells.length % 7 !== 0) cells.push(null);
 
-  const canPrevMonth = true; // allow navigating into past months
+  const canPrevMonth = true;
+
+  // Block range state
+  const [showBlockRange, setShowBlockRange] = useState(false);
+  const [brStart,   setBrStart]   = useState('');
+  const [brEnd,     setBrEnd]     = useState('');
+  const [brLabel,   setBrLabel]   = useState('');
+  const [brStaff,   setBrStaff]   = useState<'eric' | 'livi' | 'both'>('both');
+  const [brLoading, setBrLoading] = useState(false);
+
+  function openBlockRange() {
+    const y = monthStart.getFullYear();
+    const m = String(monthStart.getMonth() + 1).padStart(2, '0');
+    setBrStart(`${y}-${m}-01`);
+    setBrEnd(`${y}-${m}-${String(daysInMonth).padStart(2, '0')}`);
+    setBrLabel('');
+    setBrStaff('both');
+    setShowBlockRange(true);
+  }
+
+  async function confirmBlockRange() {
+    if (!brStart || !brEnd || brStart > brEnd) return;
+    setBrLoading(true);
+    try {
+      const label   = brLabel.trim() || 'Blocked';
+      const staffList = brStaff === 'both' ? ['eric', 'livi'] as const : [brStaff];
+      const start = new Date(brStart + 'T12:00:00');
+      const end   = new Date(brEnd   + 'T12:00:00');
+      const requests: Promise<unknown>[] = [];
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        for (const staff of staffList) {
+          requests.push(
+            fetch('/api/admin/appointments', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                date: dateStr, startTime: '08:00', endTime: '22:00',
+                staff, clientName: '', clientEmail: '', clientPhone: '',
+                service: label, durationMinutes: 840, price: 0, status: 'blocked',
+              }),
+            })
+          );
+        }
+      }
+      await Promise.all(requests);
+      setShowBlockRange(false);
+      onRefresh?.();
+    } finally {
+      setBrLoading(false);
+    }
+  }
 
   // Busyness tint
   function cellTint(day: DayInfo): string {
@@ -121,7 +177,15 @@ export default function MonthView({
           {MONTH_NAMES[month]} {year}
         </div>
 
-        <button onClick={onNextMonth} style={{ ...navArrow, border: 'none', background: 'none' }}>›</button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <button
+            onClick={openBlockRange}
+            style={{ ...navArrow, fontSize: 11, fontFamily: 'var(--font-body)', width: 'auto', padding: '0 10px', color: 'var(--admin-muted)', letterSpacing: '0.04em' }}
+          >
+            Block range
+          </button>
+          <button onClick={onNextMonth} style={{ ...navArrow, border: 'none', background: 'none' }}>›</button>
+        </div>
       </div>
 
       {/* Month stats */}
@@ -229,6 +293,63 @@ export default function MonthView({
               </button>
             );
           })}
+        </div>
+      )}
+
+      {/* Block range sheet */}
+      {showBlockRange && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 60 }} onClick={() => setShowBlockRange(false)}>
+          <div onClick={e => e.stopPropagation()} style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'var(--admin-sheet)', borderRadius: '16px 16px 0 0', padding: '24px 20px 44px', overflowY: 'auto', maxHeight: '90vh' }}>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 500, color: 'var(--admin-text)', marginBottom: 20 }}>Block date range</div>
+
+            {/* Date range */}
+            <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
+              {[['From', brStart, setBrStart], ['To', brEnd, setBrEnd]].map(([label, val, setter]) => (
+                <div key={label as string} style={{ flex: 1 }}>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--admin-muted)', marginBottom: 6 }}>{label as string}</div>
+                  <input
+                    type="date"
+                    value={val as string}
+                    onChange={e => (setter as (v: string) => void)(e.target.value)}
+                    style={{ width: '100%', boxSizing: 'border-box', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--admin-border)', background: 'var(--admin-btn)', fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)', outline: 'none' }}
+                  />
+                </div>
+              ))}
+            </div>
+
+            {/* Label */}
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--admin-muted)', marginBottom: 8 }}>Label</div>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+              {QUICK_LABELS_MV.map(lbl => {
+                const active = brLabel === lbl;
+                return (
+                  <button key={lbl} onClick={() => setBrLabel(active ? '' : lbl)} style={{ padding: '7px 12px', borderRadius: 20, border: active ? '1.5px solid var(--admin-text)' : '1px solid var(--admin-border)', background: active ? 'var(--admin-text-tint)' : 'none', fontFamily: 'var(--font-body)', fontSize: 13, color: active ? 'var(--admin-text)' : 'var(--admin-text2)', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
+                    {lbl}
+                  </button>
+                );
+              })}
+            </div>
+            <input type="text" value={brLabel} onChange={e => setBrLabel(e.target.value)} placeholder="Custom label…" style={{ width: '100%', boxSizing: 'border-box', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--admin-border)', background: 'var(--admin-btn)', fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)', outline: 'none', marginBottom: 20 }} />
+
+            {/* Staff */}
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--admin-muted)', marginBottom: 8 }}>Staff</div>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 24 }}>
+              {(['eric', 'livi', 'both'] as const).map(s => (
+                <button key={s} onClick={() => setBrStaff(s)} style={{ flex: 1, padding: '10px 0', borderRadius: 8, border: brStaff === s ? '1.5px solid var(--admin-text)' : '1px solid var(--admin-border)', background: brStaff === s ? 'var(--admin-text-tint)' : 'none', fontFamily: 'var(--font-body)', fontSize: 13, color: brStaff === s ? 'var(--admin-text)' : 'var(--admin-text2)', cursor: 'pointer', WebkitTapHighlightColor: 'transparent', textTransform: 'capitalize' }}>
+                  {s === 'both' ? 'Both' : s === 'eric' ? 'Eric' : 'Livi'}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <button onClick={confirmBlockRange} disabled={brLoading || !brStart || !brEnd || brStart > brEnd} style={{ width: '100%', padding: '14px', borderRadius: 10, border: 'none', background: 'var(--admin-btn-primary-bg)', color: 'var(--admin-btn-primary-fg)', fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 500, cursor: 'pointer', opacity: brLoading ? 0.6 : 1 }}>
+                {brLoading ? 'Blocking…' : 'Block range'}
+              </button>
+              <button onClick={() => setShowBlockRange(false)} style={{ width: '100%', padding: '14px', borderRadius: 10, border: '1px solid var(--admin-border)', background: 'none', fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text2)', cursor: 'pointer' }}>
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
