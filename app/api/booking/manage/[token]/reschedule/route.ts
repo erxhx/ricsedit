@@ -14,14 +14,17 @@ export async function POST(
   const { token } = await params;
   const apt = await dbGetAppointmentByToken(token);
 
-  if (!apt) return Response.json({ error: 'Not found' }, { status: 404 });
+  if (!apt) return Response.json({ error: 'This link has expired or is no longer valid. Please call or text us at 778 535 3348.' }, { status: 404 });
+  if (apt.status === 'cancelled') {
+    return Response.json({ error: 'This appointment has already been cancelled.' }, { status: 400 });
+  }
   if (apt.status !== 'confirmed') {
-    return Response.json({ error: 'Appointment cannot be rescheduled' }, { status: 400 });
+    return Response.json({ error: 'This appointment can no longer be rescheduled online. Please call or text us at 778 535 3348.' }, { status: 400 });
   }
 
   const body = await req.json() as { date: string; startTime: string };
   if (!body.date || !body.startTime) {
-    return Response.json({ error: 'date and startTime are required' }, { status: 400 });
+    return Response.json({ error: 'Please select a date and time.' }, { status: 400 });
   }
 
   const todayPacific = new Intl.DateTimeFormat('en-CA', {
@@ -29,7 +32,7 @@ export async function POST(
     year: 'numeric', month: '2-digit', day: '2-digit',
   }).format(new Date());
   if (body.date < todayPacific) {
-    return Response.json({ error: 'Cannot reschedule to a past date' }, { status: 400 });
+    return Response.json({ error: 'Please choose a future date.' }, { status: 400 });
   }
 
   const endTime = addMinutes(body.startTime, apt.durationMinutes);

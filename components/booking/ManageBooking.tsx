@@ -421,11 +421,11 @@ export default function ManageBooking({
     setLoading(true); setError('');
     try {
       const res = await fetch(`/api/booking/manage/${token}/cancel`, { method: 'POST' });
-      if (!res.ok) { const d = await res.json(); throw new Error(d.error ?? 'Failed to cancel'); }
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error ?? 'Unable to cancel. Please call or text us at 778 535 3348.'); }
       setApt(a => ({ ...a, status: 'cancelled' }));
       setView('cancelled');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Something went wrong.');
+      setError(e instanceof Error ? e.message : 'Something went wrong. Please call or text us at 778 535 3348.');
     } finally { setLoading(false); }
   }
 
@@ -437,12 +437,12 @@ export default function ManageBooking({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ date, startTime: time }),
       });
-      if (!res.ok) { const d = await res.json(); throw new Error(d.error ?? 'Failed to reschedule'); }
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error ?? 'Unable to reschedule. Please call or text us at 778 535 3348.'); }
       const newEnd = addMinutes(time, apt.durationMinutes);
       setApt(a => ({ ...a, date, startTime: time, endTime: newEnd }));
       setView('rescheduled');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Something went wrong.');
+      setError(e instanceof Error ? e.message : 'Something went wrong. Please call or text us at 778 535 3348.');
     } finally { setLoading(false); }
   }
 
