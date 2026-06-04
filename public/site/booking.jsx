@@ -922,6 +922,8 @@
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
               <div style={{ marginBottom: 22 }}>
                 <label style={labelSt}>First name</label>
+                {/* Honeypot — hidden from real users, bots autofill it */}
+                <input id="bk-hp" name="website" autoComplete="off" tabIndex={-1} aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }} defaultValue="" />
                 <input className="bk-input" style={fieldSt('firstName')} value={form.firstName} onChange={function(e) { update('firstName', e.target.value); }} placeholder="First" />
                 {errors.firstName && <span style={errSt}>{errors.firstName}</span>}
               </div>
@@ -1321,7 +1323,7 @@
           var res = await fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ category: category, services: services, addons: addons, date: date.toISOString(), time: time, client: client, intakeResponses: intakeResponses }),
+            body: JSON.stringify({ category: category, services: services, addons: addons, date: date.toISOString(), time: time, client: client, intakeResponses: intakeResponses, _hp: document.getElementById('bk-hp') ? document.getElementById('bk-hp').value : '' }),
           });
           if (!res.ok) throw new Error('Booking failed. Please try again or call us at 778 535 3348.');
           var data = await res.json();

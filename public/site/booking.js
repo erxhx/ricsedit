@@ -797,7 +797,7 @@
             style: { appearance: "none", border: "none", background: "none", padding: 0, cursor: "pointer", fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-faint)", display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 22 }
           },
           "\u2190 Change"
-        ), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px" } }, /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 22 } }, /* @__PURE__ */ React.createElement("label", { style: labelSt }, "First name"), /* @__PURE__ */ React.createElement("input", { className: "bk-input", style: fieldSt("firstName"), value: form.firstName, onChange: function(e) {
+        ), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px" } }, /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 22 } }, /* @__PURE__ */ React.createElement("label", { style: labelSt }, "First name"), /* @__PURE__ */ React.createElement("input", { id: "bk-hp", name: "website", autoComplete: "off", tabIndex: -1, "aria-hidden": "true", style: { position: "absolute", left: "-9999px", width: 1, height: 1, opacity: 0 }, defaultValue: "" }), /* @__PURE__ */ React.createElement("input", { className: "bk-input", style: fieldSt("firstName"), value: form.firstName, onChange: function(e) {
           update("firstName", e.target.value);
         }, placeholder: "First" }), errors.firstName && /* @__PURE__ */ React.createElement("span", { style: errSt }, errors.firstName)), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 22 } }, /* @__PURE__ */ React.createElement("label", { style: labelSt }, "Last name"), /* @__PURE__ */ React.createElement("input", { className: "bk-input", style: fieldSt("lastName"), value: form.lastName, onChange: function(e) {
           update("lastName", e.target.value);
@@ -1100,7 +1100,7 @@
             var res = await fetch(endpoint, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ category, services, addons, date: date.toISOString(), time, client, intakeResponses })
+              body: JSON.stringify({ category, services, addons, date: date.toISOString(), time, client, intakeResponses, _hp: document.getElementById("bk-hp") ? document.getElementById("bk-hp").value : "" })
             });
             if (!res.ok) throw new Error("Booking failed. Please try again or call us at 778 535 3348.");
             var data = await res.json();

@@ -14,14 +14,11 @@ const CORS = {
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
-// Pre-flight request from the browser
 export async function OPTIONS() {
   return new Response(null, { status: 204, headers: CORS });
 }
 
-function pad(n: number) {
-  return String(n).padStart(2, '0');
-}
+function pad(n: number) { return String(n).padStart(2, '0'); }
 
 function addMinutes(time: string, mins: number): string {
   const [h, m] = time.split(':').map(Number);
@@ -29,26 +26,42 @@ function addMinutes(time: string, mins: number): string {
   return `${pad(Math.floor(total / 60))}:${pad(total % 60)}`;
 }
 
-interface BookingService {
-  id: string;
-  name: string;
-  price: number;
-  duration: number;
+// ── Input validation ──────────────────────────────────────────────────────────
+
+const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,}$/;
+const PHONE_DIGITS_RE = /^\d{7,15}$/;
+
+function validateClient(client: {
+  firstName: string; lastName: string; email: string; phone: string; notes?: string;
+}): string | null {
+  if (!client.firstName?.trim() || client.firstName.length > 80)
+    return 'Invalid first name';
+  if (!client.lastName?.trim() || client.lastName.length > 80)
+    return 'Invalid last name';
+  if (!client.email?.trim() || !EMAIL_RE.test(client.email.trim()))
+    return 'Invalid email address';
+  const digits = client.phone?.replace(/\D/g, '') ?? '';
+  if (!PHONE_DIGITS_RE.test(digits))
+    return 'Invalid phone number';
+  if ((client.notes?.length ?? 0) > 1000)
+    return 'Notes too long';
+  return null;
 }
+
+// ── In-memory login attempts (first line of defence — resets on cold start) ───
+// For booking spam a honeypot + validation is the primary defence here.
+// Full rate limiting would require Redis/KV.
+
+interface BookingService { id: string; name: string; price: number; duration: number; }
 
 interface BookingPayload {
   category: 'barber' | 'tan' | 'wax';
   services: BookingService[];
-  addons: BookingService[];
-  date: string;        // ISO string from date.toISOString()
+  addons?: BookingService[];
+  date: string;
   time: { h: number; m: number };
-  client: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    phone: string;
-    notes?: string;
-  };
+  client: { firstName: string; lastName: string; email: string; phone: string; notes?: string };
+  _hp?: string; // honeypot — must be empty
 }
 
 export async function POST(req: NextRequest) {
@@ -56,50 +69,52 @@ export async function POST(req: NextRequest) {
     const body = await req.json() as BookingPayload & { intakeResponses?: Record<string, unknown> };
     const { category, services, addons, date, time, client, intakeResponses } = body;
 
-    if (!category || !services?.length || !date || !time || !client?.firstName) {
-      return Response.json(
-        { error: 'Missing required booking fields' },
-        { status: 400, headers: CORS },
-      );
+    // ── Honeypot check — bots fill this, humans don't ─────────────────────────
+    if (body._hp) {
+      // Return a convincing success to confuse bots
+      return Response.json({ ok: true }, { headers: CORS });
     }
 
-    // Staff: barber → eric, tan/wax → livi
+    // ── Basic structural validation ───────────────────────────────────────────
+    if (!category || !['barber', 'tan', 'wax'].includes(category))
+      return Response.json({ error: 'Invalid category' }, { status: 400, headers: CORS });
+    if (!services?.length || services.length > 10)
+      return Response.json({ error: 'Invalid services' }, { status: 400, headers: CORS });
+    if (!date || !time)
+      return Response.json({ error: 'Missing date or time' }, { status: 400, headers: CORS });
+
+    // ── Client field validation ───────────────────────────────────────────────
+    const clientError = validateClient(client ?? {});
+    if (clientError)
+      return Response.json({ error: clientError }, { status: 400, headers: CORS });
+
+    // ── Build appointment ─────────────────────────────────────────────────────
     const staff = category === 'barber' ? 'eric' : 'livi';
-
-    // Date string: "YYYY-MM-DD" (date comes in as ISO from the browser)
     const dateStr = new Date(date).toISOString().slice(0, 10);
-
-    // Time
     const startTime = `${pad(time.h)}:${pad(time.m ?? 0)}`;
 
-    // Combine services + add-ons
     const allServices = [...services, ...(addons ?? [])];
-    const serviceName = allServices.map((s) => s.name).join(' + ');
-    const totalDuration = allServices.reduce((sum, s) => sum + (s.duration || 0), 0) || 30;
-    const totalPrice = allServices.reduce((sum, s) => sum + (s.price || 0), 0);
-
-    const endTime = addMinutes(startTime, totalDuration);
-    const clientName = `${client.firstName.trim()} ${client.lastName.trim()}`.trim();
+    const serviceName = allServices.map(s => s.name.slice(0, 100)).join(' + ').slice(0, 200);
+    const totalDuration = allServices.reduce((s, x) => s + (x.duration || 0), 0) || 30;
+    const totalPrice    = allServices.reduce((s, x) => s + (x.price    || 0), 0);
+    const endTime       = addMinutes(startTime, totalDuration);
+    const clientName    = `${client.firstName.trim()} ${client.lastName.trim()}`.trim();
 
     const apt = await dbCreateAppointment({
-      date: dateStr,
-      startTime,
-      endTime,
-      staff,
+      date: dateStr, startTime, endTime, staff,
       clientName,
-      clientEmail: client.email?.trim() ?? '',
-      clientPhone: client.phone?.trim() ?? '',
+      clientEmail: client.email.trim(),
+      clientPhone: client.phone.trim(),
       service: serviceName,
       durationMinutes: totalDuration,
       price: totalPrice,
       status: 'confirmed',
-      notes: client.notes?.trim() || undefined,
+      notes: client.notes?.trim().slice(0, 1000) || undefined,
       intakeResponses: intakeResponses && Object.keys(intakeResponses).length
         ? { category, fields: intakeResponses }
         : undefined,
     });
 
-    // Await so Vercel doesn't terminate the function before the sends complete
     await sendBookingConfirmation(apt).catch(() => {});
 
     return Response.json(
