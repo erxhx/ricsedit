@@ -6,8 +6,8 @@ import DayView from './DayView';
 import WeekView from './WeekView';
 import DaySchedule from './DaySchedule';
 import WeekGridView from './WeekGridView';
+import MonthView from './MonthView';
 
-// Heights: AdminHeader=52, tab bar=44 (sub-toggle merged in) → column headers sticky at 96
 const SUB_STICKY = 96;
 
 function localDateStr(d: Date): string {
@@ -22,7 +22,11 @@ function addDays(d: Date, n: number): Date {
 
 function strToLocalDate(s: string): Date {
   const [y, m, d] = s.split('-').map(Number);
-  return new Date(y, m - 1, d); // local midnight — no UTC offset skew
+  return new Date(y, m - 1, d);
+}
+
+function monthStart(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), 1);
 }
 
 export default function DashboardTabs({
@@ -40,44 +44,44 @@ export default function DashboardTabs({
   openDays: Record<number, boolean>;
   hoursByDay?: Record<number, [number, number] | null>;
 }) {
-  // Reconstruct dates locally so timezone serialization from the server can't shift the day
   const today     = strToLocalDate(todayStr);
   const weekStart = strToLocalDate(weekStartStr);
 
   const searchParams = useSearchParams();
 
-  // Derive initial state from URL params (supports old ?tab=week URLs too)
   function initTab(): 'overview' | 'calendar' {
     const t = searchParams.get('tab');
     if (t === 'calendar') return 'calendar';
     if (t === 'overview') return 'overview';
-    // legacy: old ?view=grid or ?tab=week → calendar
     if (searchParams.get('view') === 'grid') return 'calendar';
     return 'overview';
   }
-  function initOverviewMode(): 'day' | 'week' {
-    return 'day';
-  }
-  function initCalendarMode(): 'day' | 'week' {
+  function initCalendarMode(): 'day' | 'week' | 'month' {
     if (searchParams.get('tab') === 'calendar' && searchParams.get('mode') === 'week') return 'week';
-    return 'day'; // default Calendar to staff day grid
+    if (searchParams.get('tab') === 'calendar' && searchParams.get('mode') === 'month') return 'month';
+    return 'day';
   }
 
   const [activeTab,    setActiveTab]    = useState<'overview' | 'calendar'>(initTab);
-  const [overviewMode, setOverviewMode] = useState<'day' | 'week'>(initOverviewMode);
-  const [calendarMode, setCalendarMode] = useState<'day' | 'week'>(initCalendarMode);
+  const [overviewMode, setOverviewMode] = useState<'day' | 'week'>('day');
+  const [calendarMode, setCalendarMode] = useState<'day' | 'week' | 'month'>(initCalendarMode);
 
-  // Day navigation state
-  const [viewDate, setViewDate] = useState<Date>(today);
-  const [viewApts, setViewApts] = useState<Appointment[]>(todayApts);
+  // Day navigation
+  const [viewDate,    setViewDate]    = useState<Date>(today);
+  const [viewApts,    setViewApts]    = useState<Appointment[]>(todayApts);
   const [loadingApts, setLoadingApts] = useState(false);
 
-  // Week navigation state
+  // Week navigation
   const [viewWeekStart, setViewWeekStart] = useState<Date>(weekStart);
   const [viewWeekApts,  setViewWeekApts]  = useState<Appointment[]>(weekApts);
   const [loadingWeek,   setLoadingWeek]   = useState(false);
 
-  // Fetch day appointments whenever viewDate changes
+  // Month navigation
+  const [viewMonthStart, setViewMonthStart] = useState<Date>(() => monthStart(today));
+  const [viewMonthApts,  setViewMonthApts]  = useState<Appointment[]>([]);
+  const [loadingMonth,   setLoadingMonth]   = useState(false);
+
+  // Fetch day
   useEffect(() => {
     if (localDateStr(viewDate) === localDateStr(today)) {
       setViewApts(todayApts);
@@ -85,13 +89,13 @@ export default function DashboardTabs({
     }
     setLoadingApts(true);
     fetch(`/api/admin/appointments?date=${localDateStr(viewDate)}`)
-      .then((r) => r.json())
-      .then((data) => { setViewApts(Array.isArray(data) ? data : []); })
+      .then(r => r.json())
+      .then(data => setViewApts(Array.isArray(data) ? data : []))
       .catch(() => setViewApts([]))
       .finally(() => setLoadingApts(false));
   }, [localDateStr(viewDate)]);
 
-  // Fetch week appointments whenever viewWeekStart changes
+  // Fetch week
   useEffect(() => {
     if (localDateStr(viewWeekStart) === weekStartStr) {
       setViewWeekApts(weekApts);
@@ -100,35 +104,73 @@ export default function DashboardTabs({
     const weekEnd = addDays(viewWeekStart, 6);
     setLoadingWeek(true);
     fetch(`/api/admin/appointments?start=${localDateStr(viewWeekStart)}&end=${localDateStr(weekEnd)}`)
-      .then((r) => r.json())
-      .then((data) => { setViewWeekApts(Array.isArray(data) ? data : []); })
+      .then(r => r.json())
+      .then(data => setViewWeekApts(Array.isArray(data) ? data : []))
       .catch(() => setViewWeekApts([]))
       .finally(() => setLoadingWeek(false));
   }, [localDateStr(viewWeekStart)]);
 
-  function prevDay()  { setViewDate((d) => addDays(d, -1)); }
-  function nextDay()  { setViewDate((d) => addDays(d,  1)); }
+  // Fetch month
+  useEffect(() => {
+    if (calendarMode !== 'month') return;
+    const y = viewMonthStart.getFullYear();
+    const m = viewMonthStart.getMonth();
+    const start = localDateStr(new Date(y, m, 1));
+    const end   = localDateStr(new Date(y, m + 1, 0));
+    setLoadingMonth(true);
+    fetch(`/api/admin/appointments?start=${start}&end=${end}`)
+      .then(r => r.json())
+      .then(data => setViewMonthApts(Array.isArray(data) ? data : []))
+      .catch(() => setViewMonthApts([]))
+      .finally(() => setLoadingMonth(false));
+  }, [localDateStr(viewMonthStart), calendarMode]);
+
+  function prevDay()  { setViewDate(d => addDays(d, -1)); }
+  function nextDay()  { setViewDate(d => addDays(d,  1)); }
   function goToToday() { setViewDate(today); }
 
-  function prevWeek()        { setViewWeekStart((d) => addDays(d, -7)); }
-  function nextWeek()        { setViewWeekStart((d) => addDays(d,  7)); }
+  function prevWeek()        { setViewWeekStart(d => addDays(d, -7)); }
+  function nextWeek()        { setViewWeekStart(d => addDays(d,  7)); }
   function goToCurrentWeek() { setViewWeekStart(weekStart); }
+
+  function prevMonth() {
+    setViewMonthStart(d => new Date(d.getFullYear(), d.getMonth() - 1, 1));
+  }
+  function nextMonth() {
+    setViewMonthStart(d => new Date(d.getFullYear(), d.getMonth() + 1, 1));
+  }
+
+  // Tap a day in month view → switch to day schedule for that date
+  function handleMonthDayTap(dateStr: string) {
+    setViewDate(strToLocalDate(dateStr));
+    setCalendarMode('day');
+  }
 
   useEffect(() => {
     const t = searchParams.get('tab');
-    if (t === 'calendar') { setActiveTab('calendar'); }
-    else if (t === 'overview') { setActiveTab('overview'); }
+    if (t === 'calendar') setActiveTab('calendar');
+    else if (t === 'overview') setActiveTab('overview');
     const mode = searchParams.get('mode');
     if (t === 'overview') setOverviewMode(mode === 'week' ? 'week' : 'day');
-    if (t === 'calendar') setCalendarMode(mode === 'week' ? 'week' : 'day');
+    if (t === 'calendar') {
+      if (mode === 'month') setCalendarMode('month');
+      else if (mode === 'week') setCalendarMode('week');
+      else setCalendarMode('day');
+    }
   }, [searchParams]);
 
-  const dayMode   = activeTab === 'overview' ? overviewMode   : calendarMode;
-  const setDayMode = activeTab === 'overview' ? setOverviewMode : setCalendarMode;
+  const dayMode    = activeTab === 'overview' ? overviewMode   : calendarMode;
+  const setDayMode = activeTab === 'overview'
+    ? (m: string) => setOverviewMode(m as 'day' | 'week')
+    : (m: string) => setCalendarMode(m as 'day' | 'week' | 'month');
+
+  const modes = activeTab === 'overview'
+    ? [{ value: 'day', label: 'Day' }, { value: 'week', label: 'Week' }]
+    : [{ value: 'day', label: 'Day' }, { value: 'week', label: 'Week' }, { value: 'month', label: 'Month' }];
 
   return (
     <div>
-      {/* ── combined tab + mode bar ───────────────────────────────────────── */}
+      {/* ── Tab + mode bar ────────────────────────────────────────────────── */}
       <div style={{
         display: 'flex', alignItems: 'center',
         padding: '0 12px 0 16px',
@@ -138,10 +180,8 @@ export default function DashboardTabs({
         borderBottom: '1px solid var(--admin-glass-border)',
         boxShadow: 'var(--admin-glass-shadow)',
         position: 'sticky', top: 52, zIndex: 9,
-        height: 44,
-        gap: 0,
+        height: 44, gap: 0,
       }}>
-        {/* Overview / Calendar tabs */}
         {(['overview', 'calendar'] as const).map((t) => (
           <button
             key={t}
@@ -152,52 +192,57 @@ export default function DashboardTabs({
               color: activeTab === t ? 'var(--admin-text)' : 'var(--admin-muted)',
               background: 'none', border: 'none',
               borderBottom: activeTab === t ? '2px solid var(--admin-text)' : '2px solid transparent',
-              padding: '0 12px',
-              height: '100%',
-              cursor: 'pointer',
-              marginBottom: -1,
+              padding: '0 12px', height: '100%',
+              cursor: 'pointer', marginBottom: -1,
               textTransform: 'capitalize',
-              WebkitTapHighlightColor: 'transparent',
-              flexShrink: 0,
+              WebkitTapHighlightColor: 'transparent', flexShrink: 0,
             }}
           >
             {t}
           </button>
         ))}
 
-        {/* Day / Week mode toggle — right-aligned, before + New */}
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
-          {(['day', 'week'] as const).map((m) => (
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 2 }}>
+          {modes.map(({ value, label }) => (
             <button
-              key={m}
-              onClick={() => setDayMode(m)}
+              key={value}
+              onClick={() => setDayMode(value)}
               style={{
                 fontFamily: 'var(--font-body)', fontSize: 11,
-                fontWeight: dayMode === m ? 500 : 400,
-                color: dayMode === m ? 'var(--admin-text)' : 'var(--admin-muted)',
-                background: dayMode === m ? 'var(--admin-btn)' : 'none',
-                border: dayMode === m ? '1px solid var(--admin-btn-border)' : '1px solid transparent',
+                fontWeight: dayMode === value ? 500 : 400,
+                color: dayMode === value ? 'var(--admin-text)' : 'var(--admin-muted)',
+                background: dayMode === value ? 'var(--admin-btn)' : 'none',
+                border: dayMode === value ? '1px solid var(--admin-btn-border)' : '1px solid transparent',
                 borderRadius: 4,
-                // Full tab-bar height = 44px tap target
-                height: 44, padding: '0 10px',
+                height: 44, padding: '0 9px',
                 display: 'flex', alignItems: 'center',
                 cursor: 'pointer',
-                textTransform: 'capitalize',
                 WebkitTapHighlightColor: 'transparent',
               }}
             >
-              {m}
+              {label}
             </button>
           ))}
-
         </div>
       </div>
 
-      {/* ── content ───────────────────────────────────────────────────────── */}
+      {/* ── Content ───────────────────────────────────────────────────────── */}
       {activeTab === 'overview' && overviewMode === 'day'  && <DayView appointments={viewApts} date={viewDate} isToday={localDateStr(viewDate) === localDateStr(today)} onPrev={prevDay} onNext={nextDay} onGoToday={goToToday} isLoading={loadingApts} openDays={openDays} hoursByDay={hoursByDay} />}
       {activeTab === 'overview' && overviewMode === 'week' && <WeekView appointments={viewWeekApts} weekStart={viewWeekStart} isLoading={loadingWeek} onPrevWeek={prevWeek} onNextWeek={nextWeek} onGoCurrentWeek={goToCurrentWeek} openDays={openDays} />}
-      {activeTab === 'calendar' && calendarMode === 'day'  && <DaySchedule appointments={viewApts} date={localDateStr(viewDate)} stickyTop={SUB_STICKY} isToday={localDateStr(viewDate) === localDateStr(today)} onPrev={prevDay} onNext={nextDay} onGoToday={goToToday} />}
-      {activeTab === 'calendar' && calendarMode === 'week' && <WeekGridView appointments={viewWeekApts} weekStart={viewWeekStart} isLoading={loadingWeek} onPrevWeek={prevWeek} onNextWeek={nextWeek} onGoCurrentWeek={goToCurrentWeek} stickyTop={SUB_STICKY} openDays={openDays} />}
+      {activeTab === 'calendar' && calendarMode === 'day'   && <DaySchedule appointments={viewApts} date={localDateStr(viewDate)} stickyTop={SUB_STICKY} isToday={localDateStr(viewDate) === localDateStr(today)} onPrev={prevDay} onNext={nextDay} onGoToday={goToToday} />}
+      {activeTab === 'calendar' && calendarMode === 'week'  && <WeekGridView appointments={viewWeekApts} weekStart={viewWeekStart} isLoading={loadingWeek} onPrevWeek={prevWeek} onNextWeek={nextWeek} onGoCurrentWeek={goToCurrentWeek} stickyTop={SUB_STICKY} openDays={openDays} />}
+      {activeTab === 'calendar' && calendarMode === 'month' && (
+        <MonthView
+          appointments={viewMonthApts}
+          monthStart={viewMonthStart}
+          todayStr={todayStr}
+          openDays={openDays}
+          onDayTap={handleMonthDayTap}
+          onPrevMonth={prevMonth}
+          onNextMonth={nextMonth}
+          isLoading={loadingMonth}
+        />
+      )}
     </div>
   );
 }
