@@ -727,7 +727,7 @@ function App() {
   // Maps service id → URL slug and back. Keeps URLs clean for SEO
   // while preserving the swipe UX entirely.
   const SLUG_TO_SERVICE = { '': 'home', 'home': 'home', 'barbering': 'barber', 'sunless': 'tan', 'waxing': 'wax' };
-  const SERVICE_TO_SLUG = { home: 'home', barber: 'barbering', tan: 'sunless', wax: 'waxing' };
+  const SERVICE_TO_SLUG = { home: '', barber: 'barbering', tan: 'sunless', wax: 'waxing' };
   const SERVICE_META = {
     home:   { title: 'Edit Studio — Barber · Wax · Tan', desc: 'Edit Studio is a barbering, sunless tanning and waxing studio on Oak Bay Avenue in Victoria, BC.' },
     barber: { title: 'Barbering — Edit Studio Oak Bay', desc: 'Precision cuts, tapers and fades by barber Eric He. Book online or walk in.' },
