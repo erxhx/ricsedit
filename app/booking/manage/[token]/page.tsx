@@ -20,7 +20,8 @@ export default async function ManagePage({
   return (
     <main className="min-h-screen px-6 py-12">
       <div className="max-w-sm mx-auto">
-        <p className="text-xs tracking-widest uppercase opacity-40 mb-6">Edit Studio</p>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/assets/logo-black.png" alt="Edit Studio" style={{ height: 32, width: 'auto', opacity: 0.7, marginBottom: 24, display: 'block' }} />
         <ManageBooking apt={apt} token={token} />
       </div>
     </main>
