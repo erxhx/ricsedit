@@ -54,8 +54,8 @@ function validateClient(client: {
 // but block any automated script hammering the endpoint.
 
 const BOOKING_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
-const MAX_PER_IP        = 3;               // max 3 bookings per IP per 10 min
-const MAX_PER_EMAIL     = 2;               // max 2 bookings per email per hour
+const MAX_PER_IP        = 10;              // max 10 bookings per IP per 10 min (covers group bookings)
+const MAX_PER_EMAIL     = 5;              // max 5 bookings per email per hour
 const EMAIL_WINDOW_MS   = 60 * 60 * 1000; // 1 hour
 
 const ipMap    = new Map<string, { count: number; resetAt: number }>();
