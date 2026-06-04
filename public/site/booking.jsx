@@ -986,7 +986,11 @@
         if (!f.required) return true;
         var v = responses[f.id];
         if (!v) return false;
-        if (Array.isArray(v)) return v.length > 0;
+        if (Array.isArray(v)) {
+          if (v.length === 0) return false;
+          if (f.requireAll && f.options) return v.length === f.options.length;
+          return true;
+        }
         return v.toString().trim() !== '';
       });
     }
@@ -997,7 +1001,11 @@
       if (!f || !f.required) return false;
       var v = responses[id];
       if (!v) return true;
-      if (Array.isArray(v)) return v.length === 0;
+      if (Array.isArray(v)) {
+        if (v.length === 0) return true;
+        if (f.requireAll && f.options) return v.length < f.options.length;
+        return false;
+      }
       return v.toString().trim() === '';
     }
 
@@ -1028,16 +1036,20 @@
       }
 
       if (f.type === 'checkbox_group') {
+        var allChecked = f.requireAll && f.options && (responses[f.id] || []).length === f.options.length;
         return React.createElement('div', { key: f.id, style: { marginBottom: 20 } },
-          label,
-          React.createElement('div', { style: { display: 'flex', flexWrap: 'wrap', gap: '6px 16px', marginTop: 8 } },
+          React.createElement('div', { style: { display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 0 } },
+            label,
+            f.requireAll && React.createElement('button', { type: 'button', onClick: function() { setResp(f.id, allChecked ? [] : f.options.slice()); }, style: { fontFamily: 'var(--body)', fontSize: 11, color: 'var(--ink-soft)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', flexShrink: 0, marginLeft: 8 } }, allChecked ? 'Deselect all' : 'Select all')
+          ),
+          React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: 10, marginTop: 10 } },
             (f.options || []).map(function(opt) {
               var sel = (responses[f.id] || []).indexOf(opt) >= 0;
-              return React.createElement('label', { key: opt, style: { display: 'flex', alignItems: 'center', gap: 7, cursor: 'pointer', fontFamily: 'var(--body)', fontSize: 13, color: 'var(--ink-soft)', userSelect: 'none', minWidth: '45%' } },
-                React.createElement('span', { onClick: function() { toggleCheck(f.id, opt); }, style: { flex: '0 0 auto', width: 18, height: 18, borderRadius: 3, border: '1px solid ' + (sel ? 'var(--ink)' : 'var(--rule)'), background: sel ? 'var(--ink)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.12s' } },
+              return React.createElement('label', { key: opt, style: { display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', fontFamily: 'var(--body)', fontSize: 13, color: 'var(--ink-soft)', userSelect: 'none' } },
+                React.createElement('span', { onClick: function() { toggleCheck(f.id, opt); }, style: { flex: '0 0 auto', width: 18, height: 18, marginTop: 1, borderRadius: 3, border: '1px solid ' + (sel ? 'var(--ink)' : (err ? '#c0392b' : 'var(--rule)')), background: sel ? 'var(--ink)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.12s' } },
                   sel && React.createElement('span', { style: { color: 'var(--bg)', fontSize: 11, fontWeight: 700 } }, '✓')
                 ),
-                React.createElement('span', { onClick: function() { toggleCheck(f.id, opt); } }, opt)
+                React.createElement('span', { onClick: function() { toggleCheck(f.id, opt); }, style: { lineHeight: 1.4 } }, opt)
               );
             })
           )
