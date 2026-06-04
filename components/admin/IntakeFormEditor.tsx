@@ -260,6 +260,18 @@ export default function IntakeFormEditor() {
     } finally { setSaving(false); }
   }
 
+  async function resetToDefault() {
+    if (!confirm('Reset to the built-in default form? This will replace the current form — you can review before saving.')) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/admin/intake-forms?category=${category}`, { method: 'DELETE' });
+      setConfig(await res.json());
+      setEditingId(null);
+      setAddingNew(false);
+    } catch { /* ignore */ }
+    finally { setLoading(false); }
+  }
+
   function updateField(updated: FormField) {
     if (!config) return;
     setConfig({ ...config, fields: config.fields.map(f => f.id === updated.id ? updated : f) });
@@ -453,19 +465,32 @@ export default function IntakeFormEditor() {
             </button>
           )}
 
-          {/* Save */}
-          <button
-            onClick={save}
-            disabled={saving}
-            style={{
-              width: '100%', padding: '14px 0', borderRadius: 10, border: 'none',
-              background: 'var(--admin-btn-primary-bg)', color: 'var(--admin-btn-primary-fg)',
-              fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 500,
-              cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : 1,
-            }}
-          >
-            {saving ? 'Saving…' : 'Save form'}
-          </button>
+              {/* Save + Reset */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <button
+              onClick={save}
+              disabled={saving}
+              style={{
+                width: '100%', padding: '14px 0', borderRadius: 10, border: 'none',
+                background: 'var(--admin-btn-primary-bg)', color: 'var(--admin-btn-primary-fg)',
+                fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 500,
+                cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : 1,
+              }}
+            >
+              {saving ? 'Saving…' : 'Save form'}
+            </button>
+            <button
+              onClick={resetToDefault}
+              style={{
+                width: '100%', padding: '12px 0', borderRadius: 10,
+                border: '1px solid var(--admin-border)', background: 'none',
+                fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-muted)',
+                cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
+              }}
+            >
+              Reset to default
+            </button>
+          </div>
         </>
       )}
     </div>

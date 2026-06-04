@@ -27,3 +27,15 @@ export async function POST(req: NextRequest) {
   const ok = await saveIntakeForm(cat, config);
   return ok ? NextResponse.json(config) : NextResponse.json({ error: 'Save failed' }, { status: 500 });
 }
+
+/** DELETE — clears the saved config so the hardcoded default is used on next GET */
+export async function DELETE(req: NextRequest) {
+  if (!await auth()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const cat = (req.nextUrl.searchParams.get('category') ?? 'tan') as FormCategory;
+  if (!CATEGORIES.includes(cat)) return NextResponse.json({ error: 'Invalid category' }, { status: 400 });
+  const { db } = await import('@/lib/supabase');
+  await db.from('settings').delete().eq('key', `intake_form_${cat}`);
+  // Return the fresh default
+  const { getIntakeForm } = await import('@/lib/intake-form-store');
+  return NextResponse.json(await getIntakeForm(cat));
+}
