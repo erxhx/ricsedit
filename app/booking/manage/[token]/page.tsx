@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { getAppointmentByToken } from '@/lib/admin-mock';
+import { dbGetAppointmentByToken } from '@/lib/db';
 import ManageBooking from '@/components/booking/ManageBooking';
 
 export const metadata: Metadata = {
@@ -14,7 +14,7 @@ export default async function ManagePage({
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
-  const apt = getAppointmentByToken(token);
+  const apt = await dbGetAppointmentByToken(token);
   if (!apt) notFound();
 
   return (
