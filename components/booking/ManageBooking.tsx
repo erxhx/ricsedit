@@ -1,18 +1,14 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Appointment } from '@/lib/admin-mock';
 
 type View = 'view' | 'reschedule' | 'cancel' | 'rescheduled' | 'cancelled';
 
 const STAFF_LABEL: Record<string, string> = { eric: 'Eric', livi: 'Livi' };
+const DAY_ABBR = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
-const TIME_SLOTS: string[] = [];
-for (let h = 9; h <= 19; h++) {
-  for (let m = 0; m < 60; m += 15) {
-    if (h === 19 && m > 0) break;
-    TIME_SLOTS.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
-  }
-}
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function fmtTime(t: string): string {
   const [h, m] = t.split(':').map(Number);
@@ -28,11 +24,10 @@ function fmtDate(dateStr: string): string {
   });
 }
 
-function fmtDateDisplay(dateStr: string): string {
-  if (!dateStr) return '';
+function fmtDateShort(dateStr: string): string {
   const [y, mo, d] = dateStr.split('-').map(Number);
-  return new Date(y, mo - 1, d).toLocaleDateString('en-US', {
-    month: 'long', day: 'numeric', year: 'numeric',
+  return new Date(y, mo - 1, d).toLocaleDateString('en-CA', {
+    month: 'short', day: 'numeric',
   });
 }
 
@@ -41,6 +36,324 @@ function addMinutes(t: string, mins: number): string {
   const total = h * 60 + m + mins;
   return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
 }
+
+function toDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function todayPacific(): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Vancouver',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date());
+}
+
+type DayHours = [number, number] | null;
+
+interface HoursConfig {
+  days: Record<number, DayHours>;
+  barberThuClose?: number;
+  staff?: {
+    eric?: { days?: Record<number, DayHours> };
+    livi?: { days?: Record<number, DayHours> };
+  };
+}
+
+interface BookedRange {
+  startMinutes: number;
+  durationMinutes: number;
+}
+
+/** Returns [openMinutes, closeMinutes] for a staff member on a given day-of-week, or null if closed. */
+function getStaffHours(
+  config: HoursConfig,
+  staff: string,
+  dow: number,
+  duration: number,
+): [number, number] | null {
+  const staffDays = config.staff?.[staff as 'eric' | 'livi']?.days ?? config.days;
+  const hours = staffDays[dow] as DayHours ?? null;
+  if (!hours) return null;
+  let [open, close] = hours;
+  // Barber Thursday special close
+  if (staff === 'eric' && dow === 4 && config.barberThuClose) close = config.barberThuClose;
+  // Need enough room for at least one appointment
+  if (open * 60 + duration > close * 60) return null;
+  return [open * 60, close * 60];
+}
+
+/** Compute available start times (in minutes from midnight) for a given day. */
+function computeSlots(
+  openMin: number,
+  closeMin: number,
+  duration: number,
+  booked: BookedRange[],
+  excludeStart?: number, // current appointment's own start — don't count as busy
+): number[] {
+  const slots: number[] = [];
+  // Step is 15 min for all services
+  for (let s = openMin; s + duration <= closeMin; s += 15) {
+    const blocked = booked.some((r) => {
+      if (r.startMinutes === excludeStart) return false; // skip current apt
+      return s < r.startMinutes + r.durationMinutes && s + duration > r.startMinutes;
+    });
+    if (!blocked) slots.push(s);
+  }
+  return slots;
+}
+
+function minToTime(m: number): string {
+  return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+}
+
+// ── Reschedule step ───────────────────────────────────────────────────────────
+
+function RescheduleStep({
+  apt,
+  onConfirm,
+  onBack,
+  loading,
+  error,
+}: {
+  apt: Appointment;
+  onConfirm: (date: string, time: string) => void;
+  onBack: () => void;
+  loading: boolean;
+  error: string;
+}) {
+  const today = todayPacific();
+  const [y0, m0] = today.split('-').map(Number);
+
+  const [viewYear,  setViewYear]  = useState(y0);
+  const [viewMonth, setViewMonth] = useState(m0 - 1); // 0-indexed
+  const [selDate,   setSelDate]   = useState('');
+  const [selTime,   setSelTime]   = useState('');
+  const [hours,     setHours]     = useState<HoursConfig | null>(null);
+  const [booked,    setBooked]    = useState<BookedRange[]>([]);
+  const [slots,     setSlots]     = useState<number[]>([]);
+  const [fetching,  setFetching]  = useState(false);
+
+  // Current appointment's start in minutes (to exclude from busy)
+  const [curH, curM] = apt.startTime.split(':').map(Number);
+  const currentAptStart = apt.date === selDate ? curH * 60 + curM : -1;
+
+  // Fetch studio hours on mount
+  useEffect(() => {
+    fetch('/api/booking/hours')
+      .then(r => r.json())
+      .then(setHours)
+      .catch(() => {});
+  }, []);
+
+  // Fetch availability when date changes
+  useEffect(() => {
+    if (!selDate) { setSlots([]); return; }
+    setFetching(true);
+    fetch(`/api/booking/availability?date=${selDate}&staff=${apt.staff}`)
+      .then(r => r.json())
+      .then((data: { bookedRanges: BookedRange[] }) => {
+        setBooked(data.bookedRanges ?? []);
+      })
+      .catch(() => setBooked([]))
+      .finally(() => setFetching(false));
+  }, [selDate, apt.staff]);
+
+  // Recompute slots when booked or hours changes
+  useEffect(() => {
+    if (!selDate || !hours) { setSlots([]); return; }
+    const [y, m, d] = selDate.split('-').map(Number);
+    const dow = new Date(y, m - 1, d).getDay();
+    const h = getStaffHours(hours, apt.staff, dow, apt.durationMinutes);
+    if (!h) { setSlots([]); return; }
+    const s = computeSlots(h[0], h[1], apt.durationMinutes, booked, currentAptStart);
+    setSlots(s);
+    if (!s.includes(selTime ? (parseInt(selTime) * 60 + parseInt(selTime.split(':')[1])) : -1)) {
+      setSelTime('');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [booked, hours, selDate]);
+
+  // Build calendar grid for current view month
+  const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const cells: (number | null)[] = [
+    ...Array(firstDay).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ];
+
+  function isDayAvailable(day: number): boolean {
+    if (!hours) return false;
+    const dateStr = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    if (dateStr < today) return false;
+    // Can't reschedule to same date+time (but same date is OK for different time)
+    const dow = new Date(viewYear, viewMonth, day).getDay();
+    const h = getStaffHours(hours, apt.staff, dow, apt.durationMinutes);
+    return h !== null;
+  }
+
+  function prevMonth() {
+    if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11); }
+    else setViewMonth(m => m - 1);
+  }
+  function nextMonth() {
+    if (viewMonth === 11) { setViewYear(y => y + 1); setViewMonth(0); }
+    else setViewMonth(m => m + 1);
+  }
+
+  // Disable prev if already showing current month
+  const canPrev = viewYear > y0 || viewMonth > m0 - 1;
+
+  const selectedTimeMin = selTime
+    ? parseInt(selTime.split(':')[0]) * 60 + parseInt(selTime.split(':')[1])
+    : -1;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {/* Header */}
+      <div>
+        <button
+          onClick={onBack}
+          style={{ fontSize: 13, opacity: 0.5, background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 10 }}
+        >
+          ← Back
+        </button>
+        <h1 style={{ fontFamily: 'var(--font-display, Georgia, serif)', fontSize: 26, fontWeight: 300, margin: 0 }}>
+          Reschedule
+        </h1>
+        <p style={{ fontSize: 13, opacity: 0.5, margin: '4px 0 0' }}>
+          Currently {fmtDate(apt.date)} at {fmtTime(apt.startTime)}
+        </p>
+      </div>
+
+      {/* Calendar */}
+      <div style={{ border: '1px solid rgba(0,0,0,0.08)', borderRadius: 16, overflow: 'hidden' }}>
+        {/* Month nav */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+          <button
+            onClick={prevMonth}
+            disabled={!canPrev}
+            style={{ background: 'none', border: 'none', cursor: canPrev ? 'pointer' : 'default', fontSize: 16, opacity: canPrev ? 0.6 : 0.2, padding: '0 4px' }}
+          >
+            ‹
+          </button>
+          <span style={{ fontSize: 14, fontWeight: 500 }}>
+            {MONTH_NAMES[viewMonth]} {viewYear}
+          </span>
+          <button
+            onClick={nextMonth}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, opacity: 0.6, padding: '0 4px' }}
+          >
+            ›
+          </button>
+        </div>
+
+        {/* Day headers */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', padding: '8px 8px 0' }}>
+          {DAY_ABBR.map(d => (
+            <div key={d} style={{ textAlign: 'center', fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', opacity: 0.35, padding: '4px 0' }}>
+              {d}
+            </div>
+          ))}
+        </div>
+
+        {/* Day cells */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', padding: '4px 8px 12px', gap: 2 }}>
+          {cells.map((day, i) => {
+            if (!day) return <div key={`empty-${i}`} />;
+            const dateStr = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const available = isDayAvailable(day);
+            const isSelected = dateStr === selDate;
+            const isPast = dateStr < today;
+            return (
+              <button
+                key={dateStr}
+                onClick={() => { if (available) { setSelDate(dateStr); setSelTime(''); } }}
+                disabled={!available}
+                style={{
+                  height: 36, borderRadius: 8,
+                  background: isSelected ? '#141210' : 'none',
+                  color: isSelected ? '#efeae0' : isPast || !available ? 'rgba(0,0,0,0.2)' : '#141210',
+                  border: 'none', cursor: available ? 'pointer' : 'default',
+                  fontSize: 13, fontWeight: isSelected ? 500 : 400,
+                  textDecoration: available && !isSelected ? 'underline' : 'none',
+                  textUnderlineOffset: 2,
+                  textDecorationColor: 'rgba(0,0,0,0.2)',
+                }}
+              >
+                {day}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Time slots */}
+      {selDate && (
+        <div>
+          <p style={{ fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', opacity: 0.4, margin: '0 0 10px' }}>
+            {fmtDateShort(selDate)}
+          </p>
+          {fetching ? (
+            <p style={{ fontSize: 13, opacity: 0.4 }}>Loading availability…</p>
+          ) : slots.length === 0 ? (
+            <p style={{ fontSize: 13, opacity: 0.4 }}>No availability on this day — pick another date.</p>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+              {slots.map(s => {
+                const timeStr = minToTime(s);
+                const isSelected = s === selectedTimeMin;
+                return (
+                  <button
+                    key={s}
+                    onClick={() => setSelTime(timeStr)}
+                    style={{
+                      padding: '10px 0', borderRadius: 10,
+                      background: isSelected ? '#141210' : 'rgba(0,0,0,0.04)',
+                      color: isSelected ? '#efeae0' : '#141210',
+                      border: isSelected ? 'none' : '1px solid rgba(0,0,0,0.08)',
+                      fontSize: 13, fontWeight: isSelected ? 500 : 400,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {fmtTime(timeStr)}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Duration hint */}
+      {selDate && selTime && (
+        <p style={{ fontSize: 12, opacity: 0.35, textAlign: 'center', margin: '-4px 0' }}>
+          {fmtTime(selTime)} – {fmtTime(addMinutes(selTime, apt.durationMinutes))} · {apt.durationMinutes} min
+        </p>
+      )}
+
+      {error && <p style={{ fontSize: 13, color: '#dc2626' }}>{error}</p>}
+
+      <button
+        onClick={() => selDate && selTime && onConfirm(selDate, selTime)}
+        disabled={!selDate || !selTime || loading}
+        style={{
+          width: '100%', padding: '16px 0', borderRadius: 16,
+          background: selDate && selTime ? '#141210' : 'rgba(0,0,0,0.06)',
+          color: selDate && selTime ? '#efeae0' : 'rgba(0,0,0,0.25)',
+          border: 'none', fontSize: 14, fontWeight: 500,
+          cursor: selDate && selTime ? 'pointer' : 'default',
+          transition: 'all 0.15s',
+        }}
+      >
+        {loading ? 'Saving…' : selDate && selTime
+          ? `Move to ${fmtDateShort(selDate)} at ${fmtTime(selTime)}`
+          : 'Select a date and time'}
+      </button>
+    </div>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
 
 export default function ManageBooking({
   apt: initial,
@@ -51,278 +364,151 @@ export default function ManageBooking({
 }) {
   const [apt, setApt] = useState(initial);
   const [view, setView] = useState<View>('view');
-  const [reschedDate, setReschedDate] = useState(initial.date);
-  const [reschedTime, setReschedTime] = useState(initial.startTime);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayPacific();
   const isPast = apt.date < today;
   const isActive = apt.status === 'confirmed' && !isPast;
 
   async function doCancel() {
-    setLoading(true);
-    setError('');
+    setLoading(true); setError('');
     try {
       const res = await fetch(`/api/booking/manage/${token}/cancel`, { method: 'POST' });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error ?? 'Failed to cancel');
-      }
-      setApt((a) => ({ ...a, status: 'cancelled' }));
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error ?? 'Failed to cancel'); }
+      setApt(a => ({ ...a, status: 'cancelled' }));
       setView('cancelled');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+      setError(e instanceof Error ? e.message : 'Something went wrong.');
+    } finally { setLoading(false); }
   }
 
-  async function doReschedule() {
-    setLoading(true);
-    setError('');
+  async function doReschedule(date: string, time: string) {
+    setLoading(true); setError('');
     try {
       const res = await fetch(`/api/booking/manage/${token}/reschedule`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date: reschedDate, startTime: reschedTime }),
+        body: JSON.stringify({ date, startTime: time }),
       });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error ?? 'Failed to reschedule');
-      }
-      const newEnd = addMinutes(reschedTime, apt.durationMinutes);
-      setApt((a) => ({ ...a, date: reschedDate, startTime: reschedTime, endTime: newEnd }));
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error ?? 'Failed to reschedule'); }
+      const newEnd = addMinutes(time, apt.durationMinutes);
+      setApt(a => ({ ...a, date, startTime: time, endTime: newEnd }));
       setView('rescheduled');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+      setError(e instanceof Error ? e.message : 'Something went wrong.');
+    } finally { setLoading(false); }
   }
 
-  // ── Success: rescheduled ──────────────────────────────────────────────────
-  if (view === 'rescheduled') {
-    return (
-      <div className="flex flex-col gap-6">
-        <div className="w-12 h-12 rounded-full bg-black/5 flex items-center justify-center text-xl">
-          ✓
-        </div>
-        <div>
-          <h1 className="text-2xl mb-1">Appointment moved</h1>
-          <p className="text-sm opacity-60">
-            Your {apt.service} has been rescheduled to{' '}
-            <strong className="font-medium opacity-100">{fmtDate(apt.date)}</strong> at{' '}
-            <strong className="font-medium opacity-100">{fmtTime(apt.startTime)}</strong>.
-          </p>
-        </div>
-        <AppointmentCard apt={apt} />
-        <a href="/book" className="text-sm opacity-40 hover:opacity-70 transition-opacity">
-          Book another appointment →
-        </a>
-      </div>
-    );
-  }
-
-  // ── Success: cancelled ────────────────────────────────────────────────────
-  if (view === 'cancelled') {
-    return (
-      <div className="flex flex-col gap-6">
-        <div className="w-12 h-12 rounded-full bg-black/5 flex items-center justify-center text-xl">
-          ✓
-        </div>
-        <div>
-          <h1 className="text-2xl mb-1">Appointment cancelled</h1>
-          <p className="text-sm opacity-60">
-            Your {apt.service} on {fmtDate(apt.date)} has been cancelled.
-          </p>
-        </div>
-        <a href="/book" className="text-sm opacity-40 hover:opacity-70 transition-opacity">
-          Book a new appointment →
-        </a>
-      </div>
-    );
-  }
-
-  // ── Cancel confirmation ───────────────────────────────────────────────────
-  if (view === 'cancel') {
-    return (
-      <div className="flex flex-col gap-6">
-        <div>
-          <button
-            onClick={() => { setView('view'); setError(''); }}
-            className="text-sm opacity-50 hover:opacity-80 transition-opacity mb-3"
-          >
-            ← Back
-          </button>
-          <h1 className="text-2xl">Cancel appointment?</h1>
-        </div>
-
-        <AppointmentCard apt={apt} />
-
-        <p className="text-sm opacity-50">
-          This will permanently cancel your {apt.service} on {fmtDate(apt.date)} at{' '}
-          {fmtTime(apt.startTime)}. This cannot be undone.
+  // ── Rescheduled ───────────────────────────────────────────────────────────
+  if (view === 'rescheduled') return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>✓</div>
+      <div>
+        <h1 style={{ fontFamily: 'var(--font-display, Georgia, serif)', fontSize: 26, fontWeight: 300, margin: '0 0 4px' }}>Appointment moved</h1>
+        <p style={{ fontSize: 13, opacity: 0.5, margin: 0 }}>
+          Your {apt.service} has been rescheduled to <strong style={{ fontWeight: 500, opacity: 1 }}>{fmtDate(apt.date)}</strong> at <strong style={{ fontWeight: 500, opacity: 1 }}>{fmtTime(apt.startTime)}</strong>.
         </p>
-
-        {error && <p className="text-sm text-red-500">{error}</p>}
-
-        <div className="flex flex-col gap-3">
-          <button
-            onClick={doCancel}
-            disabled={loading}
-            className="w-full py-4 rounded-2xl text-sm font-medium bg-red-50 text-red-600 disabled:opacity-50 active:scale-[0.98] transition-all"
-          >
-            {loading ? 'Cancelling…' : 'Yes, cancel it'}
-          </button>
-          <button
-            onClick={() => { setView('view'); setError(''); }}
-            className="w-full py-4 rounded-2xl text-sm border border-black/10 active:scale-[0.98] transition-all"
-          >
-            Keep appointment
-          </button>
-        </div>
       </div>
-    );
-  }
+      <AppointmentCard apt={apt} />
+      <a href="/book" style={{ fontSize: 13, opacity: 0.4, textDecoration: 'none' }}>Book another appointment →</a>
+    </div>
+  );
 
-  // ── Reschedule picker ─────────────────────────────────────────────────────
-  if (view === 'reschedule') {
-    return (
-      <div className="flex flex-col gap-6">
-        <div>
-          <button
-            onClick={() => { setView('view'); setError(''); }}
-            className="text-sm opacity-50 hover:opacity-80 transition-opacity mb-3"
-          >
-            ← Back
-          </button>
-          <h1 className="text-2xl">Reschedule</h1>
-          <p className="text-sm opacity-50 mt-1">
-            Currently {fmtDate(apt.date)} at {fmtTime(apt.startTime)}
-          </p>
-        </div>
+  // ── Cancelled ─────────────────────────────────────────────────────────────
+  if (view === 'cancelled') return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>✓</div>
+      <div>
+        <h1 style={{ fontFamily: 'var(--font-display, Georgia, serif)', fontSize: 26, fontWeight: 300, margin: '0 0 4px' }}>Appointment cancelled</h1>
+        <p style={{ fontSize: 13, opacity: 0.5, margin: 0 }}>Your {apt.service} on {fmtDate(apt.date)} has been cancelled.</p>
+      </div>
+      <a href="/book" style={{ fontSize: 13, opacity: 0.4, textDecoration: 'none' }}>Book a new appointment →</a>
+    </div>
+  );
 
-        {/* Date + time pickers */}
-        <div className="rounded-2xl border border-black/8 divide-y divide-black/8 overflow-hidden">
-          {/* Date */}
-          <div className="flex justify-between items-center px-4 py-3">
-            <span className="text-sm opacity-50">Date</span>
-            <div className="relative flex items-center justify-end" style={{ minHeight: 28 }}>
-              <span className="text-sm font-medium pointer-events-none select-none">
-                {fmtDateDisplay(reschedDate)}
-              </span>
-              <input
-                type="date"
-                value={reschedDate}
-                min={today}
-                onChange={(e) => setReschedDate(e.target.value)}
-                style={{
-                  position: 'absolute', inset: '-12px -16px',
-                  opacity: 0.01, cursor: 'pointer',
-                  fontSize: 16,
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Time */}
-          <div className="flex justify-between items-center px-4 py-3">
-            <span className="text-sm opacity-50">Time</span>
-            <select
-              value={reschedTime}
-              onChange={(e) => setReschedTime(e.target.value)}
-              className="text-sm font-medium bg-transparent border-none outline-none cursor-pointer appearance-none"
-            >
-              {TIME_SLOTS.map((t) => (
-                <option key={t} value={t}>{fmtTime(t)}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Duration hint */}
-        <p className="text-xs opacity-40 text-center -mt-2">
-          {fmtTime(reschedTime)} – {fmtTime(addMinutes(reschedTime, apt.durationMinutes))} · {apt.durationMinutes} min
-        </p>
-
-        {error && <p className="text-sm text-red-500">{error}</p>}
-
-        <button
-          onClick={doReschedule}
-          disabled={loading}
-          className="w-full py-4 rounded-2xl text-sm font-medium bg-black text-white disabled:opacity-40 active:scale-[0.98] transition-all"
-        >
-          {loading ? 'Saving…' : `Move to ${fmtDate(reschedDate)} at ${fmtTime(reschedTime)}`}
+  // ── Cancel confirm ────────────────────────────────────────────────────────
+  if (view === 'cancel') return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div>
+        <button onClick={() => { setView('view'); setError(''); }} style={{ fontSize: 13, opacity: 0.5, background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 10 }}>← Back</button>
+        <h1 style={{ fontFamily: 'var(--font-display, Georgia, serif)', fontSize: 26, fontWeight: 300, margin: 0 }}>Cancel appointment?</h1>
+      </div>
+      <AppointmentCard apt={apt} />
+      <p style={{ fontSize: 13, opacity: 0.5 }}>This will permanently cancel your {apt.service} on {fmtDate(apt.date)} at {fmtTime(apt.startTime)}. This cannot be undone.</p>
+      {error && <p style={{ fontSize: 13, color: '#dc2626' }}>{error}</p>}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <button onClick={doCancel} disabled={loading} style={{ width: '100%', padding: '16px 0', borderRadius: 16, background: '#fef2f2', color: '#dc2626', border: 'none', fontSize: 14, fontWeight: 500, cursor: 'pointer', opacity: loading ? 0.5 : 1 }}>
+          {loading ? 'Cancelling…' : 'Yes, cancel it'}
+        </button>
+        <button onClick={() => { setView('view'); setError(''); }} style={{ width: '100%', padding: '16px 0', borderRadius: 16, background: 'none', border: '1px solid rgba(0,0,0,0.1)', fontSize: 14, cursor: 'pointer' }}>
+          Keep appointment
         </button>
       </div>
-    );
-  }
+    </div>
+  );
+
+  // ── Reschedule ────────────────────────────────────────────────────────────
+  if (view === 'reschedule') return (
+    <RescheduleStep
+      apt={apt}
+      onConfirm={doReschedule}
+      onBack={() => { setView('view'); setError(''); }}
+      loading={loading}
+      error={error}
+    />
+  );
 
   // ── Default view ──────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col gap-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       <div>
-        <h1 className="text-2xl mb-1">Your appointment</h1>
-        <p className="text-sm opacity-50">{apt.clientName}</p>
+        <h1 style={{ fontFamily: 'var(--font-display, Georgia, serif)', fontSize: 26, fontWeight: 300, margin: '0 0 4px' }}>Your appointment</h1>
+        <p style={{ fontSize: 13, opacity: 0.5, margin: 0 }}>{apt.clientName}</p>
       </div>
 
       <AppointmentCard apt={apt} />
 
-      {apt.status === 'cancelled' && (
-        <p className="text-sm text-center opacity-50">This appointment has been cancelled.</p>
-      )}
-
-      {apt.status === 'completed' && (
-        <p className="text-sm text-center opacity-50">This appointment has been completed.</p>
-      )}
-
-      {isPast && apt.status === 'confirmed' && (
-        <p className="text-sm text-center opacity-50">This appointment has already passed.</p>
-      )}
+      {apt.status === 'cancelled' && <p style={{ fontSize: 13, textAlign: 'center', opacity: 0.5 }}>This appointment has been cancelled.</p>}
+      {apt.status === 'completed' && <p style={{ fontSize: 13, textAlign: 'center', opacity: 0.5 }}>This appointment has been completed.</p>}
+      {isPast && apt.status === 'confirmed' && <p style={{ fontSize: 13, textAlign: 'center', opacity: 0.5 }}>This appointment has already passed.</p>}
 
       {isActive && (
-        <div className="flex flex-col gap-3">
-          <button
-            onClick={() => { setReschedDate(apt.date); setReschedTime(apt.startTime); setView('reschedule'); }}
-            className="w-full py-4 rounded-2xl text-sm font-medium border border-black/10 active:scale-[0.98] transition-all"
-          >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <button onClick={() => setView('reschedule')} style={{ width: '100%', padding: '16px 0', borderRadius: 16, background: 'none', border: '1px solid rgba(0,0,0,0.1)', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
             Reschedule
           </button>
-          <button
-            onClick={() => setView('cancel')}
-            className="w-full py-4 rounded-2xl text-sm text-red-500 active:scale-[0.98] transition-all"
-          >
+          <button onClick={() => setView('cancel')} style={{ width: '100%', padding: '16px 0', borderRadius: 16, background: 'none', border: 'none', fontSize: 14, color: '#dc2626', cursor: 'pointer' }}>
             Cancel appointment
           </button>
         </div>
       )}
 
       {isActive && (
-        <p className="text-xs opacity-30 text-center">
-          Need to make changes? You can reschedule or cancel up to 24 hours before your appointment.
+        <p style={{ fontSize: 11, opacity: 0.3, textAlign: 'center' }}>
+          You can reschedule or cancel up to 24 hours before your appointment.
         </p>
       )}
     </div>
   );
 }
 
+// ── Appointment card ──────────────────────────────────────────────────────────
+
 function AppointmentCard({ apt }: { apt: Appointment }) {
   return (
-    <div className="rounded-2xl border border-black/8 divide-y divide-black/8">
-      <div className="px-4 py-3">
-        <p className="text-sm font-medium">{apt.service}</p>
-        <p className="text-xs opacity-40 mt-0.5">with {STAFF_LABEL[apt.staff] ?? apt.staff}</p>
+    <div style={{ border: '1px solid rgba(0,0,0,0.08)', borderRadius: 16, overflow: 'hidden' }}>
+      <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+        <p style={{ fontSize: 14, fontWeight: 500, margin: 0 }}>{apt.service}</p>
+        <p style={{ fontSize: 12, opacity: 0.4, margin: '2px 0 0' }}>with {STAFF_LABEL[apt.staff] ?? apt.staff}</p>
       </div>
-      <div className="px-4 py-3 flex flex-col gap-0.5">
-        <p className="text-sm font-medium">{fmtDate(apt.date)}</p>
-        <p className="text-sm opacity-50">
-          {fmtTime(apt.startTime)} – {fmtTime(apt.endTime)} · {apt.durationMinutes} min
-        </p>
+      <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+        <p style={{ fontSize: 14, fontWeight: 500, margin: 0 }}>{fmtDate(apt.date)}</p>
+        <p style={{ fontSize: 13, opacity: 0.5, margin: '2px 0 0' }}>{fmtTime(apt.startTime)} – {fmtTime(apt.endTime)} · {apt.durationMinutes} min</p>
       </div>
-      <div className="px-4 py-3 flex justify-between items-center">
-        <span className="text-sm opacity-50">Total</span>
-        <span className="text-sm font-medium">${apt.price}</span>
+      <div style={{ padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ fontSize: 13, opacity: 0.5 }}>Total</span>
+        <span style={{ fontSize: 14, fontWeight: 500 }}>${apt.price}</span>
       </div>
     </div>
   );
