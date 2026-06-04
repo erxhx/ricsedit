@@ -63,7 +63,7 @@ export default function DashboardTabs({
   }
 
   const [activeTab,    setActiveTab]    = useState<'overview' | 'calendar'>(initTab);
-  const [overviewMode, setOverviewMode] = useState<'day' | 'week'>('day');
+  const [overviewMode, setOverviewMode] = useState<'day' | 'week' | 'month'>('day');
   const [calendarMode, setCalendarMode] = useState<'day' | 'week' | 'month'>(initCalendarMode);
 
   // Day navigation
@@ -112,7 +112,7 @@ export default function DashboardTabs({
 
   // Fetch month
   useEffect(() => {
-    if (calendarMode !== 'month') return;
+    if (calendarMode !== 'month' && overviewMode !== 'month') return;
     const y = viewMonthStart.getFullYear();
     const m = viewMonthStart.getMonth();
     const start = localDateStr(new Date(y, m, 1));
@@ -161,12 +161,14 @@ export default function DashboardTabs({
 
   const dayMode    = activeTab === 'overview' ? overviewMode   : calendarMode;
   const setDayMode = activeTab === 'overview'
-    ? (m: string) => setOverviewMode(m as 'day' | 'week')
+    ? (m: string) => setOverviewMode(m as 'day' | 'week' | 'month')
     : (m: string) => setCalendarMode(m as 'day' | 'week' | 'month');
 
-  const modes = activeTab === 'overview'
-    ? [{ value: 'day', label: 'Day' }, { value: 'week', label: 'Week' }]
-    : [{ value: 'day', label: 'Day' }, { value: 'week', label: 'Week' }, { value: 'month', label: 'Month' }];
+  const modes = [
+    { value: 'day',   label: 'Day'   },
+    { value: 'week',  label: 'Week'  },
+    { value: 'month', label: 'Month' },
+  ];
 
   return (
     <div>
@@ -227,8 +229,20 @@ export default function DashboardTabs({
       </div>
 
       {/* ── Content ───────────────────────────────────────────────────────── */}
-      {activeTab === 'overview' && overviewMode === 'day'  && <DayView appointments={viewApts} date={viewDate} isToday={localDateStr(viewDate) === localDateStr(today)} onPrev={prevDay} onNext={nextDay} onGoToday={goToToday} isLoading={loadingApts} openDays={openDays} hoursByDay={hoursByDay} />}
-      {activeTab === 'overview' && overviewMode === 'week' && <WeekView appointments={viewWeekApts} weekStart={viewWeekStart} isLoading={loadingWeek} onPrevWeek={prevWeek} onNextWeek={nextWeek} onGoCurrentWeek={goToCurrentWeek} openDays={openDays} />}
+      {activeTab === 'overview' && overviewMode === 'day'   && <DayView appointments={viewApts} date={viewDate} isToday={localDateStr(viewDate) === localDateStr(today)} onPrev={prevDay} onNext={nextDay} onGoToday={goToToday} isLoading={loadingApts} openDays={openDays} hoursByDay={hoursByDay} />}
+      {activeTab === 'overview' && overviewMode === 'week'  && <WeekView appointments={viewWeekApts} weekStart={viewWeekStart} isLoading={loadingWeek} onPrevWeek={prevWeek} onNextWeek={nextWeek} onGoCurrentWeek={goToCurrentWeek} openDays={openDays} />}
+      {activeTab === 'overview' && overviewMode === 'month' && (
+        <MonthView
+          appointments={viewMonthApts}
+          monthStart={viewMonthStart}
+          todayStr={todayStr}
+          openDays={openDays}
+          onDayTap={(dateStr) => { setViewDate(strToLocalDate(dateStr)); setOverviewMode('day'); }}
+          onPrevMonth={prevMonth}
+          onNextMonth={nextMonth}
+          isLoading={loadingMonth}
+        />
+      )}
       {activeTab === 'calendar' && calendarMode === 'day'   && <DaySchedule appointments={viewApts} date={localDateStr(viewDate)} stickyTop={SUB_STICKY} isToday={localDateStr(viewDate) === localDateStr(today)} onPrev={prevDay} onNext={nextDay} onGoToday={goToToday} />}
       {activeTab === 'calendar' && calendarMode === 'week'  && <WeekGridView appointments={viewWeekApts} weekStart={viewWeekStart} isLoading={loadingWeek} onPrevWeek={prevWeek} onNextWeek={nextWeek} onGoCurrentWeek={goToCurrentWeek} stickyTop={SUB_STICKY} openDays={openDays} />}
       {activeTab === 'calendar' && calendarMode === 'month' && (
