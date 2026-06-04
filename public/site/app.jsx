@@ -702,6 +702,23 @@ function App() {
     } catch (e) {}
   }, []);
 
+  // Fetch live banner config from admin API and apply over defaults
+  useEffect(() => {
+    const endpoint = (window.__booking || {}).endpoint || '';
+    const base = endpoint.replace(/\/api\/booking\/create$/, '') || window.location.origin;
+    fetch(base + '/api/site-banner')
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(cfg) {
+        if (!cfg) return;
+        setTweakRaw({
+          announceText:   cfg.enabled ? (cfg.text   || '') : '',
+          announceTarget: cfg.target  || 'barber',
+          announceStyle:  cfg.style   || 'lime',
+        });
+      })
+      .catch(function() {});
+  }, []);
+
   const setTweak = useCallback((keyOrEdits, val) => {
     const edits = typeof keyOrEdits === 'object' && keyOrEdits !== null
       ? keyOrEdits : { [keyOrEdits]: val };
