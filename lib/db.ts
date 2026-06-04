@@ -26,8 +26,9 @@ function toApt(row: any): Appointment {
     status:          row.status as AppointmentStatus,
     notes:           row.notes ?? undefined,
     adminNotes:      row.admin_notes ?? undefined,
-    reminderSent:    row.reminder_sent ?? false,
-    manageToken:     row.manage_token,
+    reminderSent:     row.reminder_sent  ?? false,
+    intakeResponses:  row.intake_responses ?? undefined,
+    manageToken:      row.manage_token,
   };
 }
 
@@ -222,7 +223,8 @@ export async function dbCreateAppointment(
       duration_minutes: data.durationMinutes,
       price:            data.price,
       status:           data.status,
-      notes:            data.notes ?? null,
+      notes:            data.notes           ?? null,
+      intake_responses: data.intakeResponses ?? null,
     })
     .select()
     .single();

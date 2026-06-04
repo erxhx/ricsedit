@@ -22,6 +22,7 @@ export interface Appointment {
   notes?: string;         // client-submitted note from booking form
   adminNotes?: string;    // internal admin note — never shown to the client
   reminderSent?: boolean; // true once the 24h reminder email/SMS has been dispatched
+  intakeResponses?: { category: string; fields: Record<string, unknown> };
   manageToken: string;    // unique token for client self-serve cancel/reschedule
 }
 

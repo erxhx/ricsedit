@@ -346,6 +346,9 @@ export default function AppointmentDetail({
           )}
         </Section>
 
+        {/* Intake form responses */}
+        {apt.intakeResponses && <IntakeResponsesPanel intakeResponses={apt.intakeResponses} />}
+
         {/* Admin notes — persistent across all appointments, internal only */}
         <Section label={
           <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -690,6 +693,110 @@ export default function AppointmentDetail({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Intake form responses panel ───────────────────────────────────────────────
+
+function IntakeResponsesPanel({ intakeResponses }: {
+  intakeResponses: { category: string; fields: Record<string, unknown> };
+}) {
+  const [formConfig, setFormConfig] = useState<{ fields: { id: string; label: string; type: string }[] } | null>(null);
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    fetch(`/api/booking/intake-form?category=${intakeResponses.category}`)
+      .then(r => r.json())
+      .then(setFormConfig)
+      .catch(() => {});
+  }, [intakeResponses.category]);
+
+  const fields = intakeResponses.fields;
+  const hasData = Object.keys(fields).some(k => {
+    const v = fields[k];
+    return v !== undefined && v !== null && v !== '' && !(Array.isArray(v) && v.length === 0);
+  });
+
+  if (!hasData) return null;
+
+  function formatValue(value: unknown): string {
+    if (Array.isArray(value)) return value.join(', ');
+    if (value === 'yes') return 'Yes';
+    if (value === 'no') return 'No';
+    return String(value ?? '');
+  }
+
+  // Use form config labels if available, else prettify field id
+  function getLabel(id: string): string {
+    if (formConfig?.fields) {
+      const f = formConfig.fields.find(f => f.id === id);
+      if (f) return f.label;
+    }
+    return id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  }
+
+  const entries = Object.entries(fields).filter(([, v]) =>
+    v !== undefined && v !== null && v !== '' && !(Array.isArray(v) && (v as unknown[]).length === 0)
+  );
+
+  const preview = entries.slice(0, 3);
+
+  return (
+    <div style={{ marginTop: 24 }}>
+      <button
+        onClick={() => setExpanded(e => !e)}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 10,
+          WebkitTapHighlightColor: 'transparent',
+        }}
+      >
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--admin-muted)' }}>
+          Intake Form ({entries.length} responses)
+        </div>
+        <span style={{ fontSize: 11, color: 'var(--admin-muted)' }}>{expanded ? '▲' : '▼'}</span>
+      </button>
+
+      <div style={{ background: 'rgba(252,248,240,0.85)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.55)', borderRadius: 12, boxShadow: '0 1px 8px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
+        {(expanded ? entries : preview).map(([id, value], i) => (
+          <div key={id} style={{
+            padding: '11px 16px',
+            borderBottom: i < (expanded ? entries : preview).length - 1 ? '1px solid var(--admin-border-sub)' : 'none',
+          }}>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-muted)', marginBottom: 2 }}>
+              {getLabel(id)}
+            </div>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-text)', lineHeight: 1.5 }}>
+              {Array.isArray(value)
+                ? (value as string[]).map((v, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                      <span style={{ color: 'var(--admin-muted)', marginTop: 2 }}>·</span>
+                      <span>{v}</span>
+                    </div>
+                  ))
+                : formatValue(value)
+              }
+            </div>
+          </div>
+        ))}
+        {!expanded && entries.length > 3 && (
+          <button
+            onClick={() => setExpanded(true)}
+            style={{ width: '100%', padding: '10px 16px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-link)', textAlign: 'left', WebkitTapHighlightColor: 'transparent' }}
+          >
+            Show {entries.length - 3} more responses ▼
+          </button>
+        )}
+        {expanded && entries.length > 3 && (
+          <button
+            onClick={() => setExpanded(false)}
+            style={{ width: '100%', padding: '10px 16px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-link)', textAlign: 'left', WebkitTapHighlightColor: 'transparent' }}
+          >
+            Show less ▲
+          </button>
+        )}
+      </div>
     </div>
   );
 }

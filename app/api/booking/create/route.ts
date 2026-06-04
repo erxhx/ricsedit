@@ -53,8 +53,8 @@ interface BookingPayload {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json() as BookingPayload;
-    const { category, services, addons, date, time, client } = body;
+    const body = await req.json() as BookingPayload & { intakeResponses?: Record<string, unknown> };
+    const { category, services, addons, date, time, client, intakeResponses } = body;
 
     if (!category || !services?.length || !date || !time || !client?.firstName) {
       return Response.json(
@@ -94,6 +94,9 @@ export async function POST(req: NextRequest) {
       price: totalPrice,
       status: 'confirmed',
       notes: client.notes?.trim() || undefined,
+      intakeResponses: intakeResponses && Object.keys(intakeResponses).length
+        ? { category, fields: intakeResponses }
+        : undefined,
     });
 
     // Await so Vercel doesn't terminate the function before the sends complete
