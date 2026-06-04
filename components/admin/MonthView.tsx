@@ -149,7 +149,7 @@ export default function MonthView({
             return (
               <button
                 key={day.dateStr}
-                onClick={() => !dimmed && onDayTap(day.dateStr)}
+                onClick={() => onDayTap(day.dateStr)}
                 style={{
                   position: 'relative',
                   minHeight: 72,
@@ -163,7 +163,7 @@ export default function MonthView({
                   border: day.isToday
                     ? '1.5px solid var(--admin-today-card-border)'
                     : '1px solid var(--admin-border)',
-                  cursor: dimmed ? 'default' : 'pointer',
+                  cursor: 'pointer',
                   opacity: dimmed ? 0.4 : 1,
                   textAlign: 'left',
                   display: 'flex', flexDirection: 'column', gap: 4,
