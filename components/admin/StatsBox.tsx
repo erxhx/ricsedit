@@ -83,7 +83,7 @@ export default function StatsBox({ appointments, hoursByDay, startDate, endDate 
         label="Eric"
         value={ericApts.length > 0 ? `${ericApts.length} apt${ericApts.length !== 1 ? 's' : ''}` : '—'}
         color={ericApts.length > 0 ? SERVICE_COLORS.ericBarber : undefined}
-        sub={ericUtil ? `${ericUtil.pct}% utilization` : undefined}
+        sub={ericUtil ? `${ericUtil.pct}% booked` : undefined}
         subColor={ericUtil?.color}
       />
       <div style={{ width: 1, background: 'var(--admin-border)' }} />
@@ -91,7 +91,7 @@ export default function StatsBox({ appointments, hoursByDay, startDate, endDate 
         label="Livi"
         value={liviApts.length > 0 ? `${liviApts.length} apt${liviApts.length !== 1 ? 's' : ''}` : '—'}
         color={liviApts.length > 0 ? SERVICE_COLORS.liviWax : undefined}
-        sub={liviUtil ? `${liviUtil.pct}% utilization` : undefined}
+        sub={liviUtil ? `${liviUtil.pct}% booked` : undefined}
         subColor={liviUtil?.color}
       />
     </div>
