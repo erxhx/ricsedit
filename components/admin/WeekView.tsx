@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Appointment } from '@/lib/admin-mock';
 import { SERVICE_COLORS, liviCategory } from '@/lib/appointment-colors';
+import StatsBox from './StatsBox';
 
 const DAY_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -128,19 +129,12 @@ export default function WeekView({ appointments, weekStart, isLoading, onPrevWee
 
       <div style={{ opacity: isLoading ? 0.4 : 1, transition: 'opacity 0.15s ease' }}>
         {/* Week totals */}
-        <div style={{
-          display: 'flex', gap: 16, marginBottom: 20,
-          padding: '12px 16px',
-          background: 'rgba(252,248,240,0.85)',
-          backdropFilter: 'blur(8px)',
-          WebkitBackdropFilter: 'blur(8px)',
-          border: '1px solid rgba(255,255,255,0.55)',
-          borderRadius: 12,
-          boxShadow: '0 1px 8px rgba(0,0,0,0.05)',
-        }}>
-          <WeekStat label="Revenue" value={`$${weekRevenue}`} />
-          <div style={{ width: 1, background: 'var(--admin-border)' }} />
-          <WeekStat label="Bookings" value={String(weekApts)} />
+        <div style={{ marginBottom: 20 }}>
+          <StatsBox
+            appointments={appointments}
+            startDate={localDateStr(weekStart)}
+            endDate={localDateStr(new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 6))}
+          />
         </div>
 
         {/* Day cards */}

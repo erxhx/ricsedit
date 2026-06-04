@@ -1,7 +1,7 @@
 'use client';
-import { useRouter } from 'next/navigation';
 import type { Appointment } from '@/lib/admin-mock';
 import { SERVICE_COLORS } from '@/lib/appointment-colors';
+import StatsBox from './StatsBox';
 
 const DAY_ABBR  = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 const MONTH_NAMES = [
@@ -123,6 +123,17 @@ export default function MonthView({
 
         <button onClick={onNextMonth} style={{ ...navArrow, border: 'none', background: 'none' }}>›</button>
       </div>
+
+      {/* Month stats */}
+      {!isLoading && appointments.length > 0 && (
+        <div style={{ padding: '12px 8px 0' }}>
+          <StatsBox
+            appointments={appointments}
+            startDate={`${year}-${String(month + 1).padStart(2, '0')}-01`}
+            endDate={`${year}-${String(month + 1).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`}
+          />
+        </div>
+      )}
 
       {/* Day headers */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', padding: '8px 8px 4px', gap: 2 }}>
