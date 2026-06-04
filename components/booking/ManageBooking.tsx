@@ -69,7 +69,6 @@ function getStaffHours(
   config: HoursConfig,
   staff: string,
   dow: number,
-  duration: number,
 ): [number, number] | null {
   const staffDays = config.staff?.[staff as 'eric' | 'livi']?.days ?? config.days;
   const hours = staffDays[dow] as DayHours ?? null;
@@ -77,28 +76,67 @@ function getStaffHours(
   let [open, close] = hours;
   // Barber Thursday special close
   if (staff === 'eric' && dow === 4 && config.barberThuClose) close = config.barberThuClose;
-  // Need enough room for at least one appointment
-  if (open * 60 + duration > close * 60) return null;
   return [open * 60, close * 60];
 }
 
-/** Compute available start times (in minutes from midnight) for a given day. */
+/** Current time in minutes from midnight, Pacific time. */
+function nowMinsPacific(): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Vancouver', hour: 'numeric', minute: 'numeric', hour12: false,
+  }).formatToParts(new Date());
+  const h = parseInt(parts.find(p => p.type === 'hour')!.value, 10) % 24;
+  const m = parseInt(parts.find(p => p.type === 'minute')!.value, 10);
+  return h * 60 + m;
+}
+
+/** Compute available start times (in minutes from midnight) — exact port of the live booking.jsx logic. */
 function computeSlots(
   openMin: number,
   closeMin: number,
   duration: number,
   booked: BookedRange[],
-  excludeStart?: number, // current appointment's own start — don't count as busy
+  isBarber: boolean,
+  excludeStart?: number, // current appointment's own slot — exclude from busy ranges
 ): number[] {
+  const step     = isBarber ? 45 : 15;
+  const deadline = closeMin + (isBarber ? 15 : 0); // barber has 15-min grace past close
+
+  // Filter out the client's own current appointment so they can re-select it
+  const ranges = booked.filter(r => r.startMinutes !== excludeStart);
+  const sorted = [...ranges].sort((a, b) => a.startMinutes - b.startMinutes);
+
   const slots: number[] = [];
-  // Step is 15 min for all services
-  for (let s = openMin; s + duration <= closeMin; s += 15) {
-    const blocked = booked.some((r) => {
-      if (r.startMinutes === excludeStart) return false; // skip current apt
-      return s < r.startMinutes + r.durationMinutes && s + duration > r.startMinutes;
-    });
-    if (!blocked) slots.push(s);
+  let cursor = openMin;
+
+  while (cursor + duration <= deadline) {
+    // If cursor lands inside a booked range, jump to its end
+    let jumped = false;
+    for (const r of sorted) {
+      if (cursor >= r.startMinutes && cursor < r.startMinutes + r.durationMinutes) {
+        cursor = r.startMinutes + r.durationMinutes;
+        jumped = true;
+        break;
+      }
+    }
+    if (jumped) continue;
+
+    // Check if the proposed slot overlaps any booked range
+    let overlapEnd = -1;
+    for (const r of sorted) {
+      if (cursor < r.startMinutes + r.durationMinutes && cursor + duration > r.startMinutes) {
+        overlapEnd = r.startMinutes + r.durationMinutes;
+        break;
+      }
+    }
+
+    if (overlapEnd >= 0) {
+      cursor = overlapEnd;
+    } else {
+      slots.push(cursor);
+      cursor += step;
+    }
   }
+
   return slots;
 }
 
@@ -163,11 +201,17 @@ function RescheduleStep({
     if (!selDate || !hours) { setSlots([]); return; }
     const [y, m, d] = selDate.split('-').map(Number);
     const dow = new Date(y, m - 1, d).getDay();
-    const h = getStaffHours(hours, apt.staff, dow, apt.durationMinutes);
+    const h = getStaffHours(hours, apt.staff, dow);
     if (!h) { setSlots([]); return; }
-    const s = computeSlots(h[0], h[1], apt.durationMinutes, booked, currentAptStart);
+    const isBarber = apt.staff === 'eric';
+    let s = computeSlots(h[0], h[1], apt.durationMinutes, booked, isBarber, currentAptStart);
+    // Filter out past slots when viewing today (Pacific time)
+    if (selDate === today) {
+      const nowMins = nowMinsPacific();
+      s = s.filter(min => min > nowMins);
+    }
     setSlots(s);
-    if (!s.includes(selTime ? (parseInt(selTime) * 60 + parseInt(selTime.split(':')[1])) : -1)) {
+    if (!s.includes(selTime ? (parseInt(selTime.split(':')[0]) * 60 + parseInt(selTime.split(':')[1])) : -1)) {
       setSelTime('');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -181,14 +225,16 @@ function RescheduleStep({
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ];
 
+  // 60-day max booking window (same as live site)
+  const maxDateStr = toDateStr(new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() + 60));
+
   function isDayAvailable(day: number): boolean {
     if (!hours) return false;
     const dateStr = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     if (dateStr < today) return false;
-    // Can't reschedule to same date+time (but same date is OK for different time)
+    if (dateStr > maxDateStr) return false;
     const dow = new Date(viewYear, viewMonth, day).getDay();
-    const h = getStaffHours(hours, apt.staff, dow, apt.durationMinutes);
-    return h !== null;
+    return getStaffHours(hours, apt.staff, dow) !== null;
   }
 
   function prevMonth() {
