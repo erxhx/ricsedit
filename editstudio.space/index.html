@@ -294,7 +294,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="preconnect" href="https://www.googletagmanager.com" />
-<link rel="preconnect" href="https://unpkg.com" />
 <link rel="dns-prefetch" href="https://www.google-analytics.com" />
 <link rel="dns-prefetch" href="https://googleads.g.doubleclick.net" />
 <!-- Google Fonts: non-blocking load (avoids render-blocking stylesheet) -->
@@ -303,9 +302,9 @@
 
 <link rel="stylesheet" href="styles.css" />
 
-<!-- React: defer so it downloads early but doesn't block HTML parsing -->
-<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin="anonymous" defer></script>
-<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin="anonymous" defer></script>
+<!-- React: self-hosted on Vercel edge (faster than unpkg CDN), defer execution -->
+<script src="site/react.production.min.js" defer></script>
+<script src="site/react-dom.production.min.js" defer></script>
 </head>
 <body>
 <div id="root"></div>
