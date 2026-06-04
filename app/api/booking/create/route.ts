@@ -48,9 +48,46 @@ function validateClient(client: {
   return null;
 }
 
-// ── In-memory login attempts (first line of defence — resets on cold start) ───
-// For booking spam a honeypot + validation is the primary defence here.
-// Full rate limiting would require Redis/KV.
+// ── In-memory rate limiter ────────────────────────────────────────────────────
+// Resets on Vercel cold starts but covers burst bot attacks within a warm instance.
+// Thresholds are generous for real clients (who book once every few weeks)
+// but block any automated script hammering the endpoint.
+
+const BOOKING_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+const MAX_PER_IP        = 3;               // max 3 bookings per IP per 10 min
+const MAX_PER_EMAIL     = 2;               // max 2 bookings per email per hour
+const EMAIL_WINDOW_MS   = 60 * 60 * 1000; // 1 hour
+
+const ipMap    = new Map<string, { count: number; resetAt: number }>();
+const emailMap = new Map<string, { count: number; resetAt: number }>();
+
+function checkLimit(
+  map: Map<string, { count: number; resetAt: number }>,
+  key: string, max: number, windowMs: number,
+): boolean {
+  const now = Date.now();
+  const entry = map.get(key);
+  if (!entry || entry.resetAt < now) {
+    map.set(key, { count: 1, resetAt: now + windowMs });
+    return true; // allowed
+  }
+  if (entry.count >= max) return false; // blocked
+  entry.count++;
+  return true;
+}
+
+function pruneMap(map: Map<string, { count: number; resetAt: number }>) {
+  if (map.size > 1000) {
+    const now = Date.now();
+    for (const [k, v] of map) if (v.resetAt < now) map.delete(k);
+  }
+}
+
+function getIp(req: NextRequest): string {
+  return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    ?? req.headers.get('x-real-ip')
+    ?? 'unknown';
+}
 
 interface BookingService { id: string; name: string; price: number; duration: number; }
 
@@ -71,9 +108,22 @@ export async function POST(req: NextRequest) {
 
     // ── Honeypot check — bots fill this, humans don't ─────────────────────────
     if (body._hp) {
-      // Return a convincing success to confuse bots
-      return Response.json({ ok: true }, { headers: CORS });
+      return Response.json({ ok: true }, { headers: CORS }); // silent discard
     }
+
+    // ── Rate limiting ─────────────────────────────────────────────────────────
+    const ip = getIp(req);
+    pruneMap(ipMap); pruneMap(emailMap);
+
+    if (!checkLimit(ipMap, ip, MAX_PER_IP, BOOKING_WINDOW_MS)) {
+      return Response.json(
+        { error: 'Too many bookings — please try again shortly or call us at 778 535 3348.' },
+        { status: 429, headers: CORS },
+      );
+    }
+
+    // Email rate limit checked after validation so we have the email value
+    // (done below after validateClient)
 
     // ── Basic structural validation ───────────────────────────────────────────
     if (!category || !['barber', 'tan', 'wax'].includes(category))
@@ -87,6 +137,14 @@ export async function POST(req: NextRequest) {
     const clientError = validateClient(client ?? {});
     if (clientError)
       return Response.json({ error: clientError }, { status: 400, headers: CORS });
+
+    // Per-email rate limit (after validation so email is confirmed valid)
+    if (!checkLimit(emailMap, client.email.trim().toLowerCase(), MAX_PER_EMAIL, EMAIL_WINDOW_MS)) {
+      return Response.json(
+        { error: 'Too many bookings from this email — please call us at 778 535 3348.' },
+        { status: 429, headers: CORS },
+      );
+    }
 
     // ── Build appointment ─────────────────────────────────────────────────────
     const staff = category === 'barber' ? 'eric' : 'livi';
