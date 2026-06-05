@@ -233,6 +233,7 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
   z-index: 50;
   pointer-events: none;
   color: var(--ink);
+  transition: opacity 0.4s ease;
   /* Backdrop blur so text never reads through dark behind chrome */
   background: linear-gradient(
     to top,
@@ -267,6 +268,11 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
   font-family: var(--mono); font-size: 10px;
   letter-spacing: 0.08em; text-transform: uppercase;
   display: flex; gap: 14px; align-items: center;
+}
+/* Hide chrome-bot once user scrolls past the hero (vIdx > 0) */
+.app:not([data-vidx="0"]) .chrome-bot {
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* ── Service strip (vertical scroll panels per service) ─── */

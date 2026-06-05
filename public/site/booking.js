@@ -1163,9 +1163,15 @@
         }
         var el = embedRef.current;
         if (!el) return;
-        setTimeout(function() {
-          if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-        }, 80);
+        var scroller = el.closest(".cpanel");
+        var chromeEl = document.querySelector(".chrome-top");
+        var clearance = chromeEl ? chromeEl.getBoundingClientRect().bottom + 12 : 110;
+        if (scroller) {
+          var top = el.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop - clearance;
+          scroller.scrollTo({ top: Math.max(0, top), behavior: "instant" });
+        } else {
+          el.scrollIntoView({ behavior: "instant", block: "start" });
+        }
       }, [step]);
       return /* @__PURE__ */ React.createElement("div", { ref: embedRef, className: "booking-embed" }, step !== "category" && step !== "done" && /* @__PURE__ */ React.createElement("div", { className: "booking-head" }, /* @__PURE__ */ React.createElement("span", { className: "booking-eyebrow" }, catLabel), /* @__PURE__ */ React.createElement("div", { className: "booking-progress" }, /* @__PURE__ */ React.createElement("div", { className: "booking-progress-fill", style: { width: progress * 100 + "%" } }))), /* @__PURE__ */ React.createElement("div", { className: "booking-body" }, step === "category" && /* @__PURE__ */ React.createElement(StepCategory, { onSelect: function(cat) {
         setCategory(cat);
