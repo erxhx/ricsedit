@@ -505,8 +505,8 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
   /* Keep scrollIntoView({ block:'end' }) clear of the chrome-bot overlay (~52px)
      plus breathing room. scroll-padding-bottom is honoured by scrollIntoView. */
   scroll-padding-bottom: 80px;
-  /* Prevent iOS elastic overscroll from revealing the white browser background */
-  overscroll-behavior-y: contain;
+  /* Prevent iOS elastic rubber-band bounce at top/bottom of scroll container */
+  overscroll-behavior: none;
   background: var(--bg);
 }
 .cpanel::-webkit-scrollbar { display: none; }
