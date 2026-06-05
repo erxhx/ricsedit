@@ -165,7 +165,7 @@ export default function MonthView({
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '14px 16px',
-        position: 'sticky', top: 96, zIndex: 6,
+        position: 'sticky', top: 52, zIndex: 6,
         background: 'var(--admin-bg)',
         borderBottom: '1px solid var(--admin-border-sub)',
       }}>
@@ -179,13 +179,15 @@ export default function MonthView({
           {MONTH_NAMES[month]} {year}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           {modeToggle}
+          {/* Block range — compact icon button */}
           <button
             onClick={openBlockRange}
-            style={{ ...navArrow, fontSize: 11, fontFamily: 'var(--font-body)', width: 'auto', padding: '0 10px', color: 'var(--admin-muted)', letterSpacing: '0.04em' }}
+            title="Block date range"
+            style={{ ...navArrow, fontSize: 15, border: '1px solid var(--admin-border)' }}
           >
-            Block range
+            ⊘
           </button>
           <button onClick={onNextMonth} style={{ ...navArrow, border: 'none', background: 'none' }}>›</button>
         </div>
