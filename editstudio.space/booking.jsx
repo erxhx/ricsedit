@@ -997,7 +997,7 @@
       return v.toString().trim() === '';
     }
 
-    var INP = { width: '100%', boxSizing: 'border-box', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--rule)', background: 'var(--paper)', fontFamily: 'var(--body)', fontSize: 14, color: 'var(--ink)', outline: 'none', marginTop: 6 };
+    var INP = { width: '100%', boxSizing: 'border-box', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--rule)', background: 'var(--paper)', fontFamily: 'var(--body)', fontSize: 16, color: 'var(--ink)', outline: 'none', marginTop: 6 };
 
     function renderField(f) {
       var err = missing(f.id);
