@@ -16,81 +16,7 @@ function MenuRow({ name, desc, price }) {
 
 }
 
-function BookButton({ label = 'Book on Acuity', href }) {
-  return (
-    <a className="book" href={href || '#'} target={href ? '_blank' : undefined} rel={href ? 'noopener noreferrer' : undefined}>
-      {label}<span className="arr">→</span>
-    </a>);
 
-}
-
-// AcuityEmbed — lazy-loaded inline scheduler.
-// Uses URL params from Acuity's direct-scheduling spec:
-// https://help.acuityscheduling.com/hc/en-us/articles/219149067
-// The owner URL (e.g. editstudio.as.me) accepts ?category= and ?appointmentType=
-// to pre-filter, and ?firstName=&lastName=&email= to pre-fill.
-function AcuityEmbed({ category, appointmentType, owner, label, mode = 'embed' }) {
-  const { useState, useRef, useEffect } = React;
-  const root = window.__acuity && window.__acuity.owner || owner || 'editstudio.as.me';
-  const params = new URLSearchParams();
-  if (appointmentType) params.set('appointmentType', appointmentType);
-  if (category) params.set('category', category);
-  const qs = params.toString();
-  const src = `https://${root}/${qs ? '?' + qs : ''}`;
-
-  const wrapRef = useRef(null);
-  const [show, setShow] = useState(false);
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    if (mode !== 'embed') return;
-    if (!wrapRef.current) return;
-    const obs = new IntersectionObserver(
-      ([entry]) => {if (entry.isIntersecting) {setShow(true);obs.disconnect();}},
-      { rootMargin: '400px 0px' }
-    );
-    obs.observe(wrapRef.current);
-    return () => obs.disconnect();
-  }, [mode]);
-
-  if (mode === 'link') {
-    return <BookButton label={label || 'Book on Acuity'} href={src} />;
-  }
-
-  return (
-    <div className="acuity-embed" ref={wrapRef}>
-      <div className="acuity-head">
-        <span className="acuity-eyebrow">Book {label || 'now'}</span>
-        <a className="acuity-out" href={src} target="_blank" rel="noopener noreferrer">
-          Open in new tab <span aria-hidden="true">↗</span>
-        </a>
-      </div>
-      <div className="acuity-frame" data-loaded={loaded ? 'true' : 'false'}>
-        {!loaded &&
-        <div className="acuity-skeleton" aria-hidden="true">
-            <div className="acuity-spin" />
-            <span>Loading scheduler…</span>
-          </div>
-        }
-        {show &&
-        <iframe
-          src={src}
-          title={`Book ${category || 'appointment'} — Acuity Scheduling`}
-          frameBorder="0"
-          loading="lazy"
-          onLoad={() => setLoaded(true)}
-          allow="payment *; clipboard-write" />
-
-        }
-      </div>
-      <div className="acuity-foot">
-        <span>Powered by Acuity Scheduling</span>
-        <span className="acuity-dot">·</span>
-        <span>Secure checkout</span>
-      </div>
-    </div>);
-
-}
 
 function SiteFooter() {
   return (
@@ -373,4 +299,4 @@ function VisitContent() {
 
 }
 
-Object.assign(window, { BarberingContent, TanContent, WaxContent, VisitContent, AcuityEmbed, BookButton });
+Object.assign(window, { BarberingContent, TanContent, WaxContent, VisitContent });

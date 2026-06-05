@@ -2,50 +2,6 @@
   function Eyebrow({ left, right }) {
     return /* @__PURE__ */ React.createElement("div", { className: "eyebrow" }, /* @__PURE__ */ React.createElement("span", null, left), /* @__PURE__ */ React.createElement("span", null, right));
   }
-  function BookButton({ label = "Book on Acuity", href }) {
-    return /* @__PURE__ */ React.createElement("a", { className: "book", href: href || "#", target: href ? "_blank" : void 0, rel: href ? "noopener noreferrer" : void 0 }, label, /* @__PURE__ */ React.createElement("span", { className: "arr" }, "\u2192"));
-  }
-  function AcuityEmbed({ category, appointmentType, owner, label, mode = "embed" }) {
-    const { useState, useRef, useEffect } = React;
-    const root = window.__acuity && window.__acuity.owner || owner || "editstudio.as.me";
-    const params = new URLSearchParams();
-    if (appointmentType) params.set("appointmentType", appointmentType);
-    if (category) params.set("category", category);
-    const qs = params.toString();
-    const src = `https://${root}/${qs ? "?" + qs : ""}`;
-    const wrapRef = useRef(null);
-    const [show, setShow] = useState(false);
-    const [loaded, setLoaded] = useState(false);
-    useEffect(() => {
-      if (mode !== "embed") return;
-      if (!wrapRef.current) return;
-      const obs = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting) {
-            setShow(true);
-            obs.disconnect();
-          }
-        },
-        { rootMargin: "400px 0px" }
-      );
-      obs.observe(wrapRef.current);
-      return () => obs.disconnect();
-    }, [mode]);
-    if (mode === "link") {
-      return /* @__PURE__ */ React.createElement(BookButton, { label: label || "Book on Acuity", href: src });
-    }
-    return /* @__PURE__ */ React.createElement("div", { className: "acuity-embed", ref: wrapRef }, /* @__PURE__ */ React.createElement("div", { className: "acuity-head" }, /* @__PURE__ */ React.createElement("span", { className: "acuity-eyebrow" }, "Book ", label || "now"), /* @__PURE__ */ React.createElement("a", { className: "acuity-out", href: src, target: "_blank", rel: "noopener noreferrer" }, "Open in new tab ", /* @__PURE__ */ React.createElement("span", { "aria-hidden": "true" }, "\u2197"))), /* @__PURE__ */ React.createElement("div", { className: "acuity-frame", "data-loaded": loaded ? "true" : "false" }, !loaded && /* @__PURE__ */ React.createElement("div", { className: "acuity-skeleton", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement("div", { className: "acuity-spin" }), /* @__PURE__ */ React.createElement("span", null, "Loading scheduler\u2026")), show && /* @__PURE__ */ React.createElement(
-      "iframe",
-      {
-        src,
-        title: `Book ${category || "appointment"} \u2014 Acuity Scheduling`,
-        frameBorder: "0",
-        loading: "lazy",
-        onLoad: () => setLoaded(true),
-        allow: "payment *; clipboard-write"
-      }
-    )), /* @__PURE__ */ React.createElement("div", { className: "acuity-foot" }, /* @__PURE__ */ React.createElement("span", null, "Powered by Acuity Scheduling"), /* @__PURE__ */ React.createElement("span", { className: "acuity-dot" }, "\xB7"), /* @__PURE__ */ React.createElement("span", null, "Secure checkout")));
-  }
   function BarberingContent({ headline }) {
     return /* @__PURE__ */ React.createElement("div", { className: "cpanel" }, /* @__PURE__ */ React.createElement(Eyebrow, { left: "01 / Barbering", right: "Sharp \xB7 Consistent \xB7 Detailed" }), /* @__PURE__ */ React.createElement("h2", null, headline || /* @__PURE__ */ React.createElement("span", null, "Every cut, ", /* @__PURE__ */ React.createElement("em", null, "edited"), ".")), /* @__PURE__ */ React.createElement("p", { className: "body" }, "Precision cuts, blended to perfection. A personalized experience in a one chair, one barber studio."), /* @__PURE__ */ React.createElement("div", { className: "rule" }), /* @__PURE__ */ React.createElement(window.BookingEmbed, { category: "barber" }), /* @__PURE__ */ React.createElement("div", { className: "rule" }), /* @__PURE__ */ React.createElement(Eyebrow, { left: "Gallery", right: "Recent work" }), /* @__PURE__ */ React.createElement("div", { className: "gallery" }, /* @__PURE__ */ React.createElement("div", { className: "tile tall" }, /* @__PURE__ */ React.createElement("img", { src: "assets/burst-fade-curly-top.jpg", alt: "Eric He sculpting a burst fade with curly top \u2014 Edit Studio Oak Bay", loading: "lazy", decoding: "async", width: "1280", height: "1920" })), /* @__PURE__ */ React.createElement("div", { className: "tile square" }, /* @__PURE__ */ React.createElement("img", { src: "assets/mid-taper-textured-fringe.webp", alt: "Finished mid taper haircut with textured fringe, rear view \u2014 men's barbering at Edit Studio Oak Bay", loading: "lazy", decoding: "async", width: "888", height: "888" })), /* @__PURE__ */ React.createElement("div", { className: "tile" }, /* @__PURE__ */ React.createElement("img", { src: "assets/barber-tools-clippers-scissors.webp", alt: "Wahl Magic Clip clipper, detail trimmer and barbering scissors on a sunlit counter \u2014 Edit Studio Oak Bay barber tools", loading: "lazy", decoding: "async", width: "900", height: "1200" })), /* @__PURE__ */ React.createElement("div", { className: "tile wide" }, /* @__PURE__ */ React.createElement("img", { src: "assets/chair-interior.webp", alt: "Edit Studio Oak Bay barber chair, large mirror and STMNT grooming product shelves \u2014 Victoria BC studio interior", loading: "lazy", decoding: "async", width: "2048", height: "1536" }))), /* @__PURE__ */ React.createElement("div", { className: "rule" }), /* @__PURE__ */ React.createElement(Eyebrow, { left: "The chair", right: "Your barber" }), /* @__PURE__ */ React.createElement("div", { className: "stylists" }, /* @__PURE__ */ React.createElement("div", { className: "stylist" }, /* @__PURE__ */ React.createElement("div", { className: "avatar", style: { backgroundImage: "url('assets/eric-he-headshot.webp')", backgroundSize: "cover", backgroundPosition: "center 22%" } }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h3", null, "Eric He ", /* @__PURE__ */ React.createElement("a", { className: "ig", href: "https://www.instagram.com/ricthesurgeon/", target: "_blank", rel: "noopener noreferrer", "aria-label": "Eric He on Instagram \u2014 @ricthesurgeon" }, /* @__PURE__ */ React.createElement("em", null, "@ricthesurgeon"))), /* @__PURE__ */ React.createElement("div", { className: "role" }, "CoFounder \xB7 Barber"), /* @__PURE__ */ React.createElement("p", null, "Three years behind the chair, Eric specializes in modern cuts across the board \u2014 whether that's technical fading work, or something that's all about shape, texture, and flow. Whatever the direction, the detail is always there, and the love for the craft shows.")))));
   }
@@ -93,5 +49,5 @@
       "Privacy Policy"
     )));
   }
-  Object.assign(window, { BarberingContent, TanContent, WaxContent, VisitContent, AcuityEmbed, BookButton });
+  Object.assign(window, { BarberingContent, TanContent, WaxContent, VisitContent });
 })();

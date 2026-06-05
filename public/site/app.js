@@ -497,11 +497,6 @@
         "barberHeadline": "Refined. / Intentional. / Crisp.",
         "tanHeadline": "Golden hour, on demand.",
         "waxHeadline": "Smooth, sorted.",
-        "acuityOwner": "editstudio.as.me",
-        "acuityMode": "embed",
-        "acuityBarberCategory": "barber.",
-        "acuityTanCategory": "sunless.",
-        "acuityWaxCategory": "waxing and esthetics.",
         "announceText": "Late night bookings available until 9pm Thursdays",
         "announceTarget": "barber",
         "announceStyle": "lime"
@@ -673,16 +668,6 @@
       const map = { compact: 0.85, regular: 1, comfy: 1.15 };
       document.documentElement.style.setProperty("--density", map[t.density] || 1);
     }, [t.density]);
-    useEffect(() => {
-      window.__acuity = {
-        owner: (t.acuityOwner || "editstudio.as.me").replace(/^https?:\/\//, "").replace(/\/$/, ""),
-        mode: t.acuityMode || "embed",
-        barberCategory: t.acuityBarberCategory || "",
-        tanCategory: t.acuityTanCategory || "",
-        waxCategory: t.acuityWaxCategory || ""
-      };
-      window.dispatchEvent(new CustomEvent("__acuity_config_change"));
-    }, [t.acuityOwner, t.acuityMode, t.acuityBarberCategory, t.acuityTanCategory, t.acuityWaxCategory]);
     useEffect(() => {
       const el = appRef.current;
       if (!el) return;
@@ -903,42 +888,6 @@
         value: t.announceStyle,
         options: ["parchment", "lime", "ink"],
         onChange: (v) => setTweak("announceStyle", v)
-      }
-    ), /* @__PURE__ */ React.createElement(window.TweakSection, { label: "Booking \xB7 Acuity" }), /* @__PURE__ */ React.createElement(
-      window.TweakRadio,
-      {
-        label: "Mode",
-        value: t.acuityMode,
-        options: ["embed", "link"],
-        onChange: (v) => setTweak("acuityMode", v)
-      }
-    ), /* @__PURE__ */ React.createElement(
-      window.TweakText,
-      {
-        label: "Owner URL",
-        value: t.acuityOwner,
-        onChange: (v) => setTweak("acuityOwner", v)
-      }
-    ), /* @__PURE__ */ React.createElement(
-      window.TweakText,
-      {
-        label: "Barber category",
-        value: t.acuityBarberCategory,
-        onChange: (v) => setTweak("acuityBarberCategory", v)
-      }
-    ), /* @__PURE__ */ React.createElement(
-      window.TweakText,
-      {
-        label: "Tan category",
-        value: t.acuityTanCategory,
-        onChange: (v) => setTweak("acuityTanCategory", v)
-      }
-    ), /* @__PURE__ */ React.createElement(
-      window.TweakText,
-      {
-        label: "Wax category",
-        value: t.acuityWaxCategory,
-        onChange: (v) => setTweak("acuityWaxCategory", v)
       }
     ), /* @__PURE__ */ React.createElement(window.TweakSection, { label: "Headlines" }), /* @__PURE__ */ React.createElement(
       CommitText,

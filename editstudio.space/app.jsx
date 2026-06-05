@@ -666,11 +666,6 @@ function App() {
     "barberHeadline": "Refined. / Intentional. / Crisp.",
     "tanHeadline": "Golden hour, on demand.",
     "waxHeadline": "Smooth, sorted.",
-    "acuityOwner": "editstudio.as.me",
-    "acuityMode": "embed",
-    "acuityBarberCategory": "barber.",
-    "acuityTanCategory": "sunless.",
-    "acuityWaxCategory": "waxing and esthetics.",
     "announceText": "Late night bookings available until 9pm Thursdays",
     "announceTarget": "barber",
     "announceStyle": "lime"
@@ -873,19 +868,6 @@ function App() {
     document.documentElement.style.setProperty('--density', map[t.density] || 1);
   }, [t.density]);
 
-  // Acuity config (read by AcuityEmbed via window.__acuity)
-  useEffect(() => {
-    window.__acuity = {
-      owner: (t.acuityOwner || 'editstudio.as.me').replace(/^https?:\/\//, '').replace(/\/$/, ''),
-      mode: t.acuityMode || 'embed',
-      barberCategory: t.acuityBarberCategory || '',
-      tanCategory: t.acuityTanCategory || '',
-      waxCategory: t.acuityWaxCategory || ''
-    };
-    // Force re-render of any mounted AcuityEmbeds by bumping a key
-    window.dispatchEvent(new CustomEvent('__acuity_config_change'));
-  }, [t.acuityOwner, t.acuityMode, t.acuityBarberCategory, t.acuityTanCategory, t.acuityWaxCategory]);
-
   // horizontal swipe
   useEffect(() => {
     const el = appRef.current;
@@ -1080,19 +1062,6 @@ function App() {
         <window.TweakRadio label="Style" value={t.announceStyle}
         options={['parchment', 'lime', 'ink']}
         onChange={(v) => setTweak('announceStyle', v)} />
-
-        <window.TweakSection label="Booking · Acuity" />
-        <window.TweakRadio label="Mode" value={t.acuityMode}
-        options={['embed', 'link']}
-        onChange={(v) => setTweak('acuityMode', v)} />
-        <window.TweakText label="Owner URL" value={t.acuityOwner}
-        onChange={(v) => setTweak('acuityOwner', v)} />
-        <window.TweakText label="Barber category" value={t.acuityBarberCategory}
-        onChange={(v) => setTweak('acuityBarberCategory', v)} />
-        <window.TweakText label="Tan category" value={t.acuityTanCategory}
-        onChange={(v) => setTweak('acuityTanCategory', v)} />
-        <window.TweakText label="Wax category" value={t.acuityWaxCategory}
-        onChange={(v) => setTweak('acuityWaxCategory', v)} />
 
         <window.TweakSection label="Headlines" />
         <CommitText label="Home" value={t.homeHeadline}
