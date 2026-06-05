@@ -1377,29 +1377,25 @@
       return function() { window.removeEventListener('edit-studio:goto-booking', onGoto); };
     }, [categoryProp]);
 
-    // Scroll the embed's top into view when the step changes (not on initial mount).
-    // Scroll the embed into view when the step changes, clearing the chrome-top header.
-    // scrollIntoView({ block:'start' }) would land the embed directly under the logo —
-    // instead we manually offset by the chrome-top's actual rendered height.
+    // On step change: instantly snap the cpanel so the top of the booking embed
+    // is visible with chrome-top clearance. Using 'instant' avoids the smooth-scroll
+    // stutter that shows old content sliding up before the new step appears.
     useEffect(function() {
       if (!mountedRef.current) { mountedRef.current = true; return; }
       var el = embedRef.current;
       if (!el) return;
-      setTimeout(function() {
-        if (!el) return;
-        var scroller = el.closest('.cpanel');
-        var chromeEl  = document.querySelector('.chrome-top');
-        var clearance = chromeEl ? chromeEl.getBoundingClientRect().bottom + 16 : 120;
-        if (scroller) {
-          var top = el.getBoundingClientRect().top
-                    - scroller.getBoundingClientRect().top
-                    + scroller.scrollTop
-                    - clearance;
-          scroller.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
-        } else {
-          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }, 80);
+      var scroller = el.closest('.cpanel');
+      var chromeEl  = document.querySelector('.chrome-top');
+      var clearance = chromeEl ? chromeEl.getBoundingClientRect().bottom + 12 : 110;
+      if (scroller) {
+        var top = el.getBoundingClientRect().top
+                  - scroller.getBoundingClientRect().top
+                  + scroller.scrollTop
+                  - clearance;
+        scroller.scrollTo({ top: Math.max(0, top), behavior: 'instant' });
+      } else {
+        el.scrollIntoView({ behavior: 'instant', block: 'start' });
+      }
     }, [step]);
 
     return (

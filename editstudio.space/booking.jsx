@@ -1359,16 +1359,25 @@
       return function() { window.removeEventListener('edit-studio:goto-booking', onGoto); };
     }, [categoryProp]);
 
-    // Scroll the embed's top into view when the step changes (not on initial mount).
-    // Skipping mount prevents the 3 simultaneously-rendered panels from all
-    // auto-scrolling their cpanels to the embed before the user has done anything.
+    // On step change: instantly snap the cpanel so the top of the booking embed
+    // is visible with chrome-top clearance. Using 'instant' avoids the smooth-scroll
+    // stutter that shows old content sliding up before the new step appears.
     useEffect(function() {
       if (!mountedRef.current) { mountedRef.current = true; return; }
       var el = embedRef.current;
       if (!el) return;
-      setTimeout(function() {
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 80);
+      var scroller = el.closest('.cpanel');
+      var chromeEl  = document.querySelector('.chrome-top');
+      var clearance = chromeEl ? chromeEl.getBoundingClientRect().bottom + 12 : 110;
+      if (scroller) {
+        var top = el.getBoundingClientRect().top
+                  - scroller.getBoundingClientRect().top
+                  + scroller.scrollTop
+                  - clearance;
+        scroller.scrollTo({ top: Math.max(0, top), behavior: 'instant' });
+      } else {
+        el.scrollIntoView({ behavior: 'instant', block: 'start' });
+      }
     }, [step]);
 
     return (
