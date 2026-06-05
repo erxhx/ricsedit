@@ -90,11 +90,12 @@ function fmtDateNav(dateStr: string): string {
 export default function DaySchedule({
   appointments: initial,
   date,
-  stickyTop = 96,
+  stickyTop = 52,
   isToday,
   onPrev,
   onNext,
   onGoToday,
+  modeToggle,
 }: {
   appointments: Appointment[];
   date: string;
@@ -103,6 +104,7 @@ export default function DaySchedule({
   onPrev?: () => void;
   onNext?: () => void;
   onGoToday?: () => void;
+  modeToggle?: React.ReactNode;
 }) {
   const router = useRouter();
   const gridRef = useRef<HTMLDivElement>(null);
@@ -409,14 +411,15 @@ export default function DaySchedule({
     <div style={{ position: 'relative' }}>
 
       {/* ── day nav bar ───────────────────────────────────────────────────── */}
-      {(onPrev || onNext) && (
+      {(onPrev || onNext || modeToggle) && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px 10px 10px', borderBottom: '1px solid var(--admin-border-sub)' }}>
           <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-text)', fontWeight: isToday ? 500 : 400 }}>
             {fmtDateNav(date)}{isToday && <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-muted)', marginLeft: 8, fontWeight: 400 }}>Today</span>}
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <button onClick={onPrev} style={navArrow}>‹</button>
-            <button onClick={onNext} style={navArrow}>›</button>
+            {modeToggle}
+            {onPrev && <button onClick={onPrev} style={navArrow}>‹</button>}
+            {onNext && <button onClick={onNext} style={navArrow}>›</button>}
             {!isToday && onGoToday && (
               <button onClick={onGoToday} style={{ fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500, color: '#b5824a', background: 'none', cursor: 'pointer', padding: '4px 9px', borderRadius: 6, border: '1px solid var(--admin-border)', WebkitTapHighlightColor: 'transparent' }}>
                 Today

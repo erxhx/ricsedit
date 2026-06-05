@@ -7,7 +7,8 @@ import DaySchedule from './DaySchedule';
 import WeekGridView from './WeekGridView';
 import MonthView from './MonthView';
 
-const SUB_STICKY = 96;
+// stickyTop = just the AdminHeader height (52px) — no separate mode bar
+const SUB_STICKY = 52;
 
 function localDateStr(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -24,6 +25,12 @@ function strToLocalDate(s: string): Date {
 function monthStart(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), 1);
 }
+
+const SCHEDULE_MODES = [
+  { value: 'day',   label: 'Day'   },
+  { value: 'week',  label: 'Week'  },
+  { value: 'month', label: 'Month' },
+] as const;
 
 export default function DashboardTabs({
   todayApts,
@@ -42,7 +49,6 @@ export default function DashboardTabs({
 }) {
   const today     = strToLocalDate(todayStr);
   const weekStart = strToLocalDate(weekStartStr);
-
   const searchParams = useSearchParams();
 
   function initTab(): 'today' | 'schedule' {
@@ -60,82 +66,46 @@ export default function DashboardTabs({
     return 'day';
   }
 
-  const [activeTab,     setActiveTab]     = useState<'today' | 'schedule'>(initTab);
-  const [scheduleMode,  setScheduleMode]  = useState<'day' | 'week' | 'month'>(initScheduleMode);
+  const [activeTab,    setActiveTab]    = useState<'today' | 'schedule'>(initTab);
+  const [scheduleMode, setScheduleMode] = useState<'day' | 'week' | 'month'>(initScheduleMode);
 
-  // Schedule day navigation
-  const [viewDate,    setViewDate]    = useState<Date>(today);
-  const [viewApts,    setViewApts]    = useState<Appointment[]>(weekApts.filter(a => localDateStr(today) === a.date) .length ? weekApts.filter(a => a.date === localDateStr(today)) : todayApts);
-  const [loadingApts, setLoadingApts] = useState(false);
-
-  // Schedule week navigation
-  const [viewWeekStart, setViewWeekStart] = useState<Date>(weekStart);
-  const [viewWeekApts,  setViewWeekApts]  = useState<Appointment[]>(weekApts);
-  const [loadingWeek,   setLoadingWeek]   = useState(false);
-
-  // Schedule month navigation
+  const [viewDate,       setViewDate]       = useState<Date>(today);
+  const [viewApts,       setViewApts]       = useState<Appointment[]>(todayApts);
+  const [loadingApts,    setLoadingApts]    = useState(false);
+  const [viewWeekStart,  setViewWeekStart]  = useState<Date>(weekStart);
+  const [viewWeekApts,   setViewWeekApts]   = useState<Appointment[]>(weekApts);
+  const [loadingWeek,    setLoadingWeek]    = useState(false);
   const [viewMonthStart, setViewMonthStart] = useState<Date>(() => monthStart(today));
   const [viewMonthApts,  setViewMonthApts]  = useState<Appointment[]>([]);
   const [loadingMonth,   setLoadingMonth]   = useState(false);
 
-  // Fetch day for Schedule
   useEffect(() => {
-    if (localDateStr(viewDate) === localDateStr(today)) {
-      setViewApts(todayApts);
-      return;
-    }
+    if (localDateStr(viewDate) === localDateStr(today)) { setViewApts(todayApts); return; }
     setLoadingApts(true);
     fetch(`/api/admin/appointments?date=${localDateStr(viewDate)}`)
-      .then(r => r.json())
-      .then(data => setViewApts(Array.isArray(data) ? data : []))
-      .catch(() => setViewApts([]))
-      .finally(() => setLoadingApts(false));
+      .then(r => r.json()).then(d => setViewApts(Array.isArray(d) ? d : []))
+      .catch(() => setViewApts([])).finally(() => setLoadingApts(false));
   }, [localDateStr(viewDate)]);
 
-  // Fetch week
   useEffect(() => {
-    if (localDateStr(viewWeekStart) === weekStartStr) {
-      setViewWeekApts(weekApts);
-      return;
-    }
+    if (localDateStr(viewWeekStart) === weekStartStr) { setViewWeekApts(weekApts); return; }
     const weekEnd = addDays(viewWeekStart, 6);
     setLoadingWeek(true);
     fetch(`/api/admin/appointments?start=${localDateStr(viewWeekStart)}&end=${localDateStr(weekEnd)}`)
-      .then(r => r.json())
-      .then(data => setViewWeekApts(Array.isArray(data) ? data : []))
-      .catch(() => setViewWeekApts([]))
-      .finally(() => setLoadingWeek(false));
+      .then(r => r.json()).then(d => setViewWeekApts(Array.isArray(d) ? d : []))
+      .catch(() => setViewWeekApts([])).finally(() => setLoadingWeek(false));
   }, [localDateStr(viewWeekStart)]);
 
-  // Fetch month — only for Schedule month mode
   useEffect(() => {
     if (scheduleMode !== 'month') return;
-    const y = viewMonthStart.getFullYear();
-    const m = viewMonthStart.getMonth();
+    const y = viewMonthStart.getFullYear(), m = viewMonthStart.getMonth();
     const start = localDateStr(new Date(y, m, 1));
     const end   = localDateStr(new Date(y, m + 1, 0));
     setLoadingMonth(true);
     fetch(`/api/admin/appointments?start=${start}&end=${end}`)
-      .then(r => r.json())
-      .then(data => setViewMonthApts(Array.isArray(data) ? data : []))
-      .catch(() => setViewMonthApts([]))
-      .finally(() => setLoadingMonth(false));
+      .then(r => r.json()).then(d => setViewMonthApts(Array.isArray(d) ? d : []))
+      .catch(() => setViewMonthApts([])).finally(() => setLoadingMonth(false));
   }, [localDateStr(viewMonthStart), scheduleMode]);
-
-  function prevDay()         { setViewDate(d => addDays(d, -1)); }
-  function nextDay()         { setViewDate(d => addDays(d,  1)); }
-  function goToToday()       { setViewDate(today); }
-  function prevWeek()        { setViewWeekStart(d => addDays(d, -7)); }
-  function nextWeek()        { setViewWeekStart(d => addDays(d,  7)); }
-  function goToCurrentWeek() { setViewWeekStart(weekStart); }
-  function prevMonth()       { setViewMonthStart(d => new Date(d.getFullYear(), d.getMonth() - 1, 1)); }
-  function nextMonth()       { setViewMonthStart(d => new Date(d.getFullYear(), d.getMonth() + 1, 1)); }
-
-  // Tapping a day in month view → switch to day schedule for that date
-  function handleMonthDayTap(dateStr: string) {
-    setViewDate(strToLocalDate(dateStr));
-    setScheduleMode('day');
-  }
 
   useEffect(() => {
     const t = searchParams.get('tab');
@@ -146,58 +116,51 @@ export default function DashboardTabs({
       else if (m === 'week') setScheduleMode('week');
       else setScheduleMode('day');
     } else {
-      // null (plain /admin), 'today', 'overview' — all mean Today tab
       setActiveTab('today');
     }
   }, [searchParams]);
 
-  const SCHEDULE_MODES = [
-    { value: 'day',   label: 'Day'   },
-    { value: 'week',  label: 'Week'  },
-    { value: 'month', label: 'Month' },
-  ];
+  const prevDay    = () => setViewDate(d => addDays(d, -1));
+  const nextDay    = () => setViewDate(d => addDays(d,  1));
+  const goToToday  = () => setViewDate(today);
+  const prevWeek   = () => setViewWeekStart(d => addDays(d, -7));
+  const nextWeek   = () => setViewWeekStart(d => addDays(d,  7));
+  const goToCurrentWeek = () => setViewWeekStart(weekStart);
+  const prevMonth  = () => setViewMonthStart(d => new Date(d.getFullYear(), d.getMonth() - 1, 1));
+  const nextMonth  = () => setViewMonthStart(d => new Date(d.getFullYear(), d.getMonth() + 1, 1));
+
+  function handleMonthDayTap(dateStr: string) {
+    setViewDate(strToLocalDate(dateStr));
+    setScheduleMode('day');
+  }
+
+  // Mode toggle node — passed into each schedule view's own nav bar
+  const modeToggleNode = (
+    <div style={{ display: 'flex', gap: 2 }}>
+      {SCHEDULE_MODES.map(({ value, label }) => (
+        <button
+          key={value}
+          onClick={() => setScheduleMode(value)}
+          style={{
+            fontFamily: 'var(--font-body)', fontSize: 11,
+            fontWeight: scheduleMode === value ? 500 : 400,
+            color: scheduleMode === value ? 'var(--admin-text)' : 'var(--admin-muted)',
+            background: scheduleMode === value ? 'var(--admin-btn)' : 'none',
+            border: scheduleMode === value ? '1px solid var(--admin-btn-border)' : '1px solid transparent',
+            borderRadius: 4, height: 32, padding: '0 9px',
+            display: 'flex', alignItems: 'center',
+            cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
+          }}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
 
   return (
     <div>
-      {/* ── Mode bar — Schedule only, Today has no sub-header ──────────────── */}
-      {activeTab === 'schedule' && (
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
-          padding: '0 12px',
-          background: 'var(--admin-glass-bg)',
-          backdropFilter: 'blur(20px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-          borderBottom: '1px solid var(--admin-glass-border)',
-          boxShadow: 'var(--admin-glass-shadow)',
-          position: 'sticky', top: 52, zIndex: 9,
-          height: 44,
-        }}>
-          {SCHEDULE_MODES.map(({ value, label }) => (
-            <button
-              key={value}
-              onClick={() => setScheduleMode(value as 'day' | 'week' | 'month')}
-              style={{
-                fontFamily: 'var(--font-body)', fontSize: 11,
-                fontWeight: scheduleMode === value ? 500 : 400,
-                color: scheduleMode === value ? 'var(--admin-text)' : 'var(--admin-muted)',
-                background: scheduleMode === value ? 'var(--admin-btn)' : 'none',
-                border: scheduleMode === value ? '1px solid var(--admin-btn-border)' : '1px solid transparent',
-                borderRadius: 4,
-                height: 44, padding: '0 9px',
-                display: 'flex', alignItems: 'center',
-                cursor: 'pointer',
-                WebkitTapHighlightColor: 'transparent',
-              }}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* ── Content ───────────────────────────────────────────────────────── */}
-
-      {/* Today: always today's summary, no navigation */}
+      {/* Today: always today's summary, no sub-header */}
       {activeTab === 'today' && (
         <DayView
           appointments={todayApts}
@@ -208,7 +171,7 @@ export default function DashboardTabs({
         />
       )}
 
-      {/* Schedule: full navigation, day/week/month grid */}
+      {/* Schedule: mode toggle lives inside each view's own nav row */}
       {activeTab === 'schedule' && scheduleMode === 'day' && (
         <DaySchedule
           appointments={viewApts}
@@ -218,6 +181,7 @@ export default function DashboardTabs({
           onPrev={prevDay}
           onNext={nextDay}
           onGoToday={goToToday}
+          modeToggle={modeToggleNode}
         />
       )}
       {activeTab === 'schedule' && scheduleMode === 'week' && (
@@ -230,6 +194,7 @@ export default function DashboardTabs({
           onGoCurrentWeek={goToCurrentWeek}
           stickyTop={SUB_STICKY}
           openDays={openDays}
+          modeToggle={modeToggleNode}
         />
       )}
       {activeTab === 'schedule' && scheduleMode === 'month' && (
@@ -243,6 +208,7 @@ export default function DashboardTabs({
           onNextMonth={nextMonth}
           onRefresh={() => setViewMonthStart(d => new Date(d))}
           isLoading={loadingMonth}
+          modeToggle={modeToggleNode}
         />
       )}
     </div>

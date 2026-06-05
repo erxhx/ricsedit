@@ -47,6 +47,7 @@ export default function MonthView({
   onNextMonth:  () => void;
   onRefresh?:   () => void;
   isLoading?:   boolean;
+  modeToggle?:  React.ReactNode;
 }) {
   const year  = monthStart.getFullYear();
   const month = monthStart.getMonth();
@@ -178,6 +179,7 @@ export default function MonthView({
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {modeToggle}
           <button
             onClick={openBlockRange}
             style={{ ...navArrow, fontSize: 11, fontFamily: 'var(--font-body)', width: 'auto', padding: '0 10px', color: 'var(--admin-muted)', letterSpacing: '0.04em' }}

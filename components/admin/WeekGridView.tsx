@@ -111,7 +111,8 @@ export default function WeekGridView({
   onNextWeek,
   onGoCurrentWeek,
   openDays,
-  stickyTop = 96,
+  stickyTop = 52,
+  modeToggle,
 }: {
   appointments: Appointment[];
   weekStart: Date;
@@ -121,6 +122,7 @@ export default function WeekGridView({
   onGoCurrentWeek?: () => void;
   openDays?: Record<number, boolean>;
   stickyTop?: number;
+  modeToggle?: React.ReactNode;
 }) {
   const router = useRouter();
   const gridRef   = useRef<HTMLDivElement>(null);
@@ -417,13 +419,16 @@ export default function WeekGridView({
             </button>
           )}
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          {(['eric', 'livi'] as const).map((s) => (
-            <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <div style={{ width: 6, height: 6, borderRadius: '50%', background: s === 'eric' ? SERVICE_COLORS.ericBarber : SERVICE_COLORS.liviWax }} />
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-text3)' }}>{s === 'eric' ? 'Eric' : 'Livi'}</span>
-            </div>
-          ))}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {modeToggle}
+          <div style={{ display: 'flex', gap: 8 }}>
+            {(['eric', 'livi'] as const).map((s) => (
+              <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: s === 'eric' ? SERVICE_COLORS.ericBarber : SERVICE_COLORS.liviWax }} />
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-text3)' }}>{s === 'eric' ? 'Eric' : 'Livi'}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
