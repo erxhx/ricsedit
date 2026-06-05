@@ -937,10 +937,7 @@
               <textarea className="bk-input" style={Object.assign({}, fieldSt('notes'), { resize: 'none', height: 68, lineHeight: 1.5 })} value={form.notes} onChange={function(e) { update('notes', e.target.value); }} placeholder="Anything we should know before your appointment?" />
             </div>
 
-            {/* Sticky CTA — floats at the bottom of the scroll container */}
-            <div style={{ position: 'sticky', bottom: 0, background: 'var(--bg)', paddingTop: 12, paddingBottom: 20, marginTop: 4 }}>
-              <BkBtn onClick={function() { if (validate()) props.onNext(form); }}>Continue</BkBtn>
-            </div>
+            <BkBtn onClick={function() { if (validate()) props.onNext(form); }}>Continue</BkBtn>
           </div>
         )}
       </div>

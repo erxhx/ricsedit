@@ -807,9 +807,9 @@
           update("phone", e.target.value);
         }, placeholder: "250 555 0100" }), errors.phone && /* @__PURE__ */ React.createElement("span", { style: errSt }, errors.phone)), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 16 } }, /* @__PURE__ */ React.createElement("label", { style: labelSt }, "Notes ", /* @__PURE__ */ React.createElement("span", { style: { opacity: 0.5, fontStyle: "italic", textTransform: "none", letterSpacing: 0 } }, "\u2014 optional")), /* @__PURE__ */ React.createElement("textarea", { className: "bk-input", style: Object.assign({}, fieldSt("notes"), { resize: "none", height: 68, lineHeight: 1.5 }), value: form.notes, onChange: function(e) {
           update("notes", e.target.value);
-        }, placeholder: "Anything we should know before your appointment?" })), /* @__PURE__ */ React.createElement("div", { style: { position: "sticky", bottom: 0, background: "var(--bg)", paddingTop: 12, paddingBottom: 20, marginTop: 4 } }, /* @__PURE__ */ React.createElement(BkBtn, { onClick: function() {
+        }, placeholder: "Anything we should know before your appointment?" })), /* @__PURE__ */ React.createElement(BkBtn, { onClick: function() {
           if (validate()) props.onNext(form);
-        } }, "Continue")))
+        } }, "Continue"))
       ));
     }
     function StepIntakeForm(props) {
