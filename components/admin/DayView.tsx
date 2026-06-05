@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import type { Appointment } from '@/lib/admin-mock';
 import { SERVICE_COLORS, getAppointmentColor } from '@/lib/appointment-colors';
 import AppointmentCard from './AppointmentCard';
@@ -209,6 +210,95 @@ const navArrow: React.CSSProperties = {
   WebkitTapHighlightColor: 'transparent',
 };
 
+// ── Now / Up Next strip ───────────────────────────────────────────────────────
+
+function pacificMinutes(): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Vancouver', hour: 'numeric', minute: 'numeric', hour12: false,
+  }).formatToParts(new Date());
+  const h = parseInt(parts.find(p => p.type === 'hour')!.value, 10) % 24;
+  const m = parseInt(parts.find(p => p.type === 'minute')!.value, 10);
+  return h * 60 + m;
+}
+
+function toMin(t: string) { const [h, m] = t.split(':').map(Number); return h * 60 + m; }
+
+function fmtT(t: string) {
+  const [h, m] = t.split(':').map(Number);
+  const p = h >= 12 ? 'pm' : 'am';
+  return `${h > 12 ? h - 12 : h === 0 ? 12 : h}:${String(m).padStart(2, '0')} ${p}`;
+}
+
+function NowStrip({ appointments }: { appointments: Appointment[] }) {
+  const [nowMin, setNowMin] = useState(pacificMinutes);
+
+  useEffect(() => {
+    const id = setInterval(() => setNowMin(pacificMinutes()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const active = appointments.filter(a => a.status !== 'cancelled' && a.status !== 'blocked');
+
+  const current = active.find(a => nowMin >= toMin(a.startTime) && nowMin < toMin(a.endTime));
+  const next    = active
+    .filter(a => toMin(a.startTime) > nowMin)
+    .sort((a, b) => toMin(a.startTime) - toMin(b.startTime))[0];
+
+  if (!current && !next) return null;
+
+  function AptCell({ label, apt, accent }: { label: string; apt: Appointment | undefined; accent?: string }) {
+    const color = apt ? getAppointmentColor(apt.staff, apt.service) : undefined;
+    return (
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          fontFamily: 'var(--font-body)', fontSize: 10, letterSpacing: '0.1em',
+          textTransform: 'uppercase', color: accent ?? 'var(--admin-muted)', marginBottom: 5,
+          display: 'flex', alignItems: 'center', gap: 5,
+        }}>
+          {accent && <span style={{ width: 5, height: 5, borderRadius: '50%', background: accent, display: 'inline-block' }} />}
+          {label}
+        </div>
+        {apt ? (
+          <>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 500, color: 'var(--admin-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {apt.clientName}
+            </div>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-text3)', marginTop: 2 }}>
+              {apt.service}
+            </div>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: color, marginTop: 3 }}>
+              {fmtT(apt.startTime)} – {fmtT(apt.endTime)}
+            </div>
+          </>
+        ) : (
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-muted)', fontStyle: 'italic' }}>
+            —
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{
+      display: 'flex', gap: 0, marginBottom: 20,
+      background: 'var(--admin-card)',
+      border: '1px solid var(--admin-border)',
+      borderLeft: `3px solid ${current ? '#4a9b6f' : 'var(--admin-border)'}`,
+      borderRadius: 12, overflow: 'hidden',
+      padding: '14px 16px',
+    }}>
+      <AptCell label="Now" apt={current} accent={current ? '#4a9b6f' : undefined} />
+      {next && (
+        <>
+          <div style={{ width: 1, background: 'var(--admin-border)', margin: '0 16px' }} />
+          <AptCell label="Up next" apt={next} />
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function DayView({
   appointments,
   date,
@@ -298,6 +388,9 @@ export default function DayView({
 
         {/* Staff status bar — today only, when there are active appointments */}
         {isToday && active.length > 0 && <StaffStatus appointments={active} dayHours={dayHours} />}
+
+        {/* Now / Up next — today only */}
+        {isToday && <NowStrip appointments={active} />}
 
         {/* Summary row — always visible */}
         <div style={{
