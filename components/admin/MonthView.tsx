@@ -169,19 +169,20 @@ export default function MonthView({
         background: 'var(--admin-bg)',
         borderBottom: '1px solid var(--admin-border-sub)',
       }}>
-        <button
-          onClick={onPrevMonth}
-          disabled={!canPrevMonth}
-          style={{ ...navArrow, opacity: canPrevMonth ? 1 : 0.25, border: 'none', background: 'none' }}
-        >‹</button>
-
-        <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 500, color: 'var(--admin-text)', letterSpacing: '-0.01em' }}>
-          {MONTH_NAMES[month]} {year}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <button
+            onClick={onPrevMonth}
+            disabled={!canPrevMonth}
+            style={{ ...navArrow, opacity: canPrevMonth ? 1 : 0.25, border: 'none', background: 'none' }}
+          >‹</button>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 500, color: 'var(--admin-text)', letterSpacing: '-0.01em' }}>
+            {MONTH_NAMES[month]} {year}
+          </div>
+          <button onClick={onNextMonth} style={{ ...navArrow, border: 'none', background: 'none' }}>›</button>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           {modeToggle}
-          {/* Block range — compact icon button */}
           <button
             onClick={openBlockRange}
             title="Block date range"
@@ -189,7 +190,6 @@ export default function MonthView({
           >
             ⊘
           </button>
-          <button onClick={onNextMonth} style={{ ...navArrow, border: 'none', background: 'none' }}>›</button>
         </div>
       </div>
 
