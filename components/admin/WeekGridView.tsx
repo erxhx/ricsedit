@@ -33,6 +33,14 @@ function fmt(t: string): string {
   const hr = h > 12 ? h - 12 : h === 0 ? 12 : h;
   return m === 0 ? `${hr}${p}` : `${hr}:${String(m).padStart(2, '0')}${p}`;
 }
+function fmtWeekRange(start: Date): string {
+  const end = new Date(start); end.setDate(start.getDate() + 6);
+  const sm = start.toLocaleDateString('en-US', { month: 'short' });
+  const em = end.toLocaleDateString('en-US', { month: 'short' });
+  return sm === em
+    ? `${sm} ${start.getDate()} – ${end.getDate()}`
+    : `${sm} ${start.getDate()} – ${em} ${end.getDate()}`;
+}
 function fmtDateShort(dateStr: string): string {
   const [y, mo, d] = dateStr.split('-').map(Number);
   return new Date(y, mo - 1, d).toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
