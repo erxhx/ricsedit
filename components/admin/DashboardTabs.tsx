@@ -158,67 +158,41 @@ export default function DashboardTabs({
 
   return (
     <div>
-      {/* ── Tab + mode bar ────────────────────────────────────────────────── */}
-      <div style={{
-        display: 'flex', alignItems: 'center',
-        padding: '0 12px 0 16px',
-        background: 'var(--admin-glass-bg)',
-        backdropFilter: 'blur(20px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-        borderBottom: '1px solid var(--admin-glass-border)',
-        boxShadow: 'var(--admin-glass-shadow)',
-        position: 'sticky', top: 52, zIndex: 9,
-        height: 44, gap: 0,
-      }}>
-        {/* Tab buttons */}
-        {([
-          { value: 'today',    label: 'Today'    },
-          { value: 'schedule', label: 'Schedule' },
-        ] as const).map(({ value, label }) => (
-          <button
-            key={value}
-            onClick={() => setActiveTab(value)}
-            style={{
-              fontFamily: 'var(--font-body)', fontSize: 13,
-              fontWeight: activeTab === value ? 500 : 400,
-              color: activeTab === value ? 'var(--admin-text)' : 'var(--admin-muted)',
-              background: 'none', border: 'none',
-              borderBottom: activeTab === value ? '2px solid var(--admin-text)' : '2px solid transparent',
-              padding: '0 12px', height: '100%',
-              cursor: 'pointer', marginBottom: -1,
-              WebkitTapHighlightColor: 'transparent', flexShrink: 0,
-            }}
-          >
-            {label}
-          </button>
-        ))}
-
-        {/* Mode toggle — Schedule tab only */}
-        {activeTab === 'schedule' && (
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 2 }}>
-            {SCHEDULE_MODES.map(({ value, label }) => (
-              <button
-                key={value}
-                onClick={() => setScheduleMode(value as 'day' | 'week' | 'month')}
-                style={{
-                  fontFamily: 'var(--font-body)', fontSize: 11,
-                  fontWeight: scheduleMode === value ? 500 : 400,
-                  color: scheduleMode === value ? 'var(--admin-text)' : 'var(--admin-muted)',
-                  background: scheduleMode === value ? 'var(--admin-btn)' : 'none',
-                  border: scheduleMode === value ? '1px solid var(--admin-btn-border)' : '1px solid transparent',
-                  borderRadius: 4,
-                  height: 44, padding: '0 9px',
-                  display: 'flex', alignItems: 'center',
-                  cursor: 'pointer',
-                  WebkitTapHighlightColor: 'transparent',
-                }}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+      {/* ── Mode bar — Schedule only, Today has no sub-header ──────────────── */}
+      {activeTab === 'schedule' && (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+          padding: '0 12px',
+          background: 'var(--admin-glass-bg)',
+          backdropFilter: 'blur(20px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+          borderBottom: '1px solid var(--admin-glass-border)',
+          boxShadow: 'var(--admin-glass-shadow)',
+          position: 'sticky', top: 52, zIndex: 9,
+          height: 44,
+        }}>
+          {SCHEDULE_MODES.map(({ value, label }) => (
+            <button
+              key={value}
+              onClick={() => setScheduleMode(value as 'day' | 'week' | 'month')}
+              style={{
+                fontFamily: 'var(--font-body)', fontSize: 11,
+                fontWeight: scheduleMode === value ? 500 : 400,
+                color: scheduleMode === value ? 'var(--admin-text)' : 'var(--admin-muted)',
+                background: scheduleMode === value ? 'var(--admin-btn)' : 'none',
+                border: scheduleMode === value ? '1px solid var(--admin-btn-border)' : '1px solid transparent',
+                borderRadius: 4,
+                height: 44, padding: '0 9px',
+                display: 'flex', alignItems: 'center',
+                cursor: 'pointer',
+                WebkitTapHighlightColor: 'transparent',
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* ── Content ───────────────────────────────────────────────────────── */}
 
