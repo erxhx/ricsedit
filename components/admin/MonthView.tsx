@@ -37,6 +37,7 @@ export default function MonthView({
   onNextMonth,
   onRefresh,
   isLoading,
+  modeToggle,
 }: {
   appointments: Appointment[];
   monthStart:   Date;
