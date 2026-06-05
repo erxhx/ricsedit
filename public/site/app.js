@@ -187,6 +187,9 @@
     if (today && mins >= today[0] * 60 && mins < today[1] * 60) {
       return { open: true, closes: today[1] };
     }
+    if (today && mins < today[0] * 60) {
+      return { open: false, opens: today[0], day: "today" };
+    }
     const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     for (let i = 1; i <= 7; i++) {
       const nd = (dow + i) % 7;

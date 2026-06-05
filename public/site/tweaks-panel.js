@@ -1,7 +1,7 @@
 (() => {
   const __TWEAKS_STYLE = `
   .twk-panel{position:fixed;right:16px;bottom:16px;z-index:2147483646;width:280px;
-    max-height:calc(100vh - 32px);display:flex;flex-direction:column;
+    max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);display:flex;flex-direction:column;
     background:rgba(250,249,247,.78);color:#29261b;
     -webkit-backdrop-filter:blur(24px) saturate(160%);backdrop-filter:blur(24px) saturate(160%);
     border:.5px solid rgba(255,255,255,.6);border-radius:14px;

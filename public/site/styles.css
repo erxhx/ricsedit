@@ -717,7 +717,7 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
 .acuity-frame {
   position: relative;
   width: 100%;
-  height: clamp(620px, 78vh, 880px);
+  height: clamp(620px, 78vh, 880px); height: clamp(620px, 78dvh, 880px);
   background: var(--paper);
   border: 1px solid var(--rule);
   border-radius: 2px;
