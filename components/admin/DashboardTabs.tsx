@@ -134,22 +134,31 @@ export default function DashboardTabs({
     setScheduleMode('day');
   }
 
-  // Mode toggle node — passed into each schedule view's own nav bar
+  // Mode toggle — connected glass pill, passed into each schedule view's nav bar
   const modeToggleNode = (
-    <div style={{ display: 'flex', gap: 2 }}>
+    <div style={{
+      display: 'flex',
+      background: 'var(--admin-glass-bg)',
+      backdropFilter: 'blur(16px)',
+      WebkitBackdropFilter: 'blur(16px)',
+      border: '1px solid var(--admin-glass-border)',
+      borderRadius: 9999,
+      overflow: 'hidden',
+    }}>
       {SCHEDULE_MODES.map(({ value, label }) => (
         <button
           key={value}
           onClick={() => setScheduleMode(value)}
           style={{
             fontFamily: 'var(--font-body)', fontSize: 11,
-            fontWeight: scheduleMode === value ? 500 : 400,
+            fontWeight: scheduleMode === value ? 600 : 400,
             color: scheduleMode === value ? 'var(--admin-text)' : 'var(--admin-muted)',
             background: scheduleMode === value ? 'var(--admin-btn)' : 'none',
-            border: scheduleMode === value ? '1px solid var(--admin-btn-border)' : '1px solid transparent',
-            borderRadius: 4, height: 32, padding: '0 9px',
+            border: 'none',
+            height: 32, padding: '0 11px',
             display: 'flex', alignItems: 'center',
             cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
+            letterSpacing: '0.01em',
           }}
         >
           {label}

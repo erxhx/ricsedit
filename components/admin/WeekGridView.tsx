@@ -409,17 +409,32 @@ export default function WeekGridView({
   return (
     <div>
       {/* ── week nav ──────────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px 10px 10px', borderBottom: '1px solid var(--admin-border-sub)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px solid var(--admin-border-sub)' }}>
+
+        {/* Week range flanked by arrows — tap label to jump to current week */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <button onClick={onPrevWeek} style={navArrow}>‹</button>
+          <button
+            onClick={!isThisWeek && onGoCurrentWeek ? onGoCurrentWeek : undefined}
+            style={{
+              fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 500,
+              color: 'var(--admin-text)', background: 'none', border: 'none',
+              cursor: !isThisWeek && onGoCurrentWeek ? 'pointer' : 'default',
+              padding: '0 6px', display: 'flex', alignItems: 'center', gap: 6,
+              WebkitTapHighlightColor: 'transparent',
+            }}
+          >
+            {fmtWeekRange(weekStart)}
+            {isThisWeek
+              ? <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4a9b6f', display: 'inline-block' }} />
+              : <span style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: '#b5824a', letterSpacing: '0.04em' }}>→ Today</span>
+            }
+          </button>
           <button onClick={onNextWeek} style={navArrow}>›</button>
-          {!isThisWeek && onGoCurrentWeek && (
-            <button onClick={onGoCurrentWeek} style={{ fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500, color: '#b5824a', cursor: 'pointer', padding: '4px 9px', borderRadius: 9999, background: 'var(--admin-glass-bg)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: '1px solid var(--admin-glass-border)', boxShadow: 'var(--admin-glass-shadow)', WebkitTapHighlightColor: 'transparent' }}>
-              Today
-            </button>
-          )}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+
+        {/* Mode toggle + staff legend */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {modeToggle}
           <div style={{ display: 'flex', gap: 8 }}>
             {(['eric', 'livi'] as const).map((s) => (
