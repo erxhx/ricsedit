@@ -258,6 +258,10 @@ function computeStudioStatus() {
   if (today && mins >= today[0] * 60 && mins < today[1] * 60) {
     return { open: true, closes: today[1] };
   }
+  // If today has hours but we're before opening time, say "opens today".
+  if (today && mins < today[0] * 60) {
+    return { open: false, opens: today[0], day: 'today' };
+  }
   // Walk forward to next open day.
   const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   for (let i = 1; i <= 7; i++) {
