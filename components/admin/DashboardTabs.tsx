@@ -145,7 +145,8 @@ export default function DashboardTabs({
       if (m === 'month') setScheduleMode('month');
       else if (m === 'week') setScheduleMode('week');
       else setScheduleMode('day');
-    } else if (t === 'overview' || t === 'today') {
+    } else {
+      // null (plain /admin), 'today', 'overview' — all mean Today tab
       setActiveTab('today');
     }
   }, [searchParams]);
