@@ -381,6 +381,7 @@
         if (!dragRef.current.dragging) return;
         dragRef.current.dragging = false;
         el.classList.remove("dragging");
+        void el.offsetHeight;
         const dy = dragRef.current.dy;
         const dt = Math.max(50, performance.now() - dragRef.current.t);
         const v = dy / dt;

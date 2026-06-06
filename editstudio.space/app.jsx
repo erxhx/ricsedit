@@ -528,6 +528,10 @@ function ServiceColumn({ service, isActive, hProgress, animSpeed, density, headl
       if (!dragRef.current.dragging) return;
       dragRef.current.dragging = false;
       el.classList.remove('dragging');
+      // Force a style recalculation so the browser commits the transition
+      // re-enable BEFORE seeing the new transform value. Without this, both
+      // changes land in the same batch and the transition doesn't fire.
+      void el.offsetHeight;
       const dy = dragRef.current.dy;
       const dt = Math.max(50, performance.now() - dragRef.current.t);
       const v = dy / dt; // px/ms
