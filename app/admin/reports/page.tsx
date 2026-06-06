@@ -5,8 +5,19 @@ import { dbGetAppointmentsForRange } from '@/lib/db';
 import AdminHeader from '@/components/admin/AdminHeader';
 import ReportsView from '@/components/admin/ReportsView';
 
-function localDateStr(d: Date): string {
-  return d.toLocaleDateString('en-CA', { timeZone: 'America/Vancouver' });
+// Get today's date in Vancouver timezone to avoid UTC midnight drift on the server.
+function todayVancouver(): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Vancouver',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date());
+}
+
+// Add n days to a YYYY-MM-DD string using local Date constructor (no UTC drift).
+function addDaysToStr(dateStr: string, n: number): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(y, m - 1, d + n);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
 }
 
 export default async function ReportsPage() {
@@ -15,11 +26,10 @@ export default async function ReportsPage() {
   const session = token ? await verifySession(token) : null;
   if (!session) redirect('/admin/login');
 
-  const today = new Date();
-  // Last 30 days
-  const start = new Date(today);
-  start.setDate(today.getDate() - 29);
-  const appointments = await dbGetAppointmentsForRange(localDateStr(start), localDateStr(today));
+  // Derive today + start as Vancouver date strings to avoid UTC→Vancouver offset shifting the window.
+  const todayStr = todayVancouver();
+  const startStr = addDaysToStr(todayStr, -29); // 30-day window (today − 29 days)
+  const appointments = await dbGetAppointmentsForRange(startStr, todayStr);
 
   return (
     <>
