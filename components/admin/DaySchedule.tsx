@@ -96,6 +96,7 @@ export default function DaySchedule({
   onNext,
   onGoToday,
   modeToggle,
+  hoursByDay,
 }: {
   appointments: Appointment[];
   date: string;
@@ -105,6 +106,7 @@ export default function DaySchedule({
   onNext?: () => void;
   onGoToday?: () => void;
   modeToggle?: React.ReactNode;
+  hoursByDay?: Record<number, [number, number] | null>;
 }) {
   const router = useRouter();
   const gridRef = useRef<HTMLDivElement>(null);
@@ -134,6 +136,15 @@ export default function DaySchedule({
   useEffect(() => {
     setApts(initial);
   }, [initial]);
+
+  // Closed-hours grey bands for the current date
+  const dayOfWeek = (() => { const [y, mo, d] = date.split('-').map(Number); return new Date(y, mo - 1, d).getDay(); })();
+  const dayHours = hoursByDay?.[dayOfWeek] ?? null; // null = closed all day
+  // Convert store open/close hours to pixel offsets within the grid
+  const closedTopPx    = dayHours ? 0 : 0;                              // pre-open band top
+  const closedPreH     = dayHours ? Math.max(0, (dayHours[0] - H0) * 60 * PPM) : TOTAL_PX;
+  const closedPostTop  = dayHours ? Math.max(0, (dayHours[1] - H0) * 60 * PPM) : 0;
+  const closedPostH    = dayHours ? Math.max(0, TOTAL_PX - closedPostTop) : 0;
 
   // Headroom: hide nav bar on scroll-down, reveal on scroll-up
   const NAV_H = 49; // nav bar height (px) — padding 8+8 + button 32 + border 1
@@ -553,6 +564,22 @@ export default function DaySchedule({
                   pointerEvents: 'none',
                 }} />
               ))}
+
+              {/* closed-hours overlay — grey bands outside store hours */}
+              {hoursByDay !== undefined && closedPreH > 0 && (
+                <div style={{
+                  position: 'absolute', top: closedTopPx, left: 0, right: 0, height: closedPreH,
+                  background: 'var(--admin-closed-band, rgba(0,0,0,0.045))',
+                  pointerEvents: 'none', zIndex: 1,
+                }} />
+              )}
+              {hoursByDay !== undefined && closedPostH > 0 && (
+                <div style={{
+                  position: 'absolute', top: closedPostTop, left: 0, right: 0, height: closedPostH,
+                  background: 'var(--admin-closed-band, rgba(0,0,0,0.045))',
+                  pointerEvents: 'none', zIndex: 1,
+                }} />
+              )}
 
               {/* tap-to-book slots (15-min buckets for precise back-to-back booking) */}
               {Array.from({ length: (H1 - H0) * 4 }, (_, i) => {

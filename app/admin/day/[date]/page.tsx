@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { verifySession, SESSION_COOKIE } from '@/lib/admin-auth';
 import { dbGetAppointmentsForDate } from '@/lib/db';
+import { getAvailabilityConfig } from '@/lib/availability-store';
 import AdminHeader from '@/components/admin/AdminHeader';
 import DaySchedule from '@/components/admin/DaySchedule';
 
@@ -26,7 +27,10 @@ export default async function DayPage({ params }: { params: Promise<{ date: stri
   const { date } = await params;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) redirect('/admin');
 
-  const appointments = await dbGetAppointmentsForDate(date);
+  const [appointments, availability] = await Promise.all([
+    dbGetAppointmentsForDate(date),
+    getAvailabilityConfig(),
+  ]);
 
   return (
     <>
@@ -68,7 +72,7 @@ export default async function DayPage({ params }: { params: Promise<{ date: stri
         {/* Right spacer to keep date centred */}
         <div style={{ width: 60 }} />
       </div>
-      <DaySchedule appointments={appointments} date={date} />
+      <DaySchedule appointments={appointments} date={date} hoursByDay={availability.days} />
     </>
   );
 }

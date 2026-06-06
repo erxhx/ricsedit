@@ -191,6 +191,7 @@ export default function DashboardTabs({
           onNext={nextDay}
           onGoToday={goToToday}
           modeToggle={modeToggleNode}
+          hoursByDay={hoursByDay}
         />
       )}
       {activeTab === 'schedule' && scheduleMode === 'week' && (
