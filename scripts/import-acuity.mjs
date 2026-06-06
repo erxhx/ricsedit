@@ -294,10 +294,17 @@ for (let r = 1; r < rows.length; r++) {
     endTime = endParsed?.time ?? parseTime(endTimeRaw);
   }
 
-  const durationRaw = get(idxDuration);
-  const durationMinutes = durationRaw ? parseInt(durationRaw, 10) : 30;
-
-  if (!endTime && startTime) {
+  // Prefer computing duration from parsed start/end times (Acuity has no Duration column).
+  // Fall back to an explicit Duration column or 30 min if end time is unavailable.
+  let durationMinutes: number;
+  if (endTime) {
+    const [sh, sm] = startTime.split(':').map(Number);
+    const [eh, em] = endTime.split(':').map(Number);
+    const diff = (eh * 60 + em) - (sh * 60 + sm);
+    durationMinutes = diff > 0 ? diff : 30;
+  } else {
+    const durationRaw = get(idxDuration);
+    durationMinutes = durationRaw ? parseInt(durationRaw, 10) : 30;
     endTime = addMinutes(startTime, isNaN(durationMinutes) ? 30 : durationMinutes);
   }
 
@@ -317,7 +324,7 @@ for (let r = 1; r < rows.length; r++) {
     client_email:     get(idxEmail) || '',  // empty string satisfies NOT NULL for rows with no email
     client_phone:     get(idxPhone).replace(/^'+/, '') || '',  // Acuity prefixes with ' to stop Excel formula parsing
     service:          get(idxService) || 'Haircut',
-    duration_minutes: isNaN(durationMinutes) ? 30 : durationMinutes,
+    duration_minutes: durationMinutes,
     price:            isNaN(price) ? 0 : price,
     status:           isCancelled ? 'cancelled' : 'confirmed',
     reminder_sent:    true,  // suppress automated reminders for all imported Acuity records
