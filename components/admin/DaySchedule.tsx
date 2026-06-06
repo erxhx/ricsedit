@@ -151,9 +151,11 @@ export default function DaySchedule({
     if (staff === 'eric' && dayOfWeek === 4 && barberThuClose != null && h !== null) {
       h = [h[0], barberThuClose];
     }
-    const preH     = h ? Math.max(0, (h[0] - H0) * 60 * PPM) : TOTAL_PX;
-    const postTop  = h ? Math.max(0, (h[1] - H0) * 60 * PPM) : 0;
-    const postH    = h ? Math.max(0, TOTAL_PX - postTop) : 0;
+    // Barber gets +15 min flex at end of day (same rule as the booking slot engine)
+    const barberFlex = staff === 'eric' ? 15 : 0;
+    const preH    = h ? Math.max(0, (h[0] - H0) * 60 * PPM) : TOTAL_PX;
+    const postTop = h ? Math.max(0, (h[1] - H0) * 60 * PPM + barberFlex * PPM) : 0;
+    const postH   = h ? Math.max(0, TOTAL_PX - postTop) : 0;
     return { preH, postTop, postH };
   }
 
