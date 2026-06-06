@@ -159,6 +159,23 @@ export default function WeekGridView({
   thisWeekStart.setDate(today.getDate() - today.getDay());
   const isThisWeek = localStr(weekStart) === localStr(thisWeekStart);
 
+  // Headroom: hide nav bar on scroll-down, reveal on scroll-up
+  const NAV_H = 49;
+  const [navShown, setNavShown] = useState(true);
+  const lastScrollRef = useRef(0);
+  useEffect(() => {
+    const onScroll = () => {
+      const y = window.scrollY;
+      const goingDown = y > lastScrollRef.current;
+      lastScrollRef.current = y;
+      if (y <= NAV_H)       setNavShown(true);
+      else if (goingDown)   setNavShown(false);
+      else                  setNavShown(true);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
 
   const nowMin = (today.getHours() - H0) * 60 + today.getMinutes();
   const showNow = nowMin >= 0 && nowMin <= (H1 - H0) * 60;
@@ -417,7 +434,14 @@ export default function WeekGridView({
   return (
     <div>
       {/* ── week nav ──────────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px solid var(--admin-border-sub)' }}>
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '8px 12px', borderBottom: '1px solid var(--admin-border-sub)',
+        position: 'sticky', top: stickyTop, zIndex: 7,
+        background: 'var(--admin-bg)',
+        transform: navShown ? 'translateY(0)' : `translateY(calc(-100% - ${stickyTop}px))`,
+        transition: 'transform 0.25s cubic-bezier(0.22, 1, 0.36, 1)',
+      }}>
 
         {/* Week range flanked by arrows */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -468,7 +492,7 @@ export default function WeekGridView({
       </div>
 
       {/* ── day headers ── sticky ─────────────────────────────────────────── */}
-      <div style={{ display: 'flex', paddingLeft: TW, position: 'sticky', top: stickyTop, zIndex: 6, background: 'var(--admin-glass-bg)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)', borderBottom: '1px solid var(--admin-glass-border)' }}>
+      <div style={{ display: 'flex', paddingLeft: TW, position: 'sticky', top: stickyTop + (navShown ? NAV_H : 0), zIndex: 6, transition: 'top 0.25s cubic-bezier(0.22, 1, 0.36, 1)', background: 'var(--admin-glass-bg)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)', borderBottom: '1px solid var(--admin-glass-border)' }}>
         {days.map((day) => (
           <div key={day.dateStr} style={{ flex: 1, textAlign: 'center', padding: '8px 2px', opacity: day.isOpen ? 1 : 0.3 }}>
             <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', lineHeight: 1 }}>

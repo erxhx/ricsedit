@@ -135,6 +135,23 @@ export default function DaySchedule({
     setApts(initial);
   }, [initial]);
 
+  // Headroom: hide nav bar on scroll-down, reveal on scroll-up
+  const NAV_H = 49; // nav bar height (px) — padding 8+8 + button 32 + border 1
+  const [navShown, setNavShown] = useState(true);
+  const lastScrollRef = useRef(0);
+  useEffect(() => {
+    const onScroll = () => {
+      const y = window.scrollY;
+      const goingDown = y > lastScrollRef.current;
+      lastScrollRef.current = y;
+      if (y <= NAV_H)       setNavShown(true);
+      else if (goingDown)   setNavShown(false);
+      else                  setNavShown(true);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   // scroll to current time on mount
   useEffect(() => {
     if (nowRef.current) {
@@ -412,7 +429,14 @@ export default function DaySchedule({
 
       {/* ── day nav bar ───────────────────────────────────────────────────── */}
       {(onPrev || onNext || modeToggle) && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px solid var(--admin-border-sub)' }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '8px 12px', borderBottom: '1px solid var(--admin-border-sub)',
+          position: 'sticky', top: stickyTop, zIndex: 7,
+          background: 'var(--admin-bg)',
+          transform: navShown ? 'translateY(0)' : `translateY(calc(-100% - ${stickyTop}px))`,
+          transition: 'transform 0.25s cubic-bezier(0.22, 1, 0.36, 1)',
+        }}>
 
           {/* Date flanked by arrows */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -460,7 +484,8 @@ export default function DaySchedule({
       {/* ── staff column headers ──────────────────────────────────────────── */}
       <div style={{
         display: 'flex', paddingLeft: TW,
-        position: 'sticky', top: stickyTop, zIndex: 6,
+        position: 'sticky', top: stickyTop + (navShown ? NAV_H : 0), zIndex: 6,
+        transition: 'top 0.25s cubic-bezier(0.22, 1, 0.36, 1)',
         background: 'var(--admin-bg)', borderBottom: '1px solid var(--admin-border)',
       }}>
         {STAFF.map((s) => (
