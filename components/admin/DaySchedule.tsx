@@ -602,6 +602,24 @@ export default function DaySchedule({
                 </>);
               })()}
 
+              {/* selected-slot highlight */}
+              {slotAction?.staff === staff && (() => {
+                const topPx = t2m(slotAction.time) * PPM;
+                const color = STAFF_DOT[staff];
+                return (
+                  <div style={{
+                    position: 'absolute',
+                    top: topPx, left: 2, right: 2,
+                    height: 15 * PPM,
+                    background: `${color}20`,
+                    border: `1.5px solid ${color}`,
+                    borderRadius: 4,
+                    pointerEvents: 'none',
+                    zIndex: 2,
+                  }} />
+                );
+              })()}
+
               {/* tap-to-book slots (15-min buckets for precise back-to-back booking) */}
               {Array.from({ length: (H1 - H0) * 4 }, (_, i) => {
                 const s0 = i * 15, s1 = s0 + 15;
