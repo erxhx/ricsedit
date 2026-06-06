@@ -199,9 +199,9 @@ export default function NewBookingForm({
         borderBottom: '1px solid var(--admin-border)',
         position: 'sticky', top: 52, background: 'var(--admin-bg)', zIndex: 8,
       }}>
-        <Link href="/admin" style={{ color: 'var(--admin-text2)', textDecoration: 'none', fontSize: 20, lineHeight: 1 }}>
+        <button onClick={() => router.back()} style={{ color: 'var(--admin-text2)', background: 'none', border: 'none', fontSize: 20, lineHeight: 1, cursor: 'pointer', padding: '0 4px', WebkitTapHighlightColor: 'transparent' }}>
           ‹
-        </Link>
+        </button>
         <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-text3)' }}>
           New booking
         </span>
