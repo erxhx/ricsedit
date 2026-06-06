@@ -419,26 +419,35 @@ export default function WeekGridView({
       {/* ── week nav ──────────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px solid var(--admin-border-sub)' }}>
 
-        {/* Week range flanked by arrows — tap label to jump to current week */}
+        {/* Week range flanked by arrows */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <button onClick={onPrevWeek} style={navArrow}>‹</button>
           <button
-            onClick={!isThisWeek && onGoCurrentWeek ? onGoCurrentWeek : undefined}
             style={{
               fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 500,
               color: 'var(--admin-text)', background: 'none', border: 'none',
-              cursor: !isThisWeek && onGoCurrentWeek ? 'pointer' : 'default',
+              cursor: 'default',
               padding: '0 6px', display: 'flex', alignItems: 'center', gap: 6,
               WebkitTapHighlightColor: 'transparent',
             }}
           >
             {fmtWeekRange(weekStart)}
-            {isThisWeek
-              ? <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4a9b6f', display: 'inline-block' }} />
-              : <span style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: '#b5824a', letterSpacing: '0.04em' }}>→ Today</span>
-            }
+            {isThisWeek && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4a9b6f', display: 'inline-block' }} />}
           </button>
           <button onClick={onNextWeek} style={navArrow}>›</button>
+          {!isThisWeek && onGoCurrentWeek && (
+            <button
+              onClick={onGoCurrentWeek}
+              style={{
+                fontFamily: 'var(--font-body)', fontSize: 10, color: '#b5824a',
+                letterSpacing: '0.04em', background: 'none', border: 'none',
+                cursor: 'pointer', padding: '0 4px',
+                WebkitTapHighlightColor: 'transparent',
+              }}
+            >
+              → Today
+            </button>
+          )}
         </div>
 
         {/* Mode toggle + staff legend */}

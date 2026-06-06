@@ -414,16 +414,15 @@ export default function DaySchedule({
       {(onPrev || onNext || modeToggle) && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px solid var(--admin-border-sub)' }}>
 
-          {/* Date flanked by arrows — tap date to jump to today when off-day */}
+          {/* Date flanked by arrows */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             {onPrev && <button onClick={onPrev} style={navArrow}>‹</button>}
             <button
-              onClick={!isToday && onGoToday ? onGoToday : undefined}
               style={{
                 fontFamily: 'var(--font-body)', fontSize: 13,
                 fontWeight: 500, color: 'var(--admin-text)',
                 background: 'none', border: 'none',
-                cursor: !isToday && onGoToday ? 'pointer' : 'default',
+                cursor: 'default',
                 padding: '0 6px',
                 display: 'flex', alignItems: 'center', gap: 6,
                 WebkitTapHighlightColor: 'transparent',
@@ -433,13 +432,21 @@ export default function DaySchedule({
               {isToday && (
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4a9b6f', display: 'inline-block', flexShrink: 0 }} />
               )}
-              {!isToday && (
-                <span style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: '#b5824a', letterSpacing: '0.04em' }}>
-                  → Today
-                </span>
-              )}
             </button>
             {onNext && <button onClick={onNext} style={navArrow}>›</button>}
+            {!isToday && onGoToday && (
+              <button
+                onClick={onGoToday}
+                style={{
+                  fontFamily: 'var(--font-body)', fontSize: 10, color: '#b5824a',
+                  letterSpacing: '0.04em', background: 'none', border: 'none',
+                  cursor: 'pointer', padding: '0 4px',
+                  WebkitTapHighlightColor: 'transparent',
+                }}
+              >
+                → Today
+              </button>
+            )}
           </div>
 
           {/* Mode toggle as connected glass pill */}
