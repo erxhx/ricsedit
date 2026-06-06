@@ -117,34 +117,53 @@ function parseCSV(text) {
 
 // ── Date/time parsers ─────────────────────────────────────────────────────────
 
-/**
- * Parse Acuity date strings to YYYY-MM-DD.
- * Handles: "April 3, 2024"  "4/3/2024"  "2024-04-03"
- */
-function parseDate(raw) {
-  raw = raw.trim();
-  // Already ISO
-  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+const MONTH_NAMES = {
+  january:1, february:2, march:3, april:4, may:5, june:6,
+  july:7, august:8, september:9, october:10, november:11, december:12,
+};
 
-  // "Month D, YYYY"
+/**
+ * Parse an Acuity datetime string to { date: "YYYY-MM-DD", time: "HH:MM:SS" }.
+ * Handles combined: "October 7, 2025 6:20 pm"
+ * Also handles standalone date strings: "April 3, 2024" "4/3/2024" "2024-04-03"
+ */
+function parseDateTime(raw) {
+  raw = raw.trim();
+
+  // Combined "Month D, YYYY H:MM am/pm"
+  const combined = raw.match(/^(\w+)\s+(\d{1,2}),?\s+(\d{4})\s+(\d{1,2}):(\d{2})\s*(am|pm)$/i);
+  if (combined) {
+    const mon = MONTH_NAMES[combined[1].toLowerCase()];
+    if (!mon) return null;
+    let h = parseInt(combined[4], 10);
+    const min = combined[5];
+    const mer = combined[6].toLowerCase();
+    if (mer === 'pm' && h !== 12) h += 12;
+    if (mer === 'am' && h === 12) h = 0;
+    return {
+      date: `${combined[3]}-${String(mon).padStart(2,'0')}-${String(combined[2]).padStart(2,'0')}`,
+      time: `${String(h).padStart(2,'0')}:${min}:00`,
+    };
+  }
+
+  // Standalone date only — fallback
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return { date: raw, time: null };
   const longM = raw.match(/^(\w+)\s+(\d{1,2}),?\s+(\d{4})$/);
   if (longM) {
     const d = new Date(`${longM[1]} ${longM[2]}, ${longM[3]}`);
-    if (!isNaN(d)) return d.toISOString().slice(0, 10);
+    if (!isNaN(d)) return { date: d.toISOString().slice(0, 10), time: null };
   }
-
-  // "M/D/YYYY" or "M-D-YYYY"
   const shortM = raw.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
   if (shortM) {
     const d = new Date(`${shortM[3]}-${shortM[1].padStart(2,'0')}-${shortM[2].padStart(2,'0')}`);
-    if (!isNaN(d)) return d.toISOString().slice(0, 10);
+    if (!isNaN(d)) return { date: d.toISOString().slice(0, 10), time: null };
   }
 
   return null;
 }
 
 /**
- * Parse Acuity time strings to HH:MM:SS.
+ * Parse a standalone time string to HH:MM:SS.
  * Handles: "10:00am"  "10:00 AM"  "14:00"  "2:30pm"
  */
 function parseTime(raw) {
@@ -224,9 +243,9 @@ const idxCancelled    = col(['cancelled', 'canceled', 'cancelled?', 'canceled?']
 const idxNotes        = col(['notes', 'intake form', 'client notes', 'appointment notes']);
 
 // Warn about missing critical columns
+// Note: Acuity embeds date+time together in "Start Time" — no separate Date column needed.
 const criticalMissing = [];
-if (idxDate === -1)      criticalMissing.push('Date');
-if (idxTime === -1)      criticalMissing.push('Time');
+if (idxTime === -1)      criticalMissing.push('Start Time');
 if (idxFirstName === -1 && col(['name', 'client name', 'full name']) === -1)
   criticalMissing.push('First Name / Name');
 if (criticalMissing.length) {
@@ -257,20 +276,23 @@ for (let r = 1; r < rows.length; r++) {
     clientName = get(nameIdx);
   }
 
-  const dateRaw  = get(idxDate);
-  const timeRaw  = get(idxTime);
-  const date     = parseDate(dateRaw);
-  const startTime = parseTime(timeRaw);
+  const startRaw  = get(idxTime);
+  const startParsed = parseDateTime(startRaw);
+  const date      = startParsed?.date ?? null;
+  const startTime = startParsed?.time ?? null;
 
   if (!date || !startTime) {
-    errors.push(`Row ${r + 1}: could not parse date="${dateRaw}" or time="${timeRaw}" — skipped`);
+    errors.push(`Row ${r + 1}: could not parse start time="${startRaw}" — skipped`);
     continue;
   }
 
   // End time: prefer explicit end time column, fall back to start + duration
   let endTime = null;
   const endTimeRaw = get(idxEndTime);
-  if (endTimeRaw) endTime = parseTime(endTimeRaw);
+  if (endTimeRaw) {
+    const endParsed = parseDateTime(endTimeRaw);
+    endTime = endParsed?.time ?? parseTime(endTimeRaw);
+  }
 
   const durationRaw = get(idxDuration);
   const durationMinutes = durationRaw ? parseInt(durationRaw, 10) : 30;
@@ -279,8 +301,9 @@ for (let r = 1; r < rows.length; r++) {
     endTime = addMinutes(startTime, isNaN(durationMinutes) ? 30 : durationMinutes);
   }
 
+  // Acuity puts a date string in Canceled when cancelled, or leaves it empty
   const cancelledRaw = get(idxCancelled).toLowerCase();
-  const isCancelled  = ['yes', 'true', '1', 'cancelled', 'canceled'].includes(cancelledRaw);
+  const isCancelled  = cancelledRaw !== '' && cancelledRaw !== 'no' && cancelledRaw !== 'false' && cancelledRaw !== '0';
 
   const priceRaw = get(idxPrice).replace(/[$,]/g, '');
   const price = priceRaw ? parseFloat(priceRaw) : 0;
@@ -292,11 +315,12 @@ for (let r = 1; r < rows.length; r++) {
     staff:            mapStaff(get(idxCalendar)),
     client_name:      clientName || '(unknown)',
     client_email:     get(idxEmail) || null,
-    client_phone:     get(idxPhone) || null,
+    client_phone:     get(idxPhone).replace(/^'+/, '') || null,  // Acuity prefixes with ' to stop Excel formula parsing
     service:          get(idxService) || 'Haircut',
     duration_minutes: isNaN(durationMinutes) ? 30 : durationMinutes,
     price:            isNaN(price) ? 0 : price,
-    status:           isCancelled ? 'cancelled' : 'completed',
+    status:           isCancelled ? 'cancelled' : 'confirmed',
+    reminder_sent:    true,  // suppress automated reminders for all imported Acuity records
     notes:            get(idxNotes) || null,
     // manage_token inserted after we get the DB-assigned id
   });
