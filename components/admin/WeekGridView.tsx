@@ -140,6 +140,7 @@ export default function WeekGridView({
   const ghostRef  = useRef<HTMLDivElement | null>(null);
   const aptEls    = useRef<Map<string, HTMLElement>>(new Map());
   const nowRef    = useRef<HTMLDivElement>(null);
+  const swipeRef  = useRef<{ startX: number; startY: number } | null>(null);
 
   const [notifyReschedule, setNotifyReschedule] = useState(true);
   const [apts,          setApts]          = useState(initial);
@@ -434,7 +435,27 @@ export default function WeekGridView({
   };
 
   return (
-    <div>
+    <div
+      onTouchStart={(e) => {
+        // Don't start swipe tracking if an appointment drag is already beginning
+        if (dragRef.current) return;
+        swipeRef.current = { startX: e.touches[0].clientX, startY: e.touches[0].clientY };
+      }}
+      onTouchEnd={(e) => {
+        const sw = swipeRef.current;
+        swipeRef.current = null;
+        // Abort if a drag was in progress
+        if (!sw || dragRef.current?.hasMoved) return;
+        const dx = e.changedTouches[0].clientX - sw.startX;
+        const dy = e.changedTouches[0].clientY - sw.startY;
+        // Require clearly horizontal gesture: 60px minimum, dx at least 2× dy
+        if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 2) {
+          if (dx < 0) onNextWeek?.();
+          else onPrevWeek?.();
+        }
+      }}
+      onTouchCancel={() => { swipeRef.current = null; }}
+    >
       {/* ── week nav ──────────────────────────────────────────────────────── */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
