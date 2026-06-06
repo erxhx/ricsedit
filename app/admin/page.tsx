@@ -61,6 +61,7 @@ export default async function AdminPage({
         weekStartStr={localDateStr(weekStart)}
         openDays={openDays}
         hoursByDay={availability.days}
+        staffHoursByDay={{ eric: availability.staff.eric.days, livi: availability.staff.livi.days }}
         barberThuClose={availability.barberThuClose}
       />
     </>

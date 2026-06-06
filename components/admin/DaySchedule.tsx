@@ -97,6 +97,7 @@ export default function DaySchedule({
   onGoToday,
   modeToggle,
   hoursByDay,
+  staffHoursByDay,
   barberThuClose,
 }: {
   appointments: Appointment[];
@@ -108,6 +109,7 @@ export default function DaySchedule({
   onGoToday?: () => void;
   modeToggle?: React.ReactNode;
   hoursByDay?: Record<number, [number, number] | null>;
+  staffHoursByDay?: Record<string, Record<number, [number, number] | null>>;
   barberThuClose?: number;
 }) {
   const router = useRouter();
@@ -139,14 +141,15 @@ export default function DaySchedule({
     setApts(initial);
   }, [initial]);
 
-  // Closed-hours grey bands — computed per staff to respect the barber Thursday late close
+  // Closed-hours grey bands — per-staff personal schedule takes priority over store hours
   const dayOfWeek = (() => { const [y, mo, d] = date.split('-').map(Number); return new Date(y, mo - 1, d).getDay(); })();
-  const baseDayHours = hoursByDay?.[dayOfWeek] ?? null; // null = store closed all day
+  const baseDayHours = hoursByDay?.[dayOfWeek] ?? null; // store hours fallback
 
   /** Returns pixel bands {preH, postTop, postH} for a given staff column */
   function closedBands(staff: string): { preH: number; postTop: number; postH: number } {
-    if (hoursByDay === undefined) return { preH: 0, postTop: TOTAL_PX, postH: 0 };
-    let h = baseDayHours;
+    if (hoursByDay === undefined && staffHoursByDay === undefined) return { preH: 0, postTop: TOTAL_PX, postH: 0 };
+    // Prefer per-staff schedule; fall back to store hours
+    let h: [number, number] | null = staffHoursByDay?.[staff]?.[dayOfWeek] ?? baseDayHours;
     // Eric on Thursday: extend close to barberThuClose if set
     if (staff === 'eric' && dayOfWeek === 4 && barberThuClose != null && h !== null) {
       h = [h[0], barberThuClose];

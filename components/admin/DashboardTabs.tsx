@@ -39,6 +39,7 @@ export default function DashboardTabs({
   weekStartStr,
   openDays,
   hoursByDay,
+  staffHoursByDay,
   barberThuClose,
 }: {
   todayApts: Appointment[];
@@ -47,6 +48,7 @@ export default function DashboardTabs({
   weekStartStr: string;
   openDays: Record<number, boolean>;
   hoursByDay?: Record<number, [number, number] | null>;
+  staffHoursByDay?: Record<string, Record<number, [number, number] | null>>;
   barberThuClose?: number;
 }) {
   const today     = strToLocalDate(todayStr);
@@ -194,6 +196,7 @@ export default function DashboardTabs({
           onGoToday={goToToday}
           modeToggle={modeToggleNode}
           hoursByDay={hoursByDay}
+          staffHoursByDay={staffHoursByDay}
           barberThuClose={barberThuClose}
         />
       )}
