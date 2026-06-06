@@ -439,13 +439,16 @@ export default function WeekGridView({
             <button
               onClick={onGoCurrentWeek}
               style={{
-                fontFamily: 'var(--font-body)', fontSize: 10, color: '#b5824a',
-                letterSpacing: '0.04em', background: 'none', border: 'none',
-                cursor: 'pointer', padding: '0 4px',
+                fontFamily: 'var(--font-body)', fontSize: 11, color: '#b5824a',
+                letterSpacing: '0.04em', background: 'var(--admin-glass-bg)',
+                backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+                border: '1px solid var(--admin-glass-border)',
+                boxShadow: 'var(--admin-glass-shadow)',
+                borderRadius: 8, cursor: 'pointer', padding: '4px 10px',
                 WebkitTapHighlightColor: 'transparent',
               }}
             >
-              → Today
+              Today
             </button>
           )}
         </div>
