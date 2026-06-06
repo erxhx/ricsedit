@@ -10,6 +10,20 @@ function localDateStr(d: Date): string {
   return d.toLocaleDateString('en-CA', { timeZone: 'America/Vancouver' });
 }
 
+// Compute the Sunday of the week containing a Vancouver date string.
+// Works purely on date components to avoid UTC↔Vancouver timezone drift.
+function sundayOf(dateStr: string): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt  = new Date(y, m - 1, d);          // local midnight — getDay() is correct
+  const sun = new Date(y, m - 1, d - dt.getDay());
+  return `${sun.getFullYear()}-${String(sun.getMonth() + 1).padStart(2, '0')}-${String(sun.getDate()).padStart(2, '0')}`;
+}
+function addDaysToStr(dateStr: string, n: number): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(y, m - 1, d + n);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+}
+
 export default async function AdminPage({
   searchParams,
 }: {
@@ -25,25 +39,17 @@ export default async function AdminPage({
   const today = new Date();
   const todayStr = localDateStr(today);
 
-  // Determine which week to show (default: the week containing today)
-  let weekStart: Date;
-  if (week && /^\d{4}-\d{2}-\d{2}$/.test(week)) {
-    const [y, mo, d] = week.split('-').map(Number);
-    // Snap to the Sunday of whichever week this date falls in
-    const parsed = new Date(y, mo - 1, d);
-    weekStart = new Date(parsed);
-    weekStart.setDate(parsed.getDate() - parsed.getDay());
-  } else {
-    weekStart = new Date(today);
-    weekStart.setDate(today.getDate() - today.getDay());
-  }
-
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekStart.getDate() + 6);
+  // Determine which week to show (default: the week containing today).
+  // Use string-based helpers so we never round-trip through UTC Date methods,
+  // which can shift the date by a day when the server (UTC) is ahead of Vancouver.
+  const weekStartStr = week && /^\d{4}-\d{2}-\d{2}$/.test(week)
+    ? sundayOf(week)
+    : sundayOf(todayStr);
+  const weekEndStr = addDaysToStr(weekStartStr, 6);
 
   const [todayApts, weekApts, availability] = await Promise.all([
     dbGetAppointmentsForDate(todayStr),
-    dbGetAppointmentsForRange(localDateStr(weekStart), localDateStr(weekEnd)),
+    dbGetAppointmentsForRange(weekStartStr, weekEndStr),
     getAvailabilityConfig(),
   ]);
 
@@ -58,7 +64,7 @@ export default async function AdminPage({
         todayApts={todayApts}
         weekApts={weekApts}
         todayStr={todayStr}
-        weekStartStr={localDateStr(weekStart)}
+        weekStartStr={weekStartStr}
         openDays={openDays}
         hoursByDay={availability.days}
         staffHoursByDay={{ eric: availability.staff.eric.days, livi: availability.staff.livi.days }}
