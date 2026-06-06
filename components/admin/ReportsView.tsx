@@ -19,13 +19,6 @@ function fmtMoney(n: number): string {
   return `$${n.toLocaleString('en-US')}`;
 }
 
-function isoWeekStart(d: Date): Date {
-  const result = new Date(d);
-  result.setDate(d.getDate() - d.getDay());
-  result.setHours(0, 0, 0, 0);
-  return result;
-}
-
 function localDateStr(d: Date): string {
   return d.toLocaleDateString('en-CA', { timeZone: 'America/Vancouver' });
 }
@@ -87,7 +80,9 @@ function StatRow({ label, value }: { label: string; value: string }) {
 export default function ReportsView({ appointments: initialAppointments }: { appointments: Appointment[] }) {
   const [range, setRange]   = useState<Range>('month');
   const [apts,  setApts]    = useState<Appointment[]>(initialAppointments);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading]       = useState(false);
+  const [compApts, setCompApts]     = useState<Appointment[]>([]);
+  const [loadingComp, setLoadingComp] = useState(false);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -105,27 +100,33 @@ export default function ReportsView({ appointments: initialAppointments }: { app
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [range]);
 
+  // Fetch the equivalent prior period for the comparison card (month / 3months only)
+  useEffect(() => {
+    if (range !== 'month' && range !== '3months') { setCompApts([]); return; }
+    const days      = range === 'month' ? 30 : 90;
+    const prevEnd   = new Date(today); prevEnd.setDate(today.getDate() - days);
+    const prevStart = new Date(today); prevStart.setDate(today.getDate() - days * 2 + 1);
+    setLoadingComp(true);
+    fetch(`/api/admin/appointments?start=${localDateStr(prevStart)}&end=${localDateStr(prevEnd)}`)
+      .then(r => r.json())
+      .then(d => setCompApts(Array.isArray(d) ? d : []))
+      .catch(() => setCompApts([]))
+      .finally(() => setLoadingComp(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [range]);
+
   const active = apts.filter(a => a.status !== 'cancelled' && a.status !== 'blocked');
-
-  // ── Week-over-week (always based on current/last week, shown for month & 3months) ──
-  const thisWeekStart    = isoWeekStart(today);
-  const lastWeekStart    = new Date(thisWeekStart); lastWeekStart.setDate(thisWeekStart.getDate() - 7);
-  const lastWeekEnd      = new Date(thisWeekStart); lastWeekEnd.setDate(thisWeekStart.getDate() - 1);
-  const thisWeekStr      = localDateStr(thisWeekStart);
-  const lastWeekStartStr = localDateStr(lastWeekStart);
-  const lastWeekEndStr   = localDateStr(lastWeekEnd);
-
-  let thisWeekRevenue = 0, lastWeekRevenue = 0;
-  for (const a of active) {
-    if (a.date >= thisWeekStr) thisWeekRevenue += a.price;
-    else if (a.date >= lastWeekStartStr && a.date <= lastWeekEndStr) lastWeekRevenue += a.price;
-  }
-  const wowChange = lastWeekRevenue > 0
-    ? Math.round((thisWeekRevenue - lastWeekRevenue) / lastWeekRevenue * 100)
-    : null;
 
   // ── Total revenue ─────────────────────────────────────────────────────────
   const totalRevenue = active.reduce((s, a) => s + a.price, 0);
+
+  // ── Period-over-period comparison (shown for month & 3months) ───────────────
+  const compActive  = compApts.filter(a => a.status !== 'cancelled' && a.status !== 'blocked');
+  const compRevenue = compActive.reduce((s, a) => s + a.price, 0);
+  const pctChange   = compRevenue > 0
+    ? Math.round((totalRevenue - compRevenue) / compRevenue * 100)
+    : null;
+  const compLabel   = range === '3months' ? 'Previous 3 Months' : 'Previous 30 Days';
 
   // ── Revenue by day of week ────────────────────────────────────────────────
   const revenueByDow: number[] = [0, 0, 0, 0, 0, 0, 0];
@@ -226,27 +227,26 @@ export default function ReportsView({ appointments: initialAppointments }: { app
 
       {!loading && (
         <>
-          {/* ── Week over week (month / 3months only) ─────────────────────── */}
+          {/* ── Period-over-period (month / 3months only) ─────────────────── */}
           {showWoW && (
             <>
-              <SectionTitle>Revenue — This Week vs Last Week</SectionTitle>
+              <SectionTitle>Revenue — {RANGE_LABELS[range]} vs {compLabel}</SectionTitle>
               <Card style={{ marginBottom: 20 }}>
                 <div style={{ display: 'flex', gap: 0 }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>This week</div>
-                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 28, fontWeight: 500, color: 'var(--admin-text)', letterSpacing: '-0.02em' }}>{fmtMoney(thisWeekRevenue)}</div>
-                    {wowChange !== null && (
-                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, marginTop: 4, color: wowChange >= 0 ? '#4a9b6f' : '#b03030' }}>
-                        {wowChange >= 0 ? '+' : ''}{wowChange}% vs last week
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>{RANGE_LABELS[range]}</div>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 28, fontWeight: 500, color: 'var(--admin-text)', letterSpacing: '-0.02em' }}>{fmtMoney(totalRevenue)}</div>
+                    {pctChange !== null && (
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, marginTop: 4, color: pctChange >= 0 ? '#4a9b6f' : '#b03030' }}>
+                        {pctChange >= 0 ? '+' : ''}{pctChange}% vs prior period
                       </div>
                     )}
                   </div>
                   <div style={{ width: 1, background: 'var(--admin-border)', margin: '0 20px' }} />
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>Last week</div>
-                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 28, fontWeight: 500, color: 'var(--admin-text)', letterSpacing: '-0.02em' }}>{fmtMoney(lastWeekRevenue)}</div>
-                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-muted)', marginTop: 4 }}>
-                      {RANGE_LABELS[range]} total: {fmtMoney(totalRevenue)}
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>{compLabel}</div>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 28, fontWeight: 500, color: 'var(--admin-text)', letterSpacing: '-0.02em' }}>
+                      {loadingComp ? '—' : fmtMoney(compRevenue)}
                     </div>
                   </div>
                 </div>
