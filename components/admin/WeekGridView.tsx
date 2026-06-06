@@ -119,6 +119,7 @@ export default function WeekGridView({
   onNextWeek,
   onGoCurrentWeek,
   openDays,
+  hoursByDay,
   stickyTop = 52,
   modeToggle,
 }: {
@@ -129,6 +130,7 @@ export default function WeekGridView({
   onNextWeek?: () => void;
   onGoCurrentWeek?: () => void;
   openDays?: Record<number, boolean>;
+  hoursByDay?: Record<number, [number, number] | null>;
   stickyTop?: number;
   modeToggle?: React.ReactNode;
 }) {
@@ -563,7 +565,7 @@ export default function WeekGridView({
           return (
             <div
               key={day.dateStr}
-              style={{ flex: 1, position: 'relative', height: TOTAL_PX, borderLeft: '1px solid var(--admin-border-sub)', opacity: day.isOpen ? 1 : 0.6, background: day.isToday ? 'var(--admin-today)' : 'transparent' }}
+              style={{ flex: 1, position: 'relative', height: TOTAL_PX, borderLeft: '1px solid var(--admin-border-sub)', background: day.isToday ? 'var(--admin-today)' : 'transparent' }}
             >
               {/* Hour gridlines */}
               {HOURS.map((h) => (
@@ -574,6 +576,18 @@ export default function WeekGridView({
               {HOURS.slice(0, -1).map((h) => (
                 <div key={`${h}h`} style={{ position: 'absolute', top: (h - H0) * 60 * PPM + 30 * PPM, left: 0, right: 0, borderTop: '1px solid var(--admin-border-faint)', pointerEvents: 'none' }} />
               ))}
+
+              {/* Closed-hours grey bands — store hours */}
+              {(() => {
+                const h = hoursByDay ? (hoursByDay[day.dow] ?? null) : null;
+                const preH    = hoursByDay ? (h ? Math.max(0, (h[0] - H0) * 60 * PPM) : TOTAL_PX) : 0;
+                const postTop = hoursByDay ? (h ? Math.max(0, (h[1] - H0) * 60 * PPM) : 0) : TOTAL_PX;
+                const postH   = hoursByDay ? (h ? Math.max(0, TOTAL_PX - postTop) : 0) : 0;
+                return (<>
+                  {preH > 0 && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: preH, background: 'var(--admin-closed-band, rgba(0,0,0,0.045))', pointerEvents: 'none', zIndex: 1 }} />}
+                  {postH > 0 && <div style={{ position: 'absolute', top: postTop, left: 0, right: 0, height: postH, background: 'var(--admin-closed-band, rgba(0,0,0,0.045))', pointerEvents: 'none', zIndex: 1 }} />}
+                </>);
+              })()}
 
               {/* Tap-to-book slots (15-min buckets for precise back-to-back booking) */}
               {Array.from({ length: (H1 - H0) * 4 }, (_, i) => {

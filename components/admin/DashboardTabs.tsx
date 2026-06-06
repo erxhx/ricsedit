@@ -210,6 +210,7 @@ export default function DashboardTabs({
           onGoCurrentWeek={goToCurrentWeek}
           stickyTop={SUB_STICKY}
           openDays={openDays}
+          hoursByDay={hoursByDay}
           modeToggle={modeToggleNode}
         />
       )}
