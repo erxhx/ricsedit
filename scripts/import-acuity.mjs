@@ -314,8 +314,8 @@ for (let r = 1; r < rows.length; r++) {
     end_time:         endTime,
     staff:            mapStaff(get(idxCalendar)),
     client_name:      clientName || '(unknown)',
-    client_email:     get(idxEmail) || null,
-    client_phone:     get(idxPhone).replace(/^'+/, '') || null,  // Acuity prefixes with ' to stop Excel formula parsing
+    client_email:     get(idxEmail) || '',  // empty string satisfies NOT NULL for rows with no email
+    client_phone:     get(idxPhone).replace(/^'+/, '') || '',  // Acuity prefixes with ' to stop Excel formula parsing
     service:          get(idxService) || 'Haircut',
     duration_minutes: isNaN(durationMinutes) ? 30 : durationMinutes,
     price:            isNaN(price) ? 0 : price,
@@ -383,7 +383,11 @@ if (DRY_RUN) {
 // ── Insert ────────────────────────────────────────────────────────────────────
 
 console.log(`\nInserting ${records.length} rows into Supabase…`);
-const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+// Node 20 has no native WebSocket — disable realtime so the client doesn't try to init it
+const db = createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth:     { persistSession: false },
+  realtime: { transport: class DummyWS { constructor() { setTimeout(() => this.onopen?.(), 9999999); } send(){} close(){} } },
+});
 
 const BATCH = 100;
 let inserted = 0;
@@ -391,7 +395,16 @@ let failed = 0;
 
 for (let i = 0; i < records.length; i += BATCH) {
   const batch = records.slice(i, i + BATCH);
-  const { data, error } = await db.from('appointments').insert(batch).select('id');
+
+  let data, error;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    ({ data, error } = await db.from('appointments').insert(batch).select('id'));
+    if (!error) break;
+    if (attempt < 3) {
+      process.stdout.write(`  ↻ Batch ${i}–${i + batch.length} attempt ${attempt} failed (${error.message}), retrying…\n`);
+      await new Promise(r => setTimeout(r, 1000 * attempt));
+    }
+  }
 
   if (error) {
     console.error(`  ✗ Batch ${i}–${i + batch.length}: ${error.message}`);
