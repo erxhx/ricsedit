@@ -592,7 +592,7 @@ export default function WeekGridView({
               {/* Appointment blocks */}
               {day.apts.map((apt) => {
                 const topPx = t2m(apt.startTime) * PPM;
-                const hPx   = Math.max(apt.durationMinutes * PPM - 1, 14);
+                const hPx   = Math.max(apt.durationMinutes * PPM, 14);
                 const col   = getAppointmentColor(apt.staff, apt.service);
                 const pos   = day.positions.get(apt.id) ?? { leftPct: 0, widthPct: 100 };
 

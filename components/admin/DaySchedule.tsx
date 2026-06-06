@@ -574,7 +574,7 @@ export default function DaySchedule({
               {/* appointment blocks */}
               {staffApts.map((apt) => {
                 const topPx = t2m(apt.startTime) * PPM;
-                const hPx = Math.max(apt.durationMinutes * PPM - 2, 22);
+                const hPx = Math.max(apt.durationMinutes * PPM, 22);
                 const blocked = apt.status === 'blocked';
                 const completed = apt.status === 'completed';
                 const col = getAppointmentColor(apt.staff, apt.service);
