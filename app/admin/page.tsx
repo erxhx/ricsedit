@@ -61,6 +61,7 @@ export default async function AdminPage({
         weekStartStr={localDateStr(weekStart)}
         openDays={openDays}
         hoursByDay={availability.days}
+        barberThuClose={availability.barberThuClose}
       />
     </>
   );

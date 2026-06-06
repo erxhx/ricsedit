@@ -97,6 +97,7 @@ export default function DaySchedule({
   onGoToday,
   modeToggle,
   hoursByDay,
+  barberThuClose,
 }: {
   appointments: Appointment[];
   date: string;
@@ -107,6 +108,7 @@ export default function DaySchedule({
   onGoToday?: () => void;
   modeToggle?: React.ReactNode;
   hoursByDay?: Record<number, [number, number] | null>;
+  barberThuClose?: number;
 }) {
   const router = useRouter();
   const gridRef = useRef<HTMLDivElement>(null);
@@ -137,14 +139,23 @@ export default function DaySchedule({
     setApts(initial);
   }, [initial]);
 
-  // Closed-hours grey bands for the current date
+  // Closed-hours grey bands — computed per staff to respect the barber Thursday late close
   const dayOfWeek = (() => { const [y, mo, d] = date.split('-').map(Number); return new Date(y, mo - 1, d).getDay(); })();
-  const dayHours = hoursByDay?.[dayOfWeek] ?? null; // null = closed all day
-  // Convert store open/close hours to pixel offsets within the grid
-  const closedTopPx    = dayHours ? 0 : 0;                              // pre-open band top
-  const closedPreH     = dayHours ? Math.max(0, (dayHours[0] - H0) * 60 * PPM) : TOTAL_PX;
-  const closedPostTop  = dayHours ? Math.max(0, (dayHours[1] - H0) * 60 * PPM) : 0;
-  const closedPostH    = dayHours ? Math.max(0, TOTAL_PX - closedPostTop) : 0;
+  const baseDayHours = hoursByDay?.[dayOfWeek] ?? null; // null = store closed all day
+
+  /** Returns pixel bands {preH, postTop, postH} for a given staff column */
+  function closedBands(staff: string): { preH: number; postTop: number; postH: number } {
+    if (hoursByDay === undefined) return { preH: 0, postTop: TOTAL_PX, postH: 0 };
+    let h = baseDayHours;
+    // Eric on Thursday: extend close to barberThuClose if set
+    if (staff === 'eric' && dayOfWeek === 4 && barberThuClose != null && h !== null) {
+      h = [h[0], barberThuClose];
+    }
+    const preH     = h ? Math.max(0, (h[0] - H0) * 60 * PPM) : TOTAL_PX;
+    const postTop  = h ? Math.max(0, (h[1] - H0) * 60 * PPM) : 0;
+    const postH    = h ? Math.max(0, TOTAL_PX - postTop) : 0;
+    return { preH, postTop, postH };
+  }
 
   // Headroom: hide nav bar on scroll-down, reveal on scroll-up
   const NAV_H = 49; // nav bar height (px) — padding 8+8 + button 32 + border 1
@@ -565,21 +576,26 @@ export default function DaySchedule({
                 }} />
               ))}
 
-              {/* closed-hours overlay — grey bands outside store hours */}
-              {hoursByDay !== undefined && closedPreH > 0 && (
-                <div style={{
-                  position: 'absolute', top: closedTopPx, left: 0, right: 0, height: closedPreH,
-                  background: 'var(--admin-closed-band, rgba(0,0,0,0.045))',
-                  pointerEvents: 'none', zIndex: 1,
-                }} />
-              )}
-              {hoursByDay !== undefined && closedPostH > 0 && (
-                <div style={{
-                  position: 'absolute', top: closedPostTop, left: 0, right: 0, height: closedPostH,
-                  background: 'var(--admin-closed-band, rgba(0,0,0,0.045))',
-                  pointerEvents: 'none', zIndex: 1,
-                }} />
-              )}
+              {/* closed-hours overlay — grey bands outside this staff member's hours */}
+              {(() => {
+                const { preH, postTop, postH } = closedBands(staff);
+                return (<>
+                  {preH > 0 && (
+                    <div style={{
+                      position: 'absolute', top: 0, left: 0, right: 0, height: preH,
+                      background: 'var(--admin-closed-band, rgba(0,0,0,0.045))',
+                      pointerEvents: 'none', zIndex: 1,
+                    }} />
+                  )}
+                  {postH > 0 && (
+                    <div style={{
+                      position: 'absolute', top: postTop, left: 0, right: 0, height: postH,
+                      background: 'var(--admin-closed-band, rgba(0,0,0,0.045))',
+                      pointerEvents: 'none', zIndex: 1,
+                    }} />
+                  )}
+                </>);
+              })()}
 
               {/* tap-to-book slots (15-min buckets for precise back-to-back booking) */}
               {Array.from({ length: (H1 - H0) * 4 }, (_, i) => {

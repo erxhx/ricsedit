@@ -72,7 +72,7 @@ export default async function DayPage({ params }: { params: Promise<{ date: stri
         {/* Right spacer to keep date centred */}
         <div style={{ width: 60 }} />
       </div>
-      <DaySchedule appointments={appointments} date={date} hoursByDay={availability.days} />
+      <DaySchedule appointments={appointments} date={date} hoursByDay={availability.days} barberThuClose={availability.barberThuClose} />
     </>
   );
 }
