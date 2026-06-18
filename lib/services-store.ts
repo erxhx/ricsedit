@@ -28,7 +28,15 @@ function seed(): ServicesData {
 /** Ensures persisted stores predating a category get its seeded default. */
 function applyCategoryMigration(store: ServicesData): boolean {
   let changed = false;
+  // Missing entirely (store predates the lashes category) → seed it.
   if (!Array.isArray(store.lashServices)) {
+    store.lashServices = JSON.parse(JSON.stringify(LASH_SERVICES));
+    changed = true;
+  }
+  // Upgrade the original auto-seeded placeholder menu (identified by its
+  // 'lash-fill-2wk' id, which the real menu doesn't use) to the real menu.
+  // Won't touch a list that's been edited in the admin.
+  else if (store.lashServices.some((s) => s.id === 'lash-fill-2wk')) {
     store.lashServices = JSON.parse(JSON.stringify(LASH_SERVICES));
     changed = true;
   }
