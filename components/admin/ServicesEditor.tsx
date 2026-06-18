@@ -27,6 +27,7 @@ function addToData(d: ServicesData, svc: Service, target: AddTarget): ServicesDa
   if (target.kind === 'barber')   return { ...d, barberServices: [...d.barberServices, svc] };
   if (target.kind === 'tan')      return { ...d, tanServices:    [...d.tanServices, svc] };
   if (target.kind === 'tanAddon') return { ...d, tanAddons:      [...d.tanAddons, svc] };
+  if (target.kind === 'lashes')   return { ...d, lashServices:   [...d.lashServices, svc] };
   return {
     ...d,
     waxGroups: d.waxGroups.map((g) =>
@@ -41,6 +42,7 @@ function updateInData(d: ServicesData, svc: Service): ServicesData {
     barberServices: upd(d.barberServices),
     tanServices:    upd(d.tanServices),
     tanAddons:      upd(d.tanAddons),
+    lashServices:   upd(d.lashServices),
     waxGroups:      d.waxGroups.map((g) => ({ ...g, services: upd(g.services) })),
   };
 }
@@ -51,6 +53,7 @@ function removeFromData(d: ServicesData, id: string): ServicesData {
     barberServices: rm(d.barberServices),
     tanServices:    rm(d.tanServices),
     tanAddons:      rm(d.tanAddons),
+    lashServices:   rm(d.lashServices),
     waxGroups:      d.waxGroups.map((g) => ({ ...g, services: rm(g.services) })),
   };
 }
@@ -92,8 +95,8 @@ export default function ServicesEditor({ initial }: { initial: ServicesData }) {
 
   // Open sheet to add a new service to a given section
   function openAdd(target: AddTarget, sectionLabel: string) {
-    const isWax    = target.kind === 'wax';
     const isAddon  = target.kind === 'tanAddon';
+    const waiverByDefault = target.kind === 'wax' || target.kind === 'lashes';
     setSheet({
       id:              '',
       name:            '',
@@ -101,7 +104,7 @@ export default function ServicesEditor({ initial }: { initial: ServicesData }) {
       price:           '',
       durationMinutes: isAddon ? '0' : '30',
       isAddon,
-      requiresWaiver:  isWax,
+      requiresWaiver:  waiverByDefault,
       addTarget:       target,
       sectionLabel,
       confirmDelete:   false,
@@ -204,6 +207,11 @@ export default function ServicesEditor({ initial }: { initial: ServicesData }) {
           <AddRow onClick={() => openAdd({ kind: 'wax', groupName: group.name }, `Waxing — ${group.name}`)} />
         </div>
       ))}
+
+      {/* ── Lashes ── */}
+      <SectionHeader label="Lashes" staff="Niamh" />
+      <ServiceList services={data.lashServices} onEdit={openEdit} />
+      <AddRow onClick={() => openAdd({ kind: 'lashes' }, 'Lashes')} />
 
       {/* ── Bottom sheet ── */}
       {sheet && (

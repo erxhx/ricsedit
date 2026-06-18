@@ -46,6 +46,7 @@ export const STAFF_COLORS = {
   ericBarber: '#7db83e', // lime green  — Eric's barbering
   liviWax:    '#b07590', // pink        — Livi's waxing & brow services
   liviTan:    '#b5824a', // orange/tan  — Livi's sunless tan services
+  niamhLash:  '#7a6cc4', // indigo      — Niamh's lash services
 } as const;
 
 // ── The roster ──────────────────────────────────────────────────────────────────
@@ -66,6 +67,15 @@ export const STAFF: StaffMember[] = [
     categories: ['wax', 'tan'],
     categoryColors: { wax: STAFF_COLORS.liviWax, tan: STAFF_COLORS.liviTan },
     canSeeAllRevenue: true,
+  },
+  {
+    id: 'niamh',
+    name: 'Niamh',
+    role: 'esti',
+    color: STAFF_COLORS.niamhLash,
+    categories: ['lashes'],
+    canSeeAllRevenue: false,
+    // Login: set ADMIN_PASSWORD_NIAMH in the environment to enable her sign-in.
   },
 ];
 

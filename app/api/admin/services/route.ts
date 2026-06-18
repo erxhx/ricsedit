@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
   const category: ServiceCategory =
     addTarget.kind === 'barber' ? 'barber'
     : addTarget.kind === 'tan' || addTarget.kind === 'tanAddon' ? 'tan'
+    : addTarget.kind === 'lashes' ? 'lashes'
     : 'wax';
 
   const id = `${slugify(name.trim())}-${Date.now().toString(36)}`;

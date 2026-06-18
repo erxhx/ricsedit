@@ -1,4 +1,4 @@
-export type ServiceCategory = 'barber' | 'tan' | 'wax';
+export type ServiceCategory = 'barber' | 'tan' | 'wax' | 'lashes';
 
 export interface Service {
   id: string;
@@ -117,6 +117,17 @@ export const TAN_ADDONS: Service[] = [
   { id: 'addon-bra',       name: 'Disposable Bra',    category: 'tan', durationMinutes: 0,  price: 5,  description: 'Bandeau style.',                                                          requiresWaiver: false, isAddon: true },
   { id: 'addon-undies',    name: 'Disposable Undies', category: 'tan', durationMinutes: 0,  price: 5,  description: '',                                                                        requiresWaiver: false, isAddon: true },
   { id: 'addon-prep-lock', name: 'Prep + Lock',       category: 'tan', durationMinutes: 20, price: 20, description: 'Two-step longevity treatment — pH-balance prep + post-tan barrier lock.', requiresWaiver: false, isAddon: true },
+];
+
+// NOTE: Starter lash menu — durations are reasonable defaults but PRICES ARE
+// PLACEHOLDERS. Adjust them (and add/remove services) in the admin Services editor.
+export const LASH_SERVICES: Service[] = [
+  { id: 'lash-classic-set', name: 'Classic Full Set', category: 'lashes', durationMinutes: 120, price: 100, description: 'One extension per natural lash — a natural, mascara-like finish.', requiresWaiver: true },
+  { id: 'lash-hybrid-set',  name: 'Hybrid Full Set',  category: 'lashes', durationMinutes: 135, price: 120, description: 'A mix of classic and volume for texture and fullness.',          requiresWaiver: true },
+  { id: 'lash-volume-set',  name: 'Volume Full Set',  category: 'lashes', durationMinutes: 150, price: 140, description: 'Multiple lightweight extensions per lash for a dramatic look.',  requiresWaiver: true },
+  { id: 'lash-fill-2wk',    name: 'Fill — 2 Week',    category: 'lashes', durationMinutes: 60,  price: 55,  description: 'Top-up within 2 weeks of your last appointment.',                requiresWaiver: true },
+  { id: 'lash-fill-3wk',    name: 'Fill — 3 Week',    category: 'lashes', durationMinutes: 75,  price: 70,  description: 'Top-up within 3 weeks of your last appointment.',                requiresWaiver: true },
+  { id: 'lash-removal',     name: 'Lash Removal',     category: 'lashes', durationMinutes: 30,  price: 20,  description: 'Safe, gentle removal of existing extensions.',                   requiresWaiver: false },
 ];
 
 export const WAX_GROUPS: ServiceGroup[] = [

@@ -1,12 +1,13 @@
 import { db } from './supabase';
-import type { Service, ServiceGroup } from './services';
-import { BARBER_SERVICES, TAN_SERVICES, TAN_ADDONS, WAX_GROUPS } from './services';
+import type { Service, ServiceGroup, ServiceCategory } from './services';
+import { BARBER_SERVICES, TAN_SERVICES, TAN_ADDONS, WAX_GROUPS, LASH_SERVICES } from './services';
 
 export interface ServicesData {
   barberServices: Service[];
   tanServices: Service[];
   tanAddons: Service[];
   waxGroups: ServiceGroup[];
+  lashServices: Service[];
 }
 
 declare global {
@@ -20,7 +21,18 @@ function seed(): ServicesData {
     tanServices:    TAN_SERVICES,
     tanAddons:      TAN_ADDONS,
     waxGroups:      WAX_GROUPS,
+    lashServices:   LASH_SERVICES,
   }));
+}
+
+/** Ensures persisted stores predating a category get its seeded default. */
+function applyCategoryMigration(store: ServicesData): boolean {
+  let changed = false;
+  if (!Array.isArray(store.lashServices)) {
+    store.lashServices = JSON.parse(JSON.stringify(LASH_SERVICES));
+    changed = true;
+  }
+  return changed;
 }
 
 /** Synchronous read — returns in-memory store or seeds from static defaults. */
@@ -105,7 +117,8 @@ export async function getServicesStoreAsync(): Promise<ServicesData> {
       global.__servicesStore = data.value as ServicesData;
       const m1 = applyWaiverMigration(global.__servicesStore);
       const m2 = applyDurationMigration(global.__servicesStore);
-      if (m1 || m2) saveServicesStore().catch(() => {});
+      const m3 = applyCategoryMigration(global.__servicesStore);
+      if (m1 || m2 || m3) saveServicesStore().catch(() => {});
       return global.__servicesStore;
     }
   } catch {
@@ -138,7 +151,24 @@ export function getAllServices(): Service[] {
     ...s.tanServices,
     ...s.tanAddons,
     ...s.waxGroups.flatMap((g) => g.services),
+    ...s.lashServices,
   ];
+}
+
+/** Bookable (non-addon) services for a single category. */
+export function servicesByCategory(cat: ServiceCategory, data: ServicesData): Service[] {
+  switch (cat) {
+    case 'barber': return data.barberServices;
+    case 'tan':    return data.tanServices;
+    case 'wax':    return data.waxGroups.flatMap((g) => g.services);
+    case 'lashes': return data.lashServices ?? [];
+    default:       return [];
+  }
+}
+
+/** Bookable services for a set of categories, in category order. */
+export function servicesForCategories(cats: ServiceCategory[], data: ServicesData): Service[] {
+  return cats.flatMap((c) => servicesByCategory(c, data));
 }
 
 export function updateService(
@@ -155,6 +185,7 @@ export type AddTarget =
   | { kind: 'barber' }
   | { kind: 'tan' }
   | { kind: 'tanAddon' }
+  | { kind: 'lashes' }
   | { kind: 'wax'; groupName: string };
 
 export function addServiceToStore(service: Service, target: AddTarget): void {
@@ -162,6 +193,7 @@ export function addServiceToStore(service: Service, target: AddTarget): void {
   if (target.kind === 'barber')   store.barberServices.push(service);
   else if (target.kind === 'tan') store.tanServices.push(service);
   else if (target.kind === 'tanAddon') store.tanAddons.push(service);
+  else if (target.kind === 'lashes') store.lashServices.push(service);
   else {
     const group = store.waxGroups.find((g) => g.name === target.groupName);
     if (group) group.services.push(service);
@@ -174,6 +206,7 @@ export function removeServiceFromStore(id: string): boolean {
   store.barberServices = store.barberServices.filter((s) => { if (s.id === id) { found = true; return false; } return true; });
   store.tanServices    = store.tanServices.filter((s)    => { if (s.id === id) { found = true; return false; } return true; });
   store.tanAddons      = store.tanAddons.filter((s)      => { if (s.id === id) { found = true; return false; } return true; });
+  store.lashServices   = store.lashServices.filter((s)   => { if (s.id === id) { found = true; return false; } return true; });
   store.waxGroups      = store.waxGroups.map((g) => ({
     ...g,
     services: g.services.filter((s) => { if (s.id === id) { found = true; return false; } return true; }),
