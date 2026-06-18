@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { timingSafeEqual } from 'crypto';
 import { signSession, SESSION_COOKIE, SESSION_DAYS } from '@/lib/admin-auth';
+import { STAFF } from '@/lib/staff';
 
 // ── In-process rate limiter ───────────────────────────────────────────────────
 // Persists within a warm Vercel function instance — resets on cold start.
@@ -73,14 +74,15 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const password: string = typeof body.password === 'string' ? body.password : '';
 
-  const ericPass = process.env.ADMIN_PASSWORD_ERIC ?? '';
-  const liviPass = process.env.ADMIN_PASSWORD_LIVI ?? '';
-
-  let session = null;
-  if (ericPass && safeCompare(password, ericPass)) {
-    session = { sub: 'eric' as const, name: 'Eric', role: 'owner' as const };
-  } else if (liviPass && safeCompare(password, liviPass)) {
-    session = { sub: 'livi' as const, name: 'Livi', role: 'esti' as const };
+  // Each staff member authenticates with their own ADMIN_PASSWORD_<ID> env var,
+  // e.g. ADMIN_PASSWORD_ERIC. Loop the roster so adding a person needs no code change.
+  let session: { sub: string; name: string; role: 'owner' | 'esti' } | null = null;
+  for (const member of STAFF) {
+    const pass = process.env[`ADMIN_PASSWORD_${member.id.toUpperCase()}`] ?? '';
+    if (pass && safeCompare(password, pass)) {
+      session = { sub: member.id, name: member.name, role: member.role };
+      break;
+    }
   }
 
   if (!session) {

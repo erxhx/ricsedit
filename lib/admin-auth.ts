@@ -4,7 +4,7 @@ export const SESSION_COOKIE = 'es-admin-session';
 export const SESSION_DAYS = 90;
 
 export interface AdminSession {
-  sub: 'eric' | 'livi';
+  sub: string;            // staff id from the roster (lib/staff.ts)
   name: string;
   role: 'owner' | 'esti';
 }

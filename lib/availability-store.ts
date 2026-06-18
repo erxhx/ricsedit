@@ -13,6 +13,7 @@
  */
 
 import { db } from './supabase';
+import { STAFF } from './staff';
 
 /** [openHour, closeHour] in 24-hour integers, or null = closed that day. */
 export type DayHours = [number, number] | null;
@@ -27,11 +28,8 @@ export interface AvailabilityConfig {
   days: Record<number, DayHours>;
   /** Special late-night close hour for barber on Thursday (day 4). */
   barberThuClose: number;
-  /** Per-staff working schedules — drives which dates/slots are bookable. */
-  staff: {
-    eric: StaffSchedule;
-    livi: StaffSchedule;
-  };
+  /** Per-staff working schedules, keyed by staff id — drives bookable dates/slots. */
+  staff: Record<string, StaffSchedule>;
 }
 
 const DEFAULT_DAYS: Record<number, DayHours> = {
@@ -47,10 +45,9 @@ const DEFAULT_DAYS: Record<number, DayHours> = {
 export const DEFAULT_AVAILABILITY: AvailabilityConfig = {
   days: { ...DEFAULT_DAYS },
   barberThuClose: 21,
-  staff: {
-    eric: { days: { ...DEFAULT_DAYS } },
-    livi: { days: { ...DEFAULT_DAYS } },
-  },
+  staff: Object.fromEntries(
+    STAFF.map(s => [s.id, { days: { ...DEFAULT_DAYS } }]),
+  ),
 };
 
 declare global {
@@ -76,10 +73,19 @@ function normalise(raw: unknown): AvailabilityConfig {
 
   const days = normaliseDays(r.days);
 
-  // Staff — fall back to store hours if staff block is missing (old config format)
+  // Staff — build a schedule for every roster member. Fall back to store hours
+  // for anyone missing from the persisted config (old format, or a newly-added
+  // staff member whose schedule hasn't been set yet).
   const rawStaff = (r.staff ?? {}) as Record<string, unknown>;
-  const ericRaw  = (rawStaff.eric ?? {}) as Record<string, unknown>;
-  const liviRaw  = (rawStaff.livi ?? {}) as Record<string, unknown>;
+  const staff: Record<string, StaffSchedule> = {};
+  for (const member of STAFF) {
+    const memberRaw = (rawStaff[member.id] ?? {}) as Record<string, unknown>;
+    staff[member.id] = {
+      days: Object.keys(memberRaw.days ?? {}).length
+        ? normaliseDays(memberRaw.days)
+        : { ...days },
+    };
+  }
 
   return {
     days,
@@ -87,10 +93,7 @@ function normalise(raw: unknown): AvailabilityConfig {
       typeof r.barberThuClose === 'number'
         ? r.barberThuClose
         : DEFAULT_AVAILABILITY.barberThuClose,
-    staff: {
-      eric: { days: Object.keys(ericRaw.days ?? {}).length ? normaliseDays(ericRaw.days) : { ...days } },
-      livi: { days: Object.keys(liviRaw.days ?? {}).length ? normaliseDays(liviRaw.days) : { ...days } },
-    },
+    staff,
   };
 }
 

@@ -4,7 +4,8 @@
  */
 
 export type AppointmentStatus = 'confirmed' | 'completed' | 'cancelled' | 'blocked' | 'no_show';
-export type StaffId = 'eric' | 'livi';
+/** A staff member id from the roster in lib/staff.ts (e.g. 'eric', 'livi'). */
+export type StaffId = string;
 
 export interface Appointment {
   id: string;

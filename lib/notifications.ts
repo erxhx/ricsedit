@@ -18,6 +18,7 @@
 import { Resend } from 'resend';
 import twilio from 'twilio';
 import type { Appointment } from './admin-mock';
+import { staffName } from './staff';
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -56,10 +57,6 @@ function formatTime(timeStr: string): string {
   const period = h >= 12 ? 'pm' : 'am';
   const hour   = h > 12 ? h - 12 : h === 0 ? 12 : h;
   return `${hour}:${String(m).padStart(2, '0')} ${period}`;
-}
-
-function staffName(staff: string): string {
-  return staff === 'eric' ? 'Eric' : 'Livi';
 }
 
 function firstName(fullName: string): string {
