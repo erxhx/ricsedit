@@ -4,19 +4,36 @@ import { useRouter } from 'next/navigation';
 import type { ClientRecord } from '@/lib/admin-mock';
 import Link from 'next/link';
 import type { StaffId } from '@/lib/admin-mock';
-import { BARBER_SERVICES, TAN_SERVICES, WAX_GROUPS } from '@/lib/services';
-import type { Service } from '@/lib/services';
-import { SERVICE_COLORS } from '@/lib/appointment-colors';
+import type { Service, ServiceCategory } from '@/lib/services';
+import { STAFF, getStaff, staffColor as rosterColor } from '@/lib/staff';
+import { getServicesStore } from '@/lib/services-store';
 import type { ServicesData } from '@/lib/services-store';
 
-function staffServices(staff: StaffId, data?: ServicesData): Service[] {
-  if (staff === 'eric') return data?.barberServices ?? BARBER_SERVICES;
-  const tan = data?.tanServices ?? TAN_SERVICES;
-  const wax = data?.waxGroups ?? WAX_GROUPS;
-  return [...tan, ...wax.flatMap((g) => g.services)];
+/** A labelled group of services for the picker (label null = render flat). */
+type ServiceGroup = { label: string | null; services: Service[] };
+
+function categoryGroups(cat: ServiceCategory, data: ServicesData): ServiceGroup[] {
+  switch (cat) {
+    case 'barber': return [{ label: null, services: data.barberServices }];
+    case 'tan':    return [{ label: 'Sunless Tan', services: data.tanServices }];
+    case 'wax':    return data.waxGroups.map((g) => ({ label: g.name, services: g.services }));
+    case 'lashes': return [{ label: null, services: data.lashServices }];
+    default:       return [];
+  }
 }
 
-function findService(staff: StaffId, name: string, data?: ServicesData): Service | undefined {
+/** Grouped service options for a staff member, in their category order. */
+function staffServiceGroups(staff: StaffId, data: ServicesData): ServiceGroup[] {
+  const member = getStaff(staff);
+  if (!member) return [];
+  return member.categories.flatMap((c) => categoryGroups(c, data));
+}
+
+function staffServices(staff: StaffId, data: ServicesData): Service[] {
+  return staffServiceGroups(staff, data).flatMap((g) => g.services);
+}
+
+function findService(staff: StaffId, name: string, data: ServicesData): Service | undefined {
   return staffServices(staff, data).find((s) => s.name === name);
 }
 
@@ -78,17 +95,19 @@ export default function NewBookingForm({
   defaultDate: string;
   defaultStaff?: StaffId;
   defaultTime?: string;
-  servicesData?: ServicesData;
+  servicesData: ServicesData;
 }) {
   const router = useRouter();
+
+  const firstService = staffServices(defaultStaff, servicesData)[0];
 
   const [staff, setStaff] = useState<StaffId>(defaultStaff);
   const [date, setDate] = useState(defaultDate);
   const [startTime, setStartTime] = useState(defaultTime ?? '10:00');
-  const [serviceKey, setServiceKey] = useState(BARBER_SERVICES[0].name);
+  const [serviceKey, setServiceKey] = useState(firstService?.name ?? '__custom__');
   const [customService, setCustomService] = useState('');
-  const [duration, setDuration] = useState(BARBER_SERVICES[0].durationMinutes);
-  const [price, setPrice] = useState(BARBER_SERVICES[0].price);
+  const [duration, setDuration] = useState(firstService?.durationMinutes ?? 30);
+  const [price, setPrice] = useState(firstService?.price ?? 0);
   const [clientName, setClientName] = useState('');
   const [clientEmail, setClientEmail] = useState('');
   const [clientPhone, setClientPhone] = useState('');
@@ -101,6 +120,7 @@ export default function NewBookingForm({
 
   useEffect(() => {
     const first = staffServices(staff, servicesData)[0];
+    if (!first) { setServiceKey('__custom__'); setCustomService(''); return; }
     setServiceKey(first.name);
     setCustomService('');
     setDuration(first.durationMinutes);
@@ -154,7 +174,7 @@ export default function NewBookingForm({
   }
 
   const serviceName = serviceKey === '__custom__' ? customService : serviceKey;
-  const staffColor = staff === 'eric' ? SERVICE_COLORS.ericBarber : SERVICE_COLORS.liviWax;
+  const staffColor = rosterColor(staff);
 
   async function handleSubmit() {
     if (!clientName.trim()) { setError('Client name is required.'); return; }
@@ -210,13 +230,13 @@ export default function NewBookingForm({
       <div style={{ padding: '24px 20px 0' }}>
         {/* Staff toggle */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 28 }}>
-          {(['eric', 'livi'] as const).map((s) => {
-            const c = s === 'eric' ? SERVICE_COLORS.ericBarber : SERVICE_COLORS.liviWax;
-            const active = staff === s;
+          {STAFF.map((m) => {
+            const c = m.color;
+            const active = staff === m.id;
             return (
               <button
-                key={s}
-                onClick={() => setStaff(s)}
+                key={m.id}
+                onClick={() => setStaff(m.id)}
                 style={{
                   flex: 1, padding: '12px 0', borderRadius: 10,
                   border: active ? `1.5px solid ${c}` : '1px solid var(--admin-border)',
@@ -227,7 +247,7 @@ export default function NewBookingForm({
                   cursor: 'pointer',
                 }}
               >
-                {s === 'eric' ? 'Eric' : 'Livi'}
+                {m.name}
               </button>
             );
           })}
@@ -382,31 +402,22 @@ export default function NewBookingForm({
               onChange={(e) => handleServiceChange(e.target.value)}
               style={selectStyle}
             >
-              {staff === 'eric' ? (
-                (servicesData?.barberServices ?? BARBER_SERVICES).map((s) => (
-                  <option key={s.id} value={s.name} style={{ background: 'var(--admin-card)', color: 'var(--admin-text)' }}>
-                    {s.name}
-                  </option>
-                ))
-              ) : (
-                <>
-                  <optgroup label="Sunless Tan" style={{ background: 'var(--admin-card)' }}>
-                    {(servicesData?.tanServices ?? TAN_SERVICES).map((s) => (
+              {staffServiceGroups(staff, servicesData).map((group) =>
+                group.label ? (
+                  <optgroup key={group.label} label={group.label} style={{ background: 'var(--admin-card)' }}>
+                    {group.services.map((s) => (
                       <option key={s.id} value={s.name} style={{ background: 'var(--admin-card)', color: 'var(--admin-text)' }}>
                         {s.name}
                       </option>
                     ))}
                   </optgroup>
-                  {(servicesData?.waxGroups ?? WAX_GROUPS).map((g) => (
-                    <optgroup key={g.name} label={g.name} style={{ background: 'var(--admin-card)' }}>
-                      {g.services.map((s) => (
-                        <option key={s.id} value={s.name} style={{ background: 'var(--admin-card)', color: 'var(--admin-text)' }}>
-                          {s.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </>
+                ) : (
+                  group.services.map((s) => (
+                    <option key={s.id} value={s.name} style={{ background: 'var(--admin-card)', color: 'var(--admin-text)' }}>
+                      {s.name}
+                    </option>
+                  ))
+                )
               )}
               <option value="__custom__" style={{ background: 'var(--admin-card)', color: 'var(--admin-muted)' }}>
                 Custom…

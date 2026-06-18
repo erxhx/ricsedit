@@ -2,21 +2,18 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Appointment } from '@/lib/admin-mock';
-import { getAppointmentColor, SERVICE_COLORS } from '@/lib/appointment-colors';
+import { getAppointmentColor } from '@/lib/appointment-colors';
+import { STAFF as ROSTER, STAFF_IDS, staffName, staffColor } from '@/lib/staff';
 
 // ── layout constants ──────────────────────────────────────────────────────────
 const H0 = 8, H1 = 22;          // visible range: 8 am – 10 pm
 const PPM = 2;                   // pixels per minute
 const TW = 44;                   // time-label column width
+const COL_W = 150;               // min width per staff column before horizontal scroll
+const HEADER_H = 37;             // staff column-header height
 const TOTAL_PX = (H1 - H0) * 60 * PPM;  // 1200 px
 
 const HOURS = Array.from({ length: H1 - H0 + 1 }, (_, i) => H0 + i);
-const STAFF = ['eric', 'livi'] as const;
-// Staff-level dot colours for column headers (Livi uses her primary/wax colour)
-const STAFF_DOT: Record<string, string> = {
-  eric: SERVICE_COLORS.ericBarber,
-  livi: SERVICE_COLORS.liviWax,
-};
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 function t2m(t: string): number {
@@ -59,8 +56,8 @@ type DragConfirm = {
   newEndTime: string;
 } | null;
 
-type SlotAction    = { staff: 'eric' | 'livi'; time: string } | null;
-type BlockSheet    = { staff: 'eric' | 'livi'; time: string } | null;
+type SlotAction    = { staff: string; time: string } | null;
+type BlockSheet    = { staff: string; time: string } | null;
 type BlockDelSheet = Appointment | null;
 
 const QUICK_LABELS = ['Lunch', 'Break', 'Personal', 'Studio closed'] as const;
@@ -118,6 +115,8 @@ export default function DaySchedule({
   const ghostRef = useRef<HTMLDivElement | null>(null);
   const aptEls = useRef<Map<string, HTMLElement>>(new Map());
   const nowRef = useRef<HTMLDivElement>(null);
+  const headerScrollRef = useRef<HTMLDivElement>(null);
+  const bodyScrollRef = useRef<HTMLDivElement>(null);
 
   const [apts, setApts] = useState(initial);
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -406,7 +405,7 @@ export default function DaySchedule({
     const endTime  = useCustomEnd ? customEndTime : addMin(blockSheet.time, blockDur);
     const dur      = useCustomEnd ? timeDiff(blockSheet.time, customEndTime) : blockDur;
     if (dur <= 0) return;
-    const staffList = blockBoth ? (['eric', 'livi'] as const) : [blockSheet.staff];
+    const staffList = blockBoth ? STAFF_IDS : [blockSheet.staff];
     const results = await Promise.all(
       staffList.map((staff) =>
         fetch('/api/admin/appointments', {
@@ -441,6 +440,13 @@ export default function DaySchedule({
 
   const visible = apts.filter((a) => a.status !== 'cancelled');
   const ghostApt = draggingId ? apts.find((a) => a.id === draggingId) ?? null : null;
+
+  // Keep the staff-header row and the timeline body in horizontal lockstep.
+  function syncScroll(src: 'header' | 'body') {
+    const from = src === 'header' ? headerScrollRef.current : bodyScrollRef.current;
+    const to   = src === 'header' ? bodyScrollRef.current   : headerScrollRef.current;
+    if (from && to && to.scrollLeft !== from.scrollLeft) to.scrollLeft = from.scrollLeft;
+  }
 
   const navArrow: React.CSSProperties = {
     display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -510,25 +516,36 @@ export default function DaySchedule({
 
       {/* ── staff column headers ──────────────────────────────────────────── */}
       <div style={{
-        display: 'flex', paddingLeft: TW,
+        display: 'flex',
         position: 'sticky', top: stickyTop + (navShown ? NAV_H : 0), zIndex: 6,
         transition: 'top 0.25s cubic-bezier(0.22, 1, 0.36, 1)',
         background: 'var(--admin-bg)', borderBottom: '1px solid var(--admin-border)',
       }}>
-        {STAFF.map((s) => (
-          <div key={s} style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, padding: '9px 12px' }}>
-            <span style={{ width: 7, height: 7, borderRadius: '50%', background: STAFF_DOT[s], flexShrink: 0, display: 'inline-block' }} />
-            <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-text)' }}>
-              {s === 'eric' ? 'Eric' : 'Livi'}
-            </span>
+        {/* fixed gutter spacer (aligns with hour-label column) */}
+        <div style={{ width: TW, flexShrink: 0 }} />
+        {/* scrollable header track — kept in sync with the body below */}
+        <div
+          ref={headerScrollRef}
+          onScroll={() => syncScroll('header')}
+          style={{ flex: 1, overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}
+        >
+          <div style={{ display: 'flex' }}>
+            {ROSTER.map((m) => (
+              <div key={m.id} style={{ flex: `1 0 ${COL_W}px`, display: 'flex', alignItems: 'center', gap: 6, padding: '9px 12px', borderLeft: '1px solid var(--admin-border-sub)' }}>
+                <span style={{ width: 7, height: 7, borderRadius: '50%', background: staffColor(m.id), flexShrink: 0, display: 'inline-block' }} />
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-text)' }}>
+                  {m.name}
+                </span>
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
       </div>
 
       {/* ── timeline grid ────────────────────────────────────────────────── */}
-      <div ref={gridRef} style={{ display: 'flex', position: 'relative', paddingBottom: 32 }}>
+      <div style={{ display: 'flex', position: 'relative', paddingBottom: 32 }}>
 
-        {/* hour labels */}
+        {/* hour labels (fixed gutter) */}
         <div style={{ width: TW, flexShrink: 0, position: 'relative', height: TOTAL_PX }}>
           {HOURS.map((h) => (
             <div key={h} style={{
@@ -543,24 +560,33 @@ export default function DaySchedule({
           ))}
         </div>
 
-        {/* current-time bar — spans both columns */}
-        {nowMin >= 0 && nowMin <= (H1 - H0) * 60 && (
-          <div ref={nowRef} style={{
-            position: 'absolute',
-            top: nowMin * PPM, left: TW, right: 0,
-            height: 0, borderTop: '1.5px solid #b03030',
-            zIndex: 4, pointerEvents: 'none',
-          }}>
-            <div style={{ position: 'absolute', left: -4, top: -4, width: 8, height: 8, borderRadius: '50%', background: '#b03030' }} />
-          </div>
-        )}
+        {/* scrollable body track */}
+        <div
+          ref={bodyScrollRef}
+          onScroll={() => syncScroll('body')}
+          style={{ flex: 1, overflowX: 'auto', position: 'relative' }}
+        >
+          <div ref={gridRef} style={{ display: 'flex', position: 'relative', height: TOTAL_PX }}>
 
-        {/* staff columns */}
-        {STAFF.map((staff) => {
+            {/* current-time bar — spans all columns */}
+            {nowMin >= 0 && nowMin <= (H1 - H0) * 60 && (
+              <div ref={nowRef} style={{
+                position: 'absolute',
+                top: nowMin * PPM, left: 0, right: 0,
+                height: 0, borderTop: '1.5px solid #b03030',
+                zIndex: 4, pointerEvents: 'none',
+              }}>
+                <div style={{ position: 'absolute', left: -4, top: -4, width: 8, height: 8, borderRadius: '50%', background: '#b03030' }} />
+              </div>
+            )}
+
+            {/* staff columns */}
+            {ROSTER.map((m) => {
+          const staff = m.id;
           const staffApts = visible.filter((a) => a.staff === staff);
 
           return (
-            <div key={staff} style={{ flex: 1, position: 'relative', height: TOTAL_PX, borderLeft: '1px solid var(--admin-border-sub)' }}>
+            <div key={staff} style={{ flex: `1 0 ${COL_W}px`, position: 'relative', height: TOTAL_PX, borderLeft: '1px solid var(--admin-border-sub)' }}>
 
               {/* hour gridlines */}
               {HOURS.map((h) => (
@@ -605,7 +631,7 @@ export default function DaySchedule({
               {/* selected-slot highlight */}
               {slotAction?.staff === staff && (() => {
                 const topPx = t2m(slotAction.time) * PPM;
-                const color = STAFF_DOT[staff];
+                const color = staffColor(staff);
                 return (
                   <div style={{
                     position: 'absolute',
@@ -722,7 +748,9 @@ export default function DaySchedule({
               })()}
             </div>
           );
-        })}
+            })}
+          </div>{/* gridRef inner flex */}
+        </div>{/* body scroll track */}
       </div>
 
       {/* ── drag confirm sheet ───────────────────────────────────────────── */}
@@ -790,7 +818,7 @@ export default function DaySchedule({
             }}
           >
             <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-muted)', marginBottom: 16, textAlign: 'center' }}>
-              {fmt(slotAction.time)} · {slotAction.staff === 'eric' ? 'Eric' : 'Livi'}
+              {fmt(slotAction.time)} · {staffName(slotAction.staff)}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <SlotBtn
@@ -827,7 +855,7 @@ export default function DaySchedule({
 
             <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 500, color: 'var(--admin-text)', marginBottom: 2 }}>Block time off</div>
             <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-text3)', marginBottom: 20 }}>
-              {blockBoth ? 'Eric & Livi' : blockSheet.staff === 'eric' ? 'Eric' : 'Livi'} · {fmt(blockSheet.time)} – {fmt(useCustomEnd && customEndTime ? customEndTime : addMin(blockSheet.time, blockDur))}
+              {blockBoth ? 'All staff' : staffName(blockSheet.staff)} · {fmt(blockSheet.time)} – {fmt(useCustomEnd && customEndTime ? customEndTime : addMin(blockSheet.time, blockDur))}
             </div>
 
             {/* Label chips */}
@@ -885,7 +913,7 @@ export default function DaySchedule({
               onClick={() => setBlockBoth((b) => !b)}
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '13px 14px', borderRadius: 10, border: '1px solid var(--admin-border)', background: 'none', cursor: 'pointer', WebkitTapHighlightColor: 'transparent', marginBottom: 20 }}
             >
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)' }}>Block both Eric & Livi</span>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)' }}>Block all staff</span>
               <span style={{ width: 44, height: 26, borderRadius: 13, background: blockBoth ? '#34C759' : 'var(--admin-border)', display: 'flex', alignItems: 'center', padding: '0 3px', transition: 'background 0.2s', justifyContent: blockBoth ? 'flex-end' : 'flex-start', flexShrink: 0 }}>
                 <span style={{ width: 20, height: 20, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
               </span>
@@ -907,7 +935,7 @@ export default function DaySchedule({
               {blockDelSheet.service && blockDelSheet.service !== 'Blocked' ? blockDelSheet.service : 'Blocked'}
             </div>
             <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-text3)', marginBottom: 24 }}>
-              {blockDelSheet.staff === 'eric' ? 'Eric' : 'Livi'} · {fmt(blockDelSheet.startTime)} – {fmt(blockDelSheet.endTime)}
+              {staffName(blockDelSheet.staff)} · {fmt(blockDelSheet.startTime)} – {fmt(blockDelSheet.endTime)}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <SlotBtn label="Remove block" variant="danger" onClick={() => deleteBlock(blockDelSheet)} />

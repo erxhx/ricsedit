@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { verifySession, SESSION_COOKIE } from '@/lib/admin-auth';
 import { getServicesStore } from '@/lib/services-store';
+import { STAFF_IDS } from '@/lib/staff';
 import AdminHeader from '@/components/admin/AdminHeader';
 import NewBookingForm from '@/components/admin/NewBookingForm';
 
@@ -18,13 +19,14 @@ export default async function NewBookingPage({
   const { date, staff, time } = await searchParams;
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Vancouver' });
   const servicesData = getServicesStore();
+  const defaultStaff = staff && STAFF_IDS.includes(staff) ? staff : 'eric';
 
   return (
     <>
       <AdminHeader name={session.name} />
       <NewBookingForm
         defaultDate={date ?? today}
-        defaultStaff={(staff === 'livi' ? 'livi' : 'eric') as 'eric' | 'livi'}
+        defaultStaff={defaultStaff}
         defaultTime={time}
         servicesData={servicesData}
       />
