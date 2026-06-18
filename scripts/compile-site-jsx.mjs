@@ -10,6 +10,7 @@
  */
 
 import { build } from 'esbuild';
+import { copyFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -37,3 +38,15 @@ await build({
 });
 
 console.log(`✓ Compiled ${files.length} files → public/site/*.js`);
+
+// Sync static assets that the site serves from /site/ but that aren't JSX,
+// so editing them in editstudio.space/ alone is enough (no manual copy).
+const staticAssets = ['styles.css', 'manifest.json'];
+for (const asset of staticAssets) {
+  try {
+    copyFileSync(join(root, 'editstudio.space', asset), join(root, 'public', 'site', asset));
+    console.log(`✓ Synced ${asset} → public/site/${asset}`);
+  } catch (e) {
+    console.warn(`! Skipped ${asset}: ${e.message}`);
+  }
+}

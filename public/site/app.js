@@ -5,13 +5,15 @@
     barber: { id: "barber", label: "Barbering", num: "01", accent: "oklch(0.42 0.12 25)", hint: "Cuts \xB7 shaves \xB7 beard work" },
     tan: { id: "tan", label: "Sunless", num: "02", accent: "oklch(0.68 0.14 65)", hint: "Custom-blended spray tans" },
     wax: { id: "wax", label: "Waxing", num: "03", accent: "oklch(0.62 0.12 18)", hint: "Brow \xB7 body \xB7 ritual" },
-    visit: { id: "visit", label: "Visit", num: "04", accent: "oklch(0.32 0.04 30)", hint: "Hours \xB7 FAQ \xB7 the shelf" }
+    lashes: { id: "lashes", label: "Lashes", num: "04", accent: "oklch(0.55 0.13 290)", hint: "Lashes \xB7 lifts \xB7 brows" },
+    visit: { id: "visit", label: "Visit", num: "05", accent: "oklch(0.32 0.04 30)", hint: "Hours \xB7 FAQ \xB7 the shelf" }
   };
   const ANIM_FOR = {
     home: "HomeAnim",
     barber: "BarberAnim",
     tan: "TanAnim",
     wax: "WaxAnim",
+    lashes: "HomeAnim",
     visit: "HomeAnim"
   };
   const HERO_FOR = {
@@ -33,6 +35,11 @@
     wax: {
       h1: /* @__PURE__ */ React.createElement(React.Fragment, null, "Smooth, ", /* @__PURE__ */ React.createElement("em", { className: "it" }, "sorted"), "."),
       sub: "Specializing in Brazilians, brows and full body waxing with a gentle yet thorough technique.",
+      cta: "Pull down for menu"
+    },
+    lashes: {
+      h1: /* @__PURE__ */ React.createElement(React.Fragment, null, "Eyes, ", /* @__PURE__ */ React.createElement("em", { className: "it" }, "elevated"), "."),
+      sub: "Lash extensions, lifts and brow services \u2014 tailored to your eye shape with a careful, gentle hand.",
       cta: "Pull down for menu"
     },
     visit: {
@@ -102,11 +109,25 @@
       /* @__PURE__ */ React.createElement("span", { className: "chrome-ig-arr", "aria-hidden": "true" }, "\u2197\uFE0E")
     )));
   }
+  function ChromeNav({ services, idx, onSelect }) {
+    return /* @__PURE__ */ React.createElement("nav", { className: "chrome-nav", "aria-label": "Services" }, /* @__PURE__ */ React.createElement("div", { className: "chrome-nav-track" }, services.map((s, i) => /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        key: s.id,
+        type: "button",
+        className: `navpill ${i === idx ? "active" : ""}`,
+        "aria-current": i === idx ? "page" : void 0,
+        onClick: () => onSelect(i)
+      },
+      s.id === "home" ? "Home" : s.label
+    ))));
+  }
   const SERVICE_GLYPHS = {
     home: /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 16 16", width: "14", height: "14", fill: "none", stroke: "currentColor", strokeWidth: "1.2", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement("path", { d: "M2.5 7.2 L8 2.8 L13.5 7.2 V13 H2.5 Z" }), /* @__PURE__ */ React.createElement("path", { d: "M6.6 13 V9.4 H9.4 V13" })),
     barber: /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 16 16", width: "14", height: "14", fill: "none", stroke: "currentColor", strokeWidth: "1.2", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement("circle", { cx: "4", cy: "11.5", r: "1.8" }), /* @__PURE__ */ React.createElement("circle", { cx: "4", cy: "4.5", r: "1.8" }), /* @__PURE__ */ React.createElement("path", { d: "M5.5 5.6 L14 12.5" }), /* @__PURE__ */ React.createElement("path", { d: "M5.5 10.4 L14 3.5" })),
     tan: /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 16 16", width: "14", height: "14", fill: "none", stroke: "currentColor", strokeWidth: "1.2", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement("circle", { cx: "8", cy: "8", r: "2.6" }), /* @__PURE__ */ React.createElement("path", { d: "M8 1.5 V3" }), /* @__PURE__ */ React.createElement("path", { d: "M8 13 V14.5" }), /* @__PURE__ */ React.createElement("path", { d: "M1.5 8 H3" }), /* @__PURE__ */ React.createElement("path", { d: "M13 8 H14.5" }), /* @__PURE__ */ React.createElement("path", { d: "M3.4 3.4 L4.5 4.5" }), /* @__PURE__ */ React.createElement("path", { d: "M11.5 11.5 L12.6 12.6" }), /* @__PURE__ */ React.createElement("path", { d: "M3.4 12.6 L4.5 11.5" }), /* @__PURE__ */ React.createElement("path", { d: "M11.5 4.5 L12.6 3.4" })),
     wax: /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 16 16", width: "14", height: "14", fill: "none", stroke: "currentColor", strokeWidth: "1.2", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement("rect", { x: "6.5", y: "2", width: "3", height: "12", rx: "1.5", transform: "rotate(-45 8 8)" }), /* @__PURE__ */ React.createElement("line", { x1: "2", y1: "14", x2: "14", y2: "14" })),
+    lashes: /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 16 16", width: "14", height: "14", fill: "none", stroke: "currentColor", strokeWidth: "1.2", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement("path", { d: "M1.5 8 C 4 4.5, 12 4.5, 14.5 8" }), /* @__PURE__ */ React.createElement("circle", { cx: "8", cy: "8", r: "2" }), /* @__PURE__ */ React.createElement("path", { d: "M3.6 9.6 L2.7 11" }), /* @__PURE__ */ React.createElement("path", { d: "M8 10 L8 11.6" }), /* @__PURE__ */ React.createElement("path", { d: "M12.4 9.6 L13.3 11" })),
     visit: /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 16 16", width: "14", height: "14", fill: "none", stroke: "currentColor", strokeWidth: "1.2", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement("path", { d: "M8 14 C 4 9.5, 3 7.5, 3 5.8 A 5 5 0 0 1 13 5.8 C 13 7.5, 12 9.5, 8 14 Z" }), /* @__PURE__ */ React.createElement("circle", { cx: "8", cy: "6", r: "1.6" }))
   };
   function ChromeBot({ services, idx, vIdx, vCount }) {
@@ -238,6 +259,7 @@
     barber: { background: "#1a1714", color: "#f5f0e8" },
     tan: { background: "#1a1714", color: "#f5f0e8" },
     wax: { background: "#1a1714", color: "#f5f0e8" },
+    lashes: { background: "#1a1714", color: "#f5f0e8" },
     visit: { background: "#1a1714", color: "#f5f0e8" }
   };
   function NextAvailableBarber() {
@@ -341,7 +363,7 @@
     if (headlines && headlines[service]) {
       heroData.h1 = headlines[service];
     }
-    const ContentComp = service === "barber" ? window.BarberingContent : service === "tan" ? window.TanContent : service === "wax" ? window.WaxContent : service === "visit" ? window.VisitContent : null;
+    const ContentComp = service === "barber" ? window.BarberingContent : service === "tan" ? window.TanContent : service === "wax" ? window.WaxContent : service === "lashes" ? window.LashesContent : service === "visit" ? window.VisitContent : null;
     const panels = [
       /* @__PURE__ */ React.createElement(Hero, { key: "hero", data: heroData, animComp: ANIM_FOR[service], progress: hProgress, speed: animSpeed, service })
     ];
@@ -493,7 +515,7 @@
         "typeface": "fraunces-inter",
         "animSpeed": 1,
         "density": "regular",
-        "serviceOrder": "home,barber,tan,wax",
+        "serviceOrder": "home,barber,tan,wax,lashes",
         "homeHeadline": "You Found Us.",
         "barberHeadline": "Refined. / Intentional. / Crisp.",
         "tanHeadline": "Golden hour, on demand.",
@@ -546,13 +568,14 @@
       }
     }, [setTweakRaw]);
     const t = tRaw;
-    const SLUG_TO_SERVICE = { "": "home", "home": "home", "barbering": "barber", "sunless": "tan", "waxing": "wax" };
-    const SERVICE_TO_SLUG = { home: "", barber: "barbering", tan: "sunless", wax: "waxing" };
+    const SLUG_TO_SERVICE = { "": "home", "home": "home", "barbering": "barber", "sunless": "tan", "waxing": "wax", "lashes": "lashes" };
+    const SERVICE_TO_SLUG = { home: "", barber: "barbering", tan: "sunless", wax: "waxing", lashes: "lashes" };
     const SERVICE_META = {
-      home: { title: "Edit Studio \u2014 Barber \xB7 Wax \xB7 Tan", desc: "Edit Studio is a barbering, sunless tanning and waxing studio on Oak Bay Avenue in Victoria, BC." },
+      home: { title: "Edit Studio \u2014 Barber \xB7 Wax \xB7 Tan \xB7 Lashes", desc: "Edit Studio is a barbering, sunless tanning, waxing and lash studio on Oak Bay Avenue in Victoria, BC." },
       barber: { title: "Barbering \u2014 Edit Studio Oak Bay", desc: "Precision cuts, tapers and fades by barber Eric He. Book online or walk in." },
       tan: { title: "Sunless Tanning \u2014 Edit Studio Oak Bay", desc: "Custom airbrush spray tans using NUDA organic solutions. Natural, streak-free and orange-free golden glow in Victoria, BC." },
-      wax: { title: "Waxing \u2014 Edit Studio Oak Bay", desc: "Brazilian, brow and full-body waxing by esthetician Livi Furtado. Gentle technique, quality products, Oak Bay Victoria." }
+      wax: { title: "Waxing \u2014 Edit Studio Oak Bay", desc: "Brazilian, brow and full-body waxing by esthetician Livi Furtado. Gentle technique, quality products, Oak Bay Victoria." },
+      lashes: { title: "Lash Extensions & Lifts \u2014 Edit Studio Oak Bay", desc: "Classic, hybrid, volume and mega volume lash extensions, lash lifts and brow services by Niamh Frazer. Oak Bay, Victoria BC." }
     };
     const getIdxFromPath = (svcs) => {
       const slug = window.location.pathname.replace(/^\//, "").replace(/\/$/, "");
@@ -561,7 +584,7 @@
       return i >= 0 ? i : 0;
     };
     const [idx, setIdx] = useState(() => {
-      const svcs = (TWEAK_DEFAULTS.serviceOrder || "home,barber,tan,wax").split(",").map((s) => s.trim());
+      const svcs = (TWEAK_DEFAULTS.serviceOrder || "home,barber,tan,wax,lashes").split(",").map((s) => s.trim());
       return getIdxFromPath(svcs);
     });
     const [hOffset, setHOffset] = useState(0);
@@ -586,7 +609,7 @@
       } catch (e) {
       }
     }, [announceKey]);
-    const services = (t.serviceOrder || "home,barber,tan,wax").split(",").map((s) => s.trim()).filter((s) => SERVICES_DEF[s]);
+    const services = (t.serviceOrder || "home,barber,tan,wax,lashes").split(",").map((s) => s.trim()).filter((s) => SERVICES_DEF[s]);
     const total = services.length;
     const active = SERVICES_DEF[services[idx]];
     useEffect(() => {
@@ -616,7 +639,7 @@
       return () => window.removeEventListener("popstate", onPop);
     }, [services]);
     const headlines = {};
-    ["home", "barber", "tan", "wax"].forEach((k) => {
+    ["home", "barber", "tan", "wax", "lashes"].forEach((k) => {
       const v = (t[k + "Headline"] || "").trim();
       if (v) headlines[k] = parseHeadline(v);
     });
@@ -788,7 +811,7 @@
           }
         }
       }
-    ), /* @__PURE__ */ React.createElement(ChromeTop, { active, total, idx, logoSrc: t.palette === "noir" ? "assets/logo-white.png" : "assets/logo-black.png" }), /* @__PURE__ */ React.createElement(ChromeBot, { services: services.map((s) => SERVICES_DEF[s]), idx, vIdx: activeVIdx, vCount: activeVCount }), /* @__PURE__ */ React.createElement("div", { style: {
+    ), /* @__PURE__ */ React.createElement(ChromeTop, { active, total, idx, logoSrc: t.palette === "noir" ? "assets/logo-white.png" : "assets/logo-black.png" }), /* @__PURE__ */ React.createElement(ChromeNav, { services: services.map((s) => SERVICES_DEF[s]), idx, onSelect: (i) => setIdx(i) }), /* @__PURE__ */ React.createElement(ChromeBot, { services: services.map((s) => SERVICES_DEF[s]), idx, vIdx: activeVIdx, vCount: activeVCount }), /* @__PURE__ */ React.createElement("div", { style: {
       position: "absolute",
       inset: 0,
       display: "flex",

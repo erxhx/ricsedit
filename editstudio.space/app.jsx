@@ -7,7 +7,8 @@ const SERVICES_DEF = {
   barber: { id: 'barber', label: 'Barbering', num: '01', accent: 'oklch(0.42 0.12 25)', hint: 'Cuts · shaves · beard work' },
   tan: { id: 'tan', label: 'Sunless', num: '02', accent: 'oklch(0.68 0.14 65)', hint: 'Custom-blended spray tans' },
   wax: { id: 'wax', label: 'Waxing', num: '03', accent: 'oklch(0.62 0.12 18)', hint: 'Brow · body · ritual' },
-  visit: { id: 'visit', label: 'Visit', num: '04', accent: 'oklch(0.32 0.04 30)', hint: 'Hours · FAQ · the shelf' }
+  lashes: { id: 'lashes', label: 'Lashes', num: '04', accent: 'oklch(0.55 0.13 290)', hint: 'Lashes · lifts · brows' },
+  visit: { id: 'visit', label: 'Visit', num: '05', accent: 'oklch(0.32 0.04 30)', hint: 'Hours · FAQ · the shelf' }
 };
 
 const ANIM_FOR = {
@@ -15,6 +16,7 @@ const ANIM_FOR = {
   barber: 'BarberAnim',
   tan: 'TanAnim',
   wax: 'WaxAnim',
+  lashes: 'HomeAnim',
   visit: 'HomeAnim'
 };
 
@@ -37,6 +39,11 @@ const HERO_FOR = {
   wax: {
     h1: <>Smooth, <em className="it">sorted</em>.</>,
     sub: 'Specializing in Brazilians, brows and full body waxing with a gentle yet thorough technique.',
+    cta: 'Pull down for menu'
+  },
+  lashes: {
+    h1: <>Eyes, <em className="it">elevated</em>.</>,
+    sub: 'Lash extensions, lifts and brow services — tailored to your eye shape with a careful, gentle hand.',
     cta: 'Pull down for menu'
   },
   visit: {
@@ -116,6 +123,29 @@ function ChromeTop({ active, total, idx, logoSrc }) {
 
 }
 
+// Sticky top pill nav — labelled, tappable chips so every page is one tap away
+// and the current page is always clear. Only shown on the hero (hidden once the
+// user scrolls into a service's content, mirroring the bottom chrome).
+function ChromeNav({ services, idx, onSelect }) {
+  return (
+    <nav className="chrome-nav" aria-label="Services">
+      <div className="chrome-nav-track">
+        {services.map((s, i) => (
+          <button
+            key={s.id}
+            type="button"
+            className={`navpill ${i === idx ? 'active' : ''}`}
+            aria-current={i === idx ? 'page' : undefined}
+            onClick={() => onSelect(i)}
+          >
+            {s.id === 'home' ? 'Home' : s.label}
+          </button>
+        ))}
+      </div>
+    </nav>);
+
+}
+
 // Tiny editorial line-glyphs per service, used in the bottom chrome instead of dots.
 const SERVICE_GLYPHS = {
   home: (
@@ -152,6 +182,16 @@ const SERVICE_GLYPHS = {
       {/* Wax applicator stick — diagonal, with horizontal wax line at bottom */}
       <rect x="6.5" y="2" width="3" height="12" rx="1.5" transform="rotate(-45 8 8)" />
       <line x1="2" y1="14" x2="14" y2="14" />
+    </svg>),
+
+  lashes: (
+    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {/* Eye with lashes */}
+      <path d="M1.5 8 C 4 4.5, 12 4.5, 14.5 8" />
+      <circle cx="8" cy="8" r="2" />
+      <path d="M3.6 9.6 L2.7 11" />
+      <path d="M8 10 L8 11.6" />
+      <path d="M12.4 9.6 L13.3 11" />
     </svg>),
 
   visit: (
@@ -334,6 +374,7 @@ const PILL_COLORS = {
   barber: { background: '#1a1714', color: '#f5f0e8' },
   tan:    { background: '#1a1714', color: '#f5f0e8' },
   wax:    { background: '#1a1714', color: '#f5f0e8' },
+  lashes: { background: '#1a1714', color: '#f5f0e8' },
   visit:  { background: '#1a1714', color: '#f5f0e8' },
 };
 
@@ -474,6 +515,7 @@ function ServiceColumn({ service, isActive, hProgress, animSpeed, density, headl
   service === 'barber' ? window.BarberingContent :
   service === 'tan' ? window.TanContent :
   service === 'wax' ? window.WaxContent :
+  service === 'lashes' ? window.LashesContent :
   service === 'visit' ? window.VisitContent :
   null;
 
@@ -665,7 +707,7 @@ function App() {
     "typeface": "fraunces-inter",
     "animSpeed": 1,
     "density": "regular",
-    "serviceOrder": "home,barber,tan,wax",
+    "serviceOrder": "home,barber,tan,wax,lashes",
     "homeHeadline": "You Found Us.",
     "barberHeadline": "Refined. / Intentional. / Crisp.",
     "tanHeadline": "Golden hour, on demand.",
@@ -729,13 +771,14 @@ function App() {
   // ── URL routing ────────────────────────────────────────────────
   // Maps service id → URL slug and back. Keeps URLs clean for SEO
   // while preserving the swipe UX entirely.
-  const SLUG_TO_SERVICE = { '': 'home', 'home': 'home', 'barbering': 'barber', 'sunless': 'tan', 'waxing': 'wax' };
-  const SERVICE_TO_SLUG = { home: '', barber: 'barbering', tan: 'sunless', wax: 'waxing' };
+  const SLUG_TO_SERVICE = { '': 'home', 'home': 'home', 'barbering': 'barber', 'sunless': 'tan', 'waxing': 'wax', 'lashes': 'lashes' };
+  const SERVICE_TO_SLUG = { home: '', barber: 'barbering', tan: 'sunless', wax: 'waxing', lashes: 'lashes' };
   const SERVICE_META = {
-    home:   { title: 'Edit Studio — Barber · Wax · Tan', desc: 'Edit Studio is a barbering, sunless tanning and waxing studio on Oak Bay Avenue in Victoria, BC.' },
+    home:   { title: 'Edit Studio — Barber · Wax · Tan · Lashes', desc: 'Edit Studio is a barbering, sunless tanning, waxing and lash studio on Oak Bay Avenue in Victoria, BC.' },
     barber: { title: 'Barbering — Edit Studio Oak Bay', desc: 'Precision cuts, tapers and fades by barber Eric He. Book online or walk in.' },
     tan:    { title: 'Sunless Tanning — Edit Studio Oak Bay', desc: 'Custom airbrush spray tans using NUDA organic solutions. Natural, streak-free and orange-free golden glow in Victoria, BC.' },
     wax:    { title: 'Waxing — Edit Studio Oak Bay', desc: 'Brazilian, brow and full-body waxing by esthetician Livi Furtado. Gentle technique, quality products, Oak Bay Victoria.' },
+    lashes: { title: 'Lash Extensions & Lifts — Edit Studio Oak Bay', desc: 'Classic, hybrid, volume and mega volume lash extensions, lash lifts and brow services by Niamh Frazer. Oak Bay, Victoria BC.' },
   };
 
   const getIdxFromPath = (svcs) => {
@@ -746,7 +789,7 @@ function App() {
   };
 
   const [idx, setIdx] = useState(() => {
-    const svcs = (TWEAK_DEFAULTS.serviceOrder || 'home,barber,tan,wax').split(',').map(s => s.trim());
+    const svcs = (TWEAK_DEFAULTS.serviceOrder || 'home,barber,tan,wax,lashes').split(',').map(s => s.trim());
     return getIdxFromPath(svcs);
   });
   const [hOffset, setHOffset] = useState(0); // px during drag
@@ -768,7 +811,7 @@ function App() {
   }, [announceKey]);
 
   // build service list from order tweak
-  const services = (t.serviceOrder || 'home,barber,tan,wax').
+  const services = (t.serviceOrder || 'home,barber,tan,wax,lashes').
   split(',').map((s) => s.trim()).filter((s) => SERVICES_DEF[s]);
   const total = services.length;
   const active = SERVICES_DEF[services[idx]];
@@ -804,7 +847,7 @@ function App() {
 
   // headlines from tweaks (fallback to defaults if blank)
   const headlines = {};
-  ['home', 'barber', 'tan', 'wax'].forEach((k) => {
+  ['home', 'barber', 'tan', 'wax', 'lashes'].forEach((k) => {
     const v = (t[k + 'Headline'] || '').trim();
     if (v) headlines[k] = parseHeadline(v);
   });
@@ -992,6 +1035,7 @@ function App() {
         }}
       />
       <ChromeTop active={active} total={total} idx={idx} logoSrc={t.palette === 'noir' ? 'assets/logo-white.png' : 'assets/logo-black.png'} />
+      <ChromeNav services={services.map((s) => SERVICES_DEF[s])} idx={idx} onSelect={(i) => setIdx(i)} />
       <ChromeBot services={services.map((s) => SERVICES_DEF[s])} idx={idx} vIdx={activeVIdx} vCount={activeVCount} />
 
       <div style={{

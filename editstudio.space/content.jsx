@@ -194,6 +194,36 @@ function WaxContent({ headline }) {
 
 }
 
+function LashesContent({ headline }) {
+  return (
+    <div className="cpanel">
+      <Eyebrow left="04 / Lashes" right="Extensions · Lifts · Brows" />
+      <h2>{headline || <span>Eyes, <em>elevated</em>.</span>}</h2>
+      <p className="body">Lash extensions, lifts and brow services — classic through mega volume, lash &amp; brow lifts, tints and laminations. Tailored to your eye shape with a careful, gentle hand.</p>
+
+      <div className="rule" />
+      <window.BookingEmbed category="lashes" />
+
+      {/* TODO: add a lash gallery here once photos are available (mirror the
+          .gallery markup used on the Barbering / Waxing pages). */}
+
+      <div className="rule" />
+      <Eyebrow left="Your artist" right="Lash + brow" />
+      <div className="stylists">
+        <div className="stylist">
+          {/* TODO: swap in Niamh's headshot — backgroundImage: url('assets/niamh-frazer-headshot.webp') */}
+          <div className="avatar" style={{ background: 'oklch(0.55 0.13 290)' }} />
+          <div>
+            <h3>Niamh Frazer</h3>
+            <div className="role">Lash Artist</div>
+            <p>Lash and brow specialist focused on natural, eye-enhancing sets and a comfortable, meticulous application. From a soft classic set to dramatic mega volume — plus lifts, tints and brow lamination — tailored to suit you.</p>
+          </div>
+        </div>
+      </div>
+    </div>);
+
+}
+
 function VisitContent() {
   return (
     <div className="cpanel">
@@ -285,4 +315,4 @@ function VisitContent() {
 
 }
 
-Object.assign(window, { BarberingContent, TanContent, WaxContent, VisitContent });
+Object.assign(window, { BarberingContent, TanContent, WaxContent, LashesContent, VisitContent });
