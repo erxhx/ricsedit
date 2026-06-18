@@ -67,7 +67,9 @@ export default async function AdminPage({
         weekStartStr={weekStartStr}
         openDays={openDays}
         hoursByDay={availability.days}
-        staffHoursByDay={{ eric: availability.staff.eric.days, livi: availability.staff.livi.days }}
+        staffHoursByDay={Object.fromEntries(
+          Object.entries(availability.staff).map(([id, s]) => [id, s.days]),
+        )}
         barberThuClose={availability.barberThuClose}
       />
     </>

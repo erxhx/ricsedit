@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { Appointment, AppointmentStatus } from '@/lib/admin-mock';
 import { getAppointmentColor } from '@/lib/appointment-colors';
+import { staffName } from '@/lib/staff';
 
 // Time slots 9 am – 7 pm in 15-min increments
 const TIME_SLOTS: string[] = [];
@@ -28,7 +29,6 @@ function fmtDateDisplay(dateStr: string): string {
   });
 }
 
-const STAFF_NAME: Record<string, string> = { eric: 'Eric', livi: 'Livi' };
 
 const STATUS_LABEL: Record<AppointmentStatus, string> = {
   confirmed: 'Confirmed',
@@ -237,7 +237,7 @@ export default function AppointmentDetail({
           <Row label="Staff">
             <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ width: 7, height: 7, borderRadius: '50%', background: color, display: 'inline-block' }} />
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)' }}>{STAFF_NAME[apt.staff]}</span>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)' }}>{staffName(apt.staff)}</span>
             </span>
           </Row>
         </Section>
@@ -465,7 +465,7 @@ export default function AppointmentDetail({
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
                         <span style={{ width: 5, height: 5, borderRadius: '50%', background: col, display: 'inline-block', flexShrink: 0 }} />
                         <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-muted)' }}>
-                          {STAFF_NAME[h.staff]}
+                          {staffName(h.staff)}
                         </span>
                       </div>
                     </div>

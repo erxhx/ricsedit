@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useAdminTheme } from './AdminThemeProvider';
+import { staffColor } from '@/lib/staff';
 
 // ── Migration types ───────────────────────────────────────────────────────────
 
@@ -269,7 +270,7 @@ export default function SettingsPanel() {
                     {/* Staff dot */}
                     <div style={{
                       width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
-                      background: apt.staff === 'eric' ? '#7db83e' : '#c4956a',
+                      background: staffColor(apt.staff),
                     }} />
 
                     {/* Client + service */}

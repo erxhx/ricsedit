@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import type { Appointment } from '@/lib/admin-mock';
-import { SERVICE_COLORS } from '@/lib/appointment-colors';
+import { STAFF as ROSTER, STAFF_COLORS } from '@/lib/staff';
 
 // ── types ─────────────────────────────────────────────────────────────────────
 type Range = 'today' | 'week' | 'month' | '3months';
@@ -136,15 +136,19 @@ export default function ReportsView({ appointments: initialAppointments }: { app
   }
   const maxDowRevenue = Math.max(...revenueByDow, 1);
 
-  // ── Staff stats ───────────────────────────────────────────────────────────
-  const ericDays = new Set<string>(), liviDays = new Set<string>();
-  let ericApts = 0, liviApts = 0, ericRevenue = 0, liviRevenue = 0;
-  for (const a of active) {
-    if (a.staff === 'eric') { ericDays.add(a.date); ericApts++; ericRevenue += a.price; }
-    if (a.staff === 'livi') { liviDays.add(a.date); liviApts++; liviRevenue += a.price; }
-  }
-  const ericAptsPerDay = ericDays.size > 0 ? (ericApts / ericDays.size).toFixed(1) : '0';
-  const liviAptsPerDay = liviDays.size > 0 ? (liviApts / liviDays.size).toFixed(1) : '0';
+  // ── Staff stats (one entry per roster member) ───────────────────────────────
+  const staffStats = ROSTER.map((m) => {
+    const days = new Set<string>();
+    let apts = 0, revenue = 0;
+    for (const a of active) {
+      if (a.staff === m.id) { days.add(a.date); apts++; revenue += a.price; }
+    }
+    return {
+      id: m.id, label: m.name, color: m.color,
+      days: days.size, apts, revenue,
+      aptsPerDay: days.size > 0 ? (apts / days.size).toFixed(1) : '0',
+    };
+  });
 
   // ── Top services ──────────────────────────────────────────────────────────
   const serviceCount: Record<string, { count: number; revenue: number }> = {};
@@ -284,7 +288,7 @@ export default function ReportsView({ appointments: initialAppointments }: { app
                     <div style={{
                       width: '100%', borderRadius: 3,
                       height: `${Math.max(pct * 52, revenueByDow[dow] > 0 ? 4 : 0)}px`,
-                      background: isToday ? SERVICE_COLORS.ericBarber : 'var(--admin-border)',
+                      background: isToday ? STAFF_COLORS.ericBarber : 'var(--admin-border)',
                       transition: 'height 0.3s ease',
                     }} />
                     <div style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: isToday ? 'var(--admin-text)' : 'var(--admin-muted)', letterSpacing: '0.04em', fontWeight: isToday ? 600 : 400 }}>
@@ -299,13 +303,9 @@ export default function ReportsView({ appointments: initialAppointments }: { app
           {/* ── Staff stats ───────────────────────────────────────────────── */}
           <SectionTitle>Staff — {RANGE_LABELS[range]}</SectionTitle>
           <Card style={{ marginBottom: 20 }}>
-            <div style={{ display: 'flex', gap: 0 }}>
-              {[
-                { label: 'Eric', color: SERVICE_COLORS.ericBarber, days: ericDays.size, apts: ericApts, revenue: ericRevenue, aptsPerDay: ericAptsPerDay },
-                { label: 'Livi', color: SERVICE_COLORS.liviWax,    days: liviDays.size, apts: liviApts, revenue: liviRevenue, aptsPerDay: liviAptsPerDay },
-              ].map(({ label, color, days, apts, revenue, aptsPerDay }, i) => (
-                <div key={label} style={{ flex: 1, paddingLeft: i === 1 ? 20 : 0 }}>
-                  {i === 1 && <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: 1, background: 'var(--admin-border)' }} />}
+            <div style={{ display: 'flex', gap: 0, flexWrap: 'wrap', rowGap: 16 }}>
+              {staffStats.map(({ id, label, color, days, apts, revenue, aptsPerDay }, i) => (
+                <div key={id} style={{ flex: '1 0 45%', paddingLeft: i % 2 === 1 ? 16 : 0, borderLeft: i % 2 === 1 ? '1px solid var(--admin-border)' : 'none' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
                     <div style={{ width: 7, height: 7, borderRadius: '50%', background: color, flexShrink: 0 }} />
                     <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 500, color: 'var(--admin-text)' }}>{label}</span>

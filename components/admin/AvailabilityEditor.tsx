@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { AvailabilityConfig, DayHours } from '@/lib/availability-store';
+import { STAFF as ROSTER } from '@/lib/staff';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const HOUR_OPTIONS = Array.from({ length: 19 }, (_, i) => i + 6); // 6 AM – midnight
@@ -117,9 +118,12 @@ function WeekGrid({
 export default function AvailabilityEditor({ initial }: { initial: AvailabilityConfig }) {
   const [storeDays, setStoreDays]         = useState<Record<number, DayHours>>({ ...initial.days });
   const [barberThuClose, setBarberThuClose] = useState(initial.barberThuClose);
-  const [ericDays, setEricDays]           = useState<Record<number, DayHours>>({ ...initial.staff.eric.days });
-  const [liviDays, setLiviDays]           = useState<Record<number, DayHours>>({ ...initial.staff.livi.days });
-  const [activeStaff, setActiveStaff]     = useState<'eric' | 'livi'>('eric');
+  const [staffDays, setStaffDays] = useState<Record<string, Record<number, DayHours>>>(
+    () => Object.fromEntries(
+      ROSTER.map(m => [m.id, { ...(initial.staff[m.id]?.days ?? initial.days) }]),
+    ),
+  );
+  const [activeStaff, setActiveStaff]     = useState<string>(ROSTER[0].id);
 
   const [saving, setSaving]   = useState(false);
   const [saved,  setSaved]    = useState(false);
@@ -130,11 +134,9 @@ export default function AvailabilityEditor({ initial }: { initial: AvailabilityC
   function updateStoreDays(d: number, hours: DayHours) {
     setStoreDays(prev => ({ ...prev, [d]: hours })); touch();
   }
-  function updateEricDays(d: number, hours: DayHours) {
-    setEricDays(prev => ({ ...prev, [d]: hours })); touch();
-  }
-  function updateLiviDays(d: number, hours: DayHours) {
-    setLiviDays(prev => ({ ...prev, [d]: hours })); touch();
+  function updateActiveStaff(d: number, hours: DayHours) {
+    setStaffDays(prev => ({ ...prev, [activeStaff]: { ...prev[activeStaff], [d]: hours } }));
+    touch();
   }
 
   async function handleSave() {
@@ -146,10 +148,7 @@ export default function AvailabilityEditor({ initial }: { initial: AvailabilityC
         body: JSON.stringify({
           days: storeDays,
           barberThuClose,
-          staff: {
-            eric: { days: ericDays },
-            livi: { days: liviDays },
-          },
+          staff: Object.fromEntries(ROSTER.map(m => [m.id, { days: staffDays[m.id] }])),
         }),
       });
       if (!res.ok) throw new Error('Save failed');
@@ -167,8 +166,7 @@ export default function AvailabilityEditor({ initial }: { initial: AvailabilityC
   }
 
   const thuOpen = !!storeDays[4];
-  const activeStaffDays = activeStaff === 'eric' ? ericDays : liviDays;
-  const updateActiveStaff = activeStaff === 'eric' ? updateEricDays : updateLiviDays;
+  const activeStaffDays = staffDays[activeStaff] ?? {};
 
   const tabStyle = (active: boolean): React.CSSProperties => ({
     flex: 1, padding: '10px 0',
@@ -248,13 +246,14 @@ export default function AvailabilityEditor({ initial }: { initial: AvailabilityC
         borderBottom: 'none',
         overflow: 'hidden',
       }}>
-        <button style={tabStyle(activeStaff === 'eric')} onClick={() => setActiveStaff('eric')}>
-          Eric
-        </button>
-        <div style={{ width: 1, background: 'var(--admin-border)' }} />
-        <button style={tabStyle(activeStaff === 'livi')} onClick={() => setActiveStaff('livi')}>
-          Livi
-        </button>
+        {ROSTER.map((m, i) => (
+          <span key={m.id} style={{ display: 'flex', flex: 1 }}>
+            {i > 0 && <div style={{ width: 1, background: 'var(--admin-border)' }} />}
+            <button style={tabStyle(activeStaff === m.id)} onClick={() => setActiveStaff(m.id)}>
+              {m.name}
+            </button>
+          </span>
+        ))}
       </div>
 
       {/* Staff days grid — shares styling with store hours grid but rounded top removed */}
@@ -263,9 +262,7 @@ export default function AvailabilityEditor({ initial }: { initial: AvailabilityC
       </div>
 
       <p style={{ marginTop: 8, fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)', lineHeight: 1.5 }}>
-        {activeStaff === 'eric'
-          ? 'Barber bookings only show on days Eric is on.'
-          : 'Tan & wax bookings only show on days Livi is on.'}
+        {`Bookings only show on days ${ROSTER.find(m => m.id === activeStaff)?.name ?? 'this person'} is on.`}
       </p>
 
       {/* ── Save ─────────────────────────────────────────────── */}
