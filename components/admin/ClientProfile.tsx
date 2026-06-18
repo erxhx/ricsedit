@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import type { Appointment } from '@/lib/admin-mock';
-import { SERVICE_COLORS } from '@/lib/appointment-colors';
+import { staffColor } from '@/lib/staff';
 
 function fmtDate(dateStr: string): string {
   const [y, mo, d] = dateStr.split('-').map(Number);
@@ -275,9 +275,7 @@ export default function ClientProfile({
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {appointments.map((apt) => {
-              const color = apt.staff === 'eric'
-                ? SERVICE_COLORS.ericBarber
-                : SERVICE_COLORS.liviWax;
+              const color = staffColor(apt.staff);
               const status = STATUS_LABELS[apt.status] ?? { label: apt.status, color: 'var(--admin-muted)' };
               return (
                 <Link

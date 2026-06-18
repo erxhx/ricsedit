@@ -1,5 +1,5 @@
 import type { Appointment } from '@/lib/admin-mock';
-import { SERVICE_COLORS } from '@/lib/appointment-colors';
+import { STAFF as ROSTER } from '@/lib/staff';
 
 interface Props {
   appointments: Appointment[];
@@ -41,8 +41,6 @@ function Stat({ label, value, color, sub, subColor }: {
 
 export default function StatsBox({ appointments, hoursByDay, startDate, endDate }: Props) {
   const active   = appointments.filter(a => a.status !== 'cancelled' && a.status !== 'blocked');
-  const ericApts = active.filter(a => a.staff === 'eric');
-  const liviApts = active.filter(a => a.staff === 'livi');
   const total    = active.reduce((s, a) => s + a.price, 0);
 
   // Compute utilization across the date range using hoursByDay
@@ -65,9 +63,6 @@ export default function StatsBox({ appointments, hoursByDay, startDate, endDate 
     return { pct, color };
   }
 
-  const ericUtil = utilization(ericApts);
-  const liviUtil = utilization(liviApts);
-
   return (
     <div style={{
       display: 'flex', gap: 16,
@@ -78,22 +73,22 @@ export default function StatsBox({ appointments, hoursByDay, startDate, endDate 
       boxShadow: '0 1px 6px rgba(0,0,0,0.08)',
     }}>
       <Stat label="Total" value={total > 0 ? `$${total}` : '—'} />
-      <div style={{ width: 1, background: 'var(--admin-border)' }} />
-      <Stat
-        label="Eric"
-        value={ericApts.length > 0 ? `${ericApts.length} apt${ericApts.length !== 1 ? 's' : ''}` : '—'}
-        color={ericApts.length > 0 ? SERVICE_COLORS.ericBarber : undefined}
-        sub={ericUtil ? `${ericUtil.pct}% booked` : undefined}
-        subColor={ericUtil?.color}
-      />
-      <div style={{ width: 1, background: 'var(--admin-border)' }} />
-      <Stat
-        label="Livi"
-        value={liviApts.length > 0 ? `${liviApts.length} apt${liviApts.length !== 1 ? 's' : ''}` : '—'}
-        color={liviApts.length > 0 ? SERVICE_COLORS.liviWax : undefined}
-        sub={liviUtil ? `${liviUtil.pct}% booked` : undefined}
-        subColor={liviUtil?.color}
-      />
+      {ROSTER.map((m) => {
+        const apts = active.filter(a => a.staff === m.id);
+        const util = utilization(apts);
+        return (
+          <span key={m.id} style={{ display: 'contents' }}>
+            <div style={{ width: 1, background: 'var(--admin-border)' }} />
+            <Stat
+              label={m.name}
+              value={apts.length > 0 ? `${apts.length} apt${apts.length !== 1 ? 's' : ''}` : '—'}
+              color={apts.length > 0 ? m.color : undefined}
+              sub={util ? `${util.pct}% booked` : undefined}
+              subColor={util?.color}
+            />
+          </span>
+        );
+      })}
     </div>
   );
 }

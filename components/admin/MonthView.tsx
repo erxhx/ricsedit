@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import type { Appointment } from '@/lib/admin-mock';
-import { SERVICE_COLORS } from '@/lib/appointment-colors';
+import { STAFF as ROSTER, STAFF_IDS, STAFF_COLORS, staffName } from '@/lib/staff';
 import StatsBox from './StatsBox';
 
 const DAY_ABBR  = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
@@ -20,8 +20,7 @@ interface DayInfo {
   isToday: boolean;
   isPast:  boolean;
   isClosed: boolean;
-  ericCount: number;
-  liviCount: number;
+  counts:  Record<string, number>; // per-staff-id appointment counts
   total: number;
 }
 
@@ -55,14 +54,13 @@ export default function MonthView({
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDow    = new Date(year, month, 1).getDay();
 
-  // Build appointment map keyed by dateStr
-  const aptMap = new Map<string, { eric: number; livi: number }>();
+  // Build appointment map keyed by dateStr → per-staff-id counts
+  const aptMap = new Map<string, Record<string, number>>();
   for (const a of appointments) {
     if (a.status === 'cancelled') continue;
-    if (!aptMap.has(a.date)) aptMap.set(a.date, { eric: 0, livi: 0 });
+    if (!aptMap.has(a.date)) aptMap.set(a.date, {});
     const entry = aptMap.get(a.date)!;
-    if (a.staff === 'eric') entry.eric++;
-    else entry.livi++;
+    entry[a.staff] = (entry[a.staff] ?? 0) + 1;
   }
 
   // Build grid cells (null = empty padding)
@@ -70,16 +68,16 @@ export default function MonthView({
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const dow     = new Date(year, month, d).getDay();
-    const counts  = aptMap.get(dateStr) ?? { eric: 0, livi: 0 };
+    const counts  = aptMap.get(dateStr) ?? {};
+    const total   = Object.values(counts).reduce((s, n) => s + n, 0);
     cells.push({
       dateStr,
       day:       d,
       isToday:   dateStr === todayStr,
       isPast:    dateStr < todayStr,
       isClosed:  openDays ? openDays[dow] === false : false,
-      ericCount: counts.eric,
-      liviCount: counts.livi,
-      total:     counts.eric + counts.livi,
+      counts,
+      total,
     });
   }
   // Pad to complete final row
@@ -92,7 +90,7 @@ export default function MonthView({
   const [brStart,   setBrStart]   = useState('');
   const [brEnd,     setBrEnd]     = useState('');
   const [brLabel,   setBrLabel]   = useState('');
-  const [brStaff,   setBrStaff]   = useState<'eric' | 'livi' | 'both'>('both');
+  const [brStaff,   setBrStaff]   = useState<string>('all');
   const [brLoading, setBrLoading] = useState(false);
 
   function openBlockRange() {
@@ -101,7 +99,7 @@ export default function MonthView({
     setBrStart(`${y}-${m}-01`);
     setBrEnd(`${y}-${m}-${String(daysInMonth).padStart(2, '0')}`);
     setBrLabel('');
-    setBrStaff('both');
+    setBrStaff('all');
     setShowBlockRange(true);
   }
 
@@ -110,7 +108,7 @@ export default function MonthView({
     setBrLoading(true);
     try {
       const label   = brLabel.trim() || 'Blocked';
-      const staffList = brStaff === 'both' ? ['eric', 'livi'] as const : [brStaff];
+      const staffList = brStaff === 'all' ? STAFF_IDS : [brStaff];
       const start = new Date(brStart + 'T12:00:00');
       const end   = new Date(brEnd   + 'T12:00:00');
       const requests: Promise<unknown>[] = [];
@@ -142,9 +140,9 @@ export default function MonthView({
   function cellTint(day: DayInfo): string {
     if (day.isPast || day.isClosed) return 'none';
     if (day.total === 0) return 'none';
-    if (day.total <= 2) return `${SERVICE_COLORS.ericBarber}0d`;
-    if (day.total <= 4) return `${SERVICE_COLORS.ericBarber}18`;
-    return `${SERVICE_COLORS.ericBarber}28`;
+    if (day.total <= 2) return `${STAFF_COLORS.ericBarber}0d`;
+    if (day.total <= 4) return `${STAFF_COLORS.ericBarber}18`;
+    return `${STAFF_COLORS.ericBarber}28`;
   }
 
   const navArrow: React.CSSProperties = {
@@ -265,22 +263,14 @@ export default function MonthView({
                 {/* Appointment indicators */}
                 {day.total > 0 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 2 }}>
-                    {day.ericCount > 0 && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: SERVICE_COLORS.ericBarber, flexShrink: 0 }} />
+                    {ROSTER.map((m) => (day.counts[m.id] ?? 0) > 0 && (
+                      <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: m.color, flexShrink: 0 }} />
                         <span style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-text2)', lineHeight: 1 }}>
-                          {day.ericCount}
+                          {day.counts[m.id]}
                         </span>
                       </div>
-                    )}
-                    {day.liviCount > 0 && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: SERVICE_COLORS.liviWax, flexShrink: 0 }} />
-                        <span style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-text2)', lineHeight: 1 }}>
-                          {day.liviCount}
-                        </span>
-                      </div>
-                    )}
+                    ))}
                   </div>
                 )}
 
@@ -338,10 +328,10 @@ export default function MonthView({
 
             {/* Staff */}
             <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--admin-muted)', marginBottom: 8 }}>Staff</div>
-            <div style={{ display: 'flex', gap: 6, marginBottom: 24 }}>
-              {(['eric', 'livi', 'both'] as const).map(s => (
-                <button key={s} onClick={() => setBrStaff(s)} style={{ flex: 1, padding: '10px 0', borderRadius: 8, border: brStaff === s ? '1.5px solid var(--admin-text)' : '1px solid var(--admin-border)', background: brStaff === s ? 'var(--admin-text-tint)' : 'none', fontFamily: 'var(--font-body)', fontSize: 13, color: brStaff === s ? 'var(--admin-text)' : 'var(--admin-text2)', cursor: 'pointer', WebkitTapHighlightColor: 'transparent', textTransform: 'capitalize' }}>
-                  {s === 'both' ? 'Both' : s === 'eric' ? 'Eric' : 'Livi'}
+            <div style={{ display: 'flex', gap: 6, marginBottom: 24, flexWrap: 'wrap' }}>
+              {[...STAFF_IDS, 'all'].map(s => (
+                <button key={s} onClick={() => setBrStaff(s)} style={{ flex: '1 0 auto', padding: '10px 8px', borderRadius: 8, border: brStaff === s ? '1.5px solid var(--admin-text)' : '1px solid var(--admin-border)', background: brStaff === s ? 'var(--admin-text-tint)' : 'none', fontFamily: 'var(--font-body)', fontSize: 13, color: brStaff === s ? 'var(--admin-text)' : 'var(--admin-text2)', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
+                  {s === 'all' ? 'All' : staffName(s)}
                 </button>
               ))}
             </div>
@@ -359,14 +349,11 @@ export default function MonthView({
       )}
 
       {/* Legend */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '4px 16px 0', justifyContent: 'flex-end' }}>
-        {[
-          { color: SERVICE_COLORS.ericBarber, label: 'Eric' },
-          { color: SERVICE_COLORS.liviWax,    label: 'Livi' },
-        ].map(({ color, label }) => (
-          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: color }} />
-            <span style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>{label}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '4px 16px 0', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+        {ROSTER.map((m) => (
+          <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: m.color }} />
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>{m.name}</span>
           </div>
         ))}
       </div>

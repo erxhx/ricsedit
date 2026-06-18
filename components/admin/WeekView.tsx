@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Appointment } from '@/lib/admin-mock';
-import { SERVICE_COLORS, liviCategory } from '@/lib/appointment-colors';
+import { getAppointmentColor } from '@/lib/appointment-colors';
+import { STAFF_IDS } from '@/lib/staff';
 import StatsBox from './StatsBox';
 
 const DAY_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -11,9 +12,7 @@ interface DaySummary {
   isOpen: boolean;
   isToday: boolean;
   total: number;
-  ericCount: number;
-  liviWaxCount: number;
-  liviTanCount: number;
+  dotColors: string[]; // one accent colour per appointment, grouped by staff
   revenue: number;
   hasNotes: boolean;
 }
@@ -54,16 +53,14 @@ export default function WeekView({ appointments, weekStart, isLoading, onPrevWee
     d.setDate(weekStart.getDate() + i);
     const dateStr = localDateStr(d);
     const dayApts = appointments.filter((a) => a.date === dateStr && a.status !== 'cancelled' && a.status !== 'blocked');
-    const liviApts = dayApts.filter((a) => a.staff === 'livi');
+    const sorted = [...dayApts].sort((a, b) => STAFF_IDS.indexOf(a.staff) - STAFF_IDS.indexOf(b.staff));
     return {
       date: dateStr,
       dateObj: d,
       isOpen: openDays ? (openDays[d.getDay()] ?? true) : true,
       isToday: dateStr === todayStr,
       total: dayApts.length,
-      ericCount: dayApts.filter((a) => a.staff === 'eric').length,
-      liviWaxCount: liviApts.filter((a) => liviCategory(a.service) === 'wax').length,
-      liviTanCount: liviApts.filter((a) => liviCategory(a.service) === 'tan').length,
+      dotColors: sorted.map((a) => getAppointmentColor(a.staff, a.service)),
       revenue:  dayApts.reduce((s, a) => s + a.price, 0),
       hasNotes: dayApts.some((a) => !!a.notes),
     };
@@ -182,14 +179,8 @@ function DayCard({ day }: { day: DaySummary }) {
             </span>
           ) : (
             <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
-              {Array.from({ length: day.ericCount }, (_, i) => (
-                <div key={`e${i}`} style={{ width: 7, height: 7, borderRadius: '50%', background: SERVICE_COLORS.ericBarber }} />
-              ))}
-              {Array.from({ length: day.liviWaxCount }, (_, i) => (
-                <div key={`lw${i}`} style={{ width: 7, height: 7, borderRadius: '50%', background: SERVICE_COLORS.liviWax }} />
-              ))}
-              {Array.from({ length: day.liviTanCount }, (_, i) => (
-                <div key={`lt${i}`} style={{ width: 7, height: 7, borderRadius: '50%', background: SERVICE_COLORS.liviTan }} />
+              {day.dotColors.map((c, i) => (
+                <div key={i} style={{ width: 7, height: 7, borderRadius: '50%', background: c }} />
               ))}
               {!day.isOpen && (
                 <span style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', letterSpacing: '0.06em', marginLeft: 2 }}>closed</span>
