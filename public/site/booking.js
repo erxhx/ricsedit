@@ -241,11 +241,11 @@
       }
       return result;
     }
-    var BK_INTAKE_FORMS = { tan: null, wax: null };
+    var BK_INTAKE_FORMS = { tan: null, wax: null, lashes: null };
     (function() {
       var endpoint = (window.__booking || {}).endpoint || "";
       var base = endpoint.replace(/\/api\/booking\/create$/, "") || window.location.origin;
-      ["tan", "wax"].forEach(function(cat) {
+      ["tan", "wax", "lashes"].forEach(function(cat) {
         fetch(base + "/api/booking/intake-form?category=" + cat).then(function(r) {
           return r.ok ? r.json() : null;
         }).then(function(d) {
@@ -1115,8 +1115,7 @@
       var progress = PROGRESS[step] || 0;
       var catLabel = category === "barber" ? "Barbering" : category === "tan" ? "Sunless" : category === "wax" ? "Waxing" : category === "lashes" ? "Lashes" : "Book now";
       function needsIntakeForm(cat) {
-        if (cat !== "tan" && cat !== "wax") return false;
-        var form = cat === "tan" ? BK_INTAKE_FORMS.tan : BK_INTAKE_FORMS.wax;
+        var form = BK_INTAKE_FORMS[cat];
         return form && form.fields && form.fields.length > 0;
       }
       async function handleConfirm() {
@@ -1252,7 +1251,7 @@
       ), step === "waiver" && /* @__PURE__ */ React.createElement(
         StepIntakeForm,
         {
-          form: category === "tan" ? BK_INTAKE_FORMS.tan : BK_INTAKE_FORMS.wax,
+          form: BK_INTAKE_FORMS[category],
           category,
           onBack: function() {
             setStep("client");

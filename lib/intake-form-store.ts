@@ -27,7 +27,7 @@ export interface IntakeFormConfig {
   fields: FormField[];
 }
 
-export type FormCategory = 'tan' | 'wax' | 'barber';
+export type FormCategory = 'tan' | 'wax' | 'barber' | 'lashes';
 
 function key(cat: FormCategory) { return `intake_form_${cat}`; }
 
@@ -112,6 +112,53 @@ const DEFAULT_WAX: IntakeFormConfig = {
   ],
 };
 
+const DEFAULT_LASHES: IntakeFormConfig = {
+  title: 'Lash Extension Consent + Intake',
+  description: 'Please complete this form before your appointment. Answer truthfully — adverse reactions can happen, and your technician needs to be aware to make any adjustments.',
+  fields: [
+    { id: 'name',  type: 'text',  label: 'Name' },
+    { id: 'email', type: 'email', label: 'Email', required: true },
+    { id: 'phone', type: 'phone', label: 'Phone Number', required: true },
+    { id: 'dob',   type: 'date',  label: 'Date of Birth' },
+
+    { id: 'social_media',    type: 'yes_no', label: 'Do you agree to having photos posted to social media?' },
+    { id: 'had_extensions',  type: 'yes_no', label: 'Have you previously gotten eyelash extensions?' },
+
+    { id: 'conditions', type: 'checkbox_group', required: true,
+      label: 'Check all applicable boxes. Important to answer truthfully, as adverse reactions can happen and your technician needs to be aware to make any changes.',
+      options: [
+        'Allergic to adhesives / glues / tapes / band-aids / etc.',
+        'Lasik eye surgery less than 4 months ago',
+        'Thyroid medications',
+        'Chemotherapy within the last 6 months',
+        'Blepharoplasty',
+        'Wear contact lenses',
+        'Extremely oily skin and hair',
+        'None of the above',
+      ] },
+
+    { id: 'risks_understood', type: 'yes_no', required: true,
+      label: 'I understand there are risks associated with having artificial eyelashes applied to and/or removed from my natural eyelashes.' },
+
+    { id: 'acknowledgements', type: 'checkbox_group', required: true, requireAll: true,
+      label: 'I understand and agree to all of the following',
+      options: [
+        'The technician will use their discretion in deciding how many extensions to apply so as not to create excessive weight on the natural lashes.',
+        'Eye irritation, pain, itching, discomfort and — in rare cases — eye infection may occur.',
+        'If I experience any of these issues I will contact the technician, have the extensions removed immediately, and see a physician, all at my own expense.',
+        'Even when applied and removed properly, adhesive materials may become dislodged during or after the procedure, which may irritate my eyes or require follow-up care.',
+        'I agree to follow the aftercare instructions provided. Failure to follow them may cause extensions to fall out.',
+        'I will need to keep my eyes closed for roughly 60–100 minutes during the procedure, lying in a reclined position.',
+        'Any medical condition that may be aggravated by lying still for a prolonged period may mean the procedure cannot be performed.',
+        'This agreement remains in effect for this and all future procedures by the technician and/or 1543354 B.C. LTD. for one year from the date signed.',
+        'This agreement is binding. I have read and fully understand all of the above, and I am over 18 (or a parent/guardian will sign below).',
+      ] },
+
+    { id: 'signature', type: 'signature', required: true,
+      label: 'Type your full name to sign (parent or guardian if under 18).' },
+  ],
+};
+
 const DEFAULT_BARBER: IntakeFormConfig = {
   title: 'Barbering Intake Form',
   description: '',
@@ -127,6 +174,7 @@ const DEFAULTS: Record<FormCategory, IntakeFormConfig> = {
   tan:   DEFAULT_TAN,
   wax:   DEFAULT_WAX,
   barber: DEFAULT_BARBER,
+  lashes: DEFAULT_LASHES,
 };
 
 // ── Store ─────────────────────────────────────────────────────────────────────

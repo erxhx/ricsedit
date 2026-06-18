@@ -7,6 +7,7 @@ import type { FormField, FieldType, IntakeFormConfig, FormCategory } from '@/lib
 const CATEGORIES: { value: FormCategory; label: string }[] = [
   { value: 'tan',    label: 'Sunless' },
   { value: 'wax',    label: 'Waxing' },
+  { value: 'lashes', label: 'Lashes' },
   { value: 'barber', label: 'Barbering' },
 ];
 

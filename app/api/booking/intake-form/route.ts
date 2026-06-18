@@ -14,7 +14,7 @@ export async function OPTIONS() {
 
 export async function GET(req: NextRequest) {
   const cat = (req.nextUrl.searchParams.get('category') ?? 'tan') as FormCategory;
-  if (!['tan', 'wax'].includes(cat)) {
+  if (!['tan', 'wax', 'lashes'].includes(cat)) {
     return NextResponse.json({ error: 'No intake form for this category' }, { status: 400, headers: CORS });
   }
   const form = await getIntakeForm(cat);

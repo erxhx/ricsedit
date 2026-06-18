@@ -4,7 +4,7 @@ import { verifySession, SESSION_COOKIE } from '@/lib/admin-auth';
 import { getIntakeForm, saveIntakeForm } from '@/lib/intake-form-store';
 import type { FormCategory, IntakeFormConfig } from '@/lib/intake-form-store';
 
-const CATEGORIES: FormCategory[] = ['tan', 'wax', 'barber'];
+const CATEGORIES: FormCategory[] = ['tan', 'wax', 'barber', 'lashes'];
 
 async function auth() {
   const cookieStore = await cookies();
