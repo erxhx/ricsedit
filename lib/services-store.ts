@@ -8,7 +8,12 @@ export interface ServicesData {
   tanAddons: Service[];
   waxGroups: ServiceGroup[];
   lashServices: Service[];
+  /** Bumped when the seeded lash menu changes so persisted stores re-adopt it. */
+  lashMenuVersion?: number;
 }
+
+// Bump this when LASH_SERVICES changes and you want existing stores to re-seed it.
+const LASH_MENU_VERSION = 2;
 
 declare global {
   // eslint-disable-next-line no-var
@@ -25,22 +30,21 @@ function seed(): ServicesData {
   }));
 }
 
-/** Ensures persisted stores predating a category get its seeded default. */
+/** Ensures persisted stores adopt the current seeded lash menu. */
 function applyCategoryMigration(store: ServicesData): boolean {
-  let changed = false;
-  // Missing entirely (store predates the lashes category) → seed it.
-  if (!Array.isArray(store.lashServices)) {
-    store.lashServices = JSON.parse(JSON.stringify(LASH_SERVICES));
-    changed = true;
+  const missing     = !Array.isArray(store.lashServices);
+  // Original auto-seeded placeholder menu, identified by an id the real menu lacks.
+  const placeholder = !missing && store.lashServices.some((s) => s.id === 'lash-fill-2wk');
+  // Persisted seed predates the current LASH_MENU_VERSION (e.g. duration fixes).
+  // A store with a lash list but no version field is treated as version 1.
+  const stale       = !missing && (store.lashMenuVersion ?? 1) < LASH_MENU_VERSION;
+
+  if (missing || placeholder || stale) {
+    store.lashServices    = JSON.parse(JSON.stringify(LASH_SERVICES));
+    store.lashMenuVersion = LASH_MENU_VERSION;
+    return true;
   }
-  // Upgrade the original auto-seeded placeholder menu (identified by its
-  // 'lash-fill-2wk' id, which the real menu doesn't use) to the real menu.
-  // Won't touch a list that's been edited in the admin.
-  else if (store.lashServices.some((s) => s.id === 'lash-fill-2wk')) {
-    store.lashServices = JSON.parse(JSON.stringify(LASH_SERVICES));
-    changed = true;
-  }
-  return changed;
+  return false;
 }
 
 /** Synchronous read — returns in-memory store or seeds from static defaults. */
