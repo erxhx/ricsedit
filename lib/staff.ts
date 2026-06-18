@@ -97,6 +97,11 @@ export function staffColor(id: string): string {
   return STAFF_BY_ID.get(id)?.color ?? '#ece9e2';
 }
 
+/** The staff member who performs a given service category, if any. */
+export function staffForCategory(cat: ServiceCategory): string | undefined {
+  return STAFF.find(m => m.categories.includes(cat))?.id;
+}
+
 // ── Service name → category ──────────────────────────────────────────────────────
 // Appointments store the service *name* (e.g. "Classic Full Body"), so we build a
 // name → category lookup from the static service catalogue. Used to colour an

@@ -7,6 +7,10 @@
 import { NextRequest } from 'next/server';
 import { dbCreateAppointment } from '@/lib/db';
 import { sendBookingConfirmation } from '@/lib/notifications';
+import { staffForCategory } from '@/lib/staff';
+import type { ServiceCategory } from '@/lib/services';
+
+const CATEGORIES: ServiceCategory[] = ['barber', 'tan', 'wax', 'lashes'];
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -92,7 +96,7 @@ function getIp(req: NextRequest): string {
 interface BookingService { id: string; name: string; price: number; duration: number; }
 
 interface BookingPayload {
-  category: 'barber' | 'tan' | 'wax';
+  category: ServiceCategory;
   services: BookingService[];
   addons?: BookingService[];
   date: string;
@@ -126,7 +130,7 @@ export async function POST(req: NextRequest) {
     // (done below after validateClient)
 
     // ── Basic structural validation ───────────────────────────────────────────
-    if (!category || !['barber', 'tan', 'wax'].includes(category))
+    if (!category || !CATEGORIES.includes(category))
       return Response.json({ error: 'Invalid category' }, { status: 400, headers: CORS });
     if (!services?.length || services.length > 10)
       return Response.json({ error: 'Invalid services' }, { status: 400, headers: CORS });
@@ -147,7 +151,7 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Build appointment ─────────────────────────────────────────────────────
-    const staff = category === 'barber' ? 'eric' : 'livi';
+    const staff = staffForCategory(category) ?? 'eric';
     const dateStr = new Date(date).toISOString().slice(0, 10);
     const startTime = `${pad(time.h)}:${pad(time.m ?? 0)}`;
 

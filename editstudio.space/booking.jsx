@@ -68,6 +68,23 @@
     },
   ];
 
+  var BK_LASHES = [
+    { id: 'lash-classic-set',  name: 'Classic Full Set',  desc: 'One extension per natural lash — a natural, mascara-like finish.', price: 150, duration: 120 },
+    { id: 'lash-classic-fill', name: 'Classic Fill',      desc: 'Must have minimum 50% retention.',                                price: 80,  duration: 60  },
+    { id: 'lash-hybrid-set',   name: 'Hybrid Full Set',   desc: 'A mix of classic and volume for texture and fullness.',          price: 180, duration: 135 },
+    { id: 'lash-hybrid-fill',  name: 'Hybrid Fill',       desc: 'Must have minimum 50% retention.',                                price: 95,  duration: 75  },
+    { id: 'lash-volume-set',   name: 'Volume Full Set',   desc: 'Multiple lightweight extensions per lash for a fuller look.',     price: 220, duration: 150 },
+    { id: 'lash-volume-fill',  name: 'Volume Fill',       desc: 'Must have minimum 50% retention.',                                price: 110, duration: 80  },
+    { id: 'lash-mega-set',     name: 'Mega Volume Set',   desc: 'Maximum density for a dramatic, full finish.',                    price: 245, duration: 165 },
+    { id: 'lash-mega-fill',    name: 'Mega Volume Fill',  desc: 'Must have minimum 50% retention.',                                price: 125, duration: 90  },
+    { id: 'lash-removal',      name: 'Lash Removal',      desc: 'Safe, gentle removal of existing extensions.',                    price: 30,  duration: 15  },
+    { id: 'lash-lift-tint',    name: 'Lash Lift and Tint', desc: 'Lifts and tints your natural lashes — no extensions.',           price: 100, duration: 60  },
+    { id: 'lash-lift',         name: 'Lash Lift',         desc: 'Lifts and curls your natural lashes.',                            price: 90,  duration: 30  },
+    { id: 'lash-brow-lam-tint', name: 'Brow Lamination and Tint', desc: 'Smooths, sets and tints brows for a fuller shape.',       price: 120, duration: 60  },
+    { id: 'lash-brow-tint',    name: 'Brow Tint',         desc: 'Define and deepen the brows.',                                    price: 75,  duration: 30  },
+    { id: 'lash-bundle-brow-lash', name: 'Bundle — Brow Lamination and Tint + Lash Lift and Tint', desc: 'Brow lamination & tint paired with a lash lift & tint.', price: 210, duration: 105 },
+  ];
+
   // ── Service data — fetched from admin on init so price/name edits propagate ──
 
   // Maps a Next.js Service object → booking.jsx format
@@ -98,6 +115,9 @@
             return { label: g.name, note: g.note || '', items: (g.services || []).map(mapSvc) };
           });
         }
+        if (Array.isArray(d.lashServices) && d.lashServices.length) {
+          BK_LASHES = d.lashServices.map(mapSvc);
+        }
       })
       .catch(function () {});
   })();
@@ -106,12 +126,14 @@
   // Mutable vars — updated async from admin config so the calendar stays in sync.
   var BK_HOURS = { 0: [10, 18], 1: null, 2: null, 3: [10, 18], 4: [10, 18], 5: [10, 18], 6: [10, 18] };
   var BK_BARBER_THU_CLOSE = 21;
-  // Per-staff hours — keyed by staff id ('eric'|'livi'). Falls back to BK_HOURS if not set.
-  var BK_STAFF_HOURS = { eric: null, livi: null };
+  // Per-staff hours — keyed by staff id. Falls back to BK_HOURS if not set.
+  var BK_STAFF_HOURS = { eric: null, livi: null, niamh: null };
 
   // Maps booking category → staff id (matches the admin assignment)
   function bkCategoryStaff(category) {
-    return category === 'barber' ? 'eric' : 'livi';
+    if (category === 'barber') return 'eric';
+    if (category === 'lashes') return 'niamh';
+    return 'livi';
   }
 
   // Returns the hours object for a given category (staff-specific if available)
@@ -143,7 +165,7 @@
         }
         // Update per-staff hours
         if (cfg.staff) {
-          ['eric', 'livi'].forEach(function (id) {
+          ['eric', 'livi', 'niamh'].forEach(function (id) {
             var sd = cfg.staff[id] && cfg.staff[id].days;
             if (sd) {
               var sh = {};
@@ -374,6 +396,7 @@
       { id: 'barber', num: '01', label: 'Barbering', hint: 'Crafted haircuts and beards' },
       { id: 'tan',    num: '02', label: 'Sunless',   hint: 'Custom-blended spray tans'  },
       { id: 'wax',    num: '03', label: 'Waxing',    hint: 'Brow · body · bikini'       },
+      { id: 'lashes', num: '04', label: 'Lashes',    hint: 'Lashes · lifts · brows'     },
     ];
     return (
       <div>
@@ -464,7 +487,7 @@
     var total = bkTotalPrice(all);
     var dur   = bkTotalDuration(all);
 
-    var catLabel = category === 'barber' ? '01 / Barbering' : category === 'tan' ? '02 / Sunless' : '03 / Waxing';
+    var catLabel = category === 'barber' ? '01 / Barbering' : category === 'tan' ? '02 / Sunless' : category === 'lashes' ? '04 / Lashes' : '03 / Waxing';
 
     // Pre-selected slot (from "Next available" CTA)
     var prefill = props.prefillSlot;
@@ -530,6 +553,15 @@
           </>)}
         </>)}
 
+        {/* Lashes */}
+        {category === 'lashes' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 1, background: 'var(--rule)' }}>
+            {BK_LASHES.map(function(s) {
+              return <BkServiceRow key={s.id} service={s} active={!!selected.find(function(x) { return x.id === s.id; })} onClick={function() { toggleMain(s); }} />;
+            })}
+          </div>
+        )}
+
         {/* Wax */}
         {category === 'wax' && BK_WAX_GROUPS.map(function(group) {
           return (
@@ -591,7 +623,7 @@
 
     // Fetch real availability whenever the selected date or category changes
     useEffect(function() {
-      var staff    = category === 'barber' ? 'eric' : 'livi';
+      var staff    = bkCategoryStaff(category);
       var endpoint = window.__booking && window.__booking.endpoint;
       if (!endpoint) { setLoadingSlots(false); return; } // dev — show all slots open
 
@@ -1283,7 +1315,7 @@
     var PROGRESS = { category: 0, service: 0.15, datetime: 0.38, client: 0.58, waiver: 0.75, confirm: 0.88, done: 1 };
     var progress = PROGRESS[step] || 0;
 
-    var catLabel = category === 'barber' ? 'Barbering' : category === 'tan' ? 'Sunless' : category === 'wax' ? 'Waxing' : 'Book now';
+    var catLabel = category === 'barber' ? 'Barbering' : category === 'tan' ? 'Sunless' : category === 'wax' ? 'Waxing' : category === 'lashes' ? 'Lashes' : 'Book now';
 
     function needsIntakeForm(cat) {
       // Intake form required for tan and wax only

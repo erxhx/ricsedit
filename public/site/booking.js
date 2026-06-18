@@ -57,6 +57,22 @@
         ]
       }
     ];
+    var BK_LASHES = [
+      { id: "lash-classic-set", name: "Classic Full Set", desc: "One extension per natural lash \u2014 a natural, mascara-like finish.", price: 150, duration: 120 },
+      { id: "lash-classic-fill", name: "Classic Fill", desc: "Must have minimum 50% retention.", price: 80, duration: 60 },
+      { id: "lash-hybrid-set", name: "Hybrid Full Set", desc: "A mix of classic and volume for texture and fullness.", price: 180, duration: 135 },
+      { id: "lash-hybrid-fill", name: "Hybrid Fill", desc: "Must have minimum 50% retention.", price: 95, duration: 75 },
+      { id: "lash-volume-set", name: "Volume Full Set", desc: "Multiple lightweight extensions per lash for a fuller look.", price: 220, duration: 150 },
+      { id: "lash-volume-fill", name: "Volume Fill", desc: "Must have minimum 50% retention.", price: 110, duration: 80 },
+      { id: "lash-mega-set", name: "Mega Volume Set", desc: "Maximum density for a dramatic, full finish.", price: 245, duration: 165 },
+      { id: "lash-mega-fill", name: "Mega Volume Fill", desc: "Must have minimum 50% retention.", price: 125, duration: 90 },
+      { id: "lash-removal", name: "Lash Removal", desc: "Safe, gentle removal of existing extensions.", price: 30, duration: 15 },
+      { id: "lash-lift-tint", name: "Lash Lift and Tint", desc: "Lifts and tints your natural lashes \u2014 no extensions.", price: 100, duration: 60 },
+      { id: "lash-lift", name: "Lash Lift", desc: "Lifts and curls your natural lashes.", price: 90, duration: 30 },
+      { id: "lash-brow-lam-tint", name: "Brow Lamination and Tint", desc: "Smooths, sets and tints brows for a fuller shape.", price: 120, duration: 60 },
+      { id: "lash-brow-tint", name: "Brow Tint", desc: "Define and deepen the brows.", price: 75, duration: 30 },
+      { id: "lash-bundle-brow-lash", name: "Bundle \u2014 Brow Lamination and Tint + Lash Lift and Tint", desc: "Brow lamination & tint paired with a lash lift & tint.", price: 210, duration: 105 }
+    ];
     function mapSvc(s) {
       return { id: s.id, name: s.name, desc: s.description || "", price: s.price, duration: s.durationMinutes };
     }
@@ -82,14 +98,19 @@
             return { label: g.name, note: g.note || "", items: (g.services || []).map(mapSvc) };
           });
         }
+        if (Array.isArray(d.lashServices) && d.lashServices.length) {
+          BK_LASHES = d.lashServices.map(mapSvc);
+        }
       }).catch(function() {
       });
     })();
     var BK_HOURS = { 0: [10, 18], 1: null, 2: null, 3: [10, 18], 4: [10, 18], 5: [10, 18], 6: [10, 18] };
     var BK_BARBER_THU_CLOSE = 21;
-    var BK_STAFF_HOURS = { eric: null, livi: null };
+    var BK_STAFF_HOURS = { eric: null, livi: null, niamh: null };
     function bkCategoryStaff(category) {
-      return category === "barber" ? "eric" : "livi";
+      if (category === "barber") return "eric";
+      if (category === "lashes") return "niamh";
+      return "livi";
     }
     function bkHoursForCategory(category) {
       var staffId = bkCategoryStaff(category);
@@ -115,7 +136,7 @@
           BK_BARBER_THU_CLOSE = cfg.barberThuClose;
         }
         if (cfg.staff) {
-          ["eric", "livi"].forEach(function(id) {
+          ["eric", "livi", "niamh"].forEach(function(id) {
             var sd = cfg.staff[id] && cfg.staff[id].days;
             if (sd) {
               var sh = {};
@@ -331,7 +352,8 @@
       var cats = [
         { id: "barber", num: "01", label: "Barbering", hint: "Crafted haircuts and beards" },
         { id: "tan", num: "02", label: "Sunless", hint: "Custom-blended spray tans" },
-        { id: "wax", num: "03", label: "Waxing", hint: "Brow \xB7 body \xB7 bikini" }
+        { id: "wax", num: "03", label: "Waxing", hint: "Brow \xB7 body \xB7 bikini" },
+        { id: "lashes", num: "04", label: "Lashes", hint: "Lashes \xB7 lifts \xB7 brows" }
       ];
       return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement(BkEyebrow, { left: "Book a service" }), /* @__PURE__ */ React.createElement("h3", { style: { fontFamily: "var(--display)", fontWeight: 300, fontStyle: "italic", fontSize: "clamp(26px,5vw,44px)", margin: "0 0 24px", letterSpacing: "-0.02em", lineHeight: 1 } }, "What are you booking?"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 1, background: "var(--rule)" } }, cats.map(function(cat) {
         return /* @__PURE__ */ React.createElement(
@@ -402,7 +424,7 @@
       var all = selected.concat(addons);
       var total = bkTotalPrice(all);
       var dur = bkTotalDuration(all);
-      var catLabel = category === "barber" ? "01 / Barbering" : category === "tan" ? "02 / Sunless" : "03 / Waxing";
+      var catLabel = category === "barber" ? "01 / Barbering" : category === "tan" ? "02 / Sunless" : category === "lashes" ? "04 / Lashes" : "03 / Waxing";
       var prefill = props.prefillSlot;
       return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement(BkBack, { onClick: props.onBack }), /* @__PURE__ */ React.createElement(BkEyebrow, { left: catLabel, right: isMulti ? "Select all that apply" : "Select a service" }), prefill && /* @__PURE__ */ React.createElement("div", { style: {
         display: "inline-flex",
@@ -449,7 +471,13 @@
         }), onClick: function() {
           toggleAddon(s);
         }, prefix: "+" });
-      })))), category === "wax" && BK_WAX_GROUPS.map(function(group) {
+      })))), category === "lashes" && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 1, background: "var(--rule)" } }, BK_LASHES.map(function(s) {
+        return /* @__PURE__ */ React.createElement(BkServiceRow, { key: s.id, service: s, active: !!selected.find(function(x) {
+          return x.id === s.id;
+        }), onClick: function() {
+          toggleMain(s);
+        } });
+      })), category === "wax" && BK_WAX_GROUPS.map(function(group) {
         return /* @__PURE__ */ React.createElement("div", { key: group.label, style: { marginBottom: 4 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-faint)", padding: "10px 0 4px", borderTop: "1px solid var(--rule)" } }, group.label, group.note && /* @__PURE__ */ React.createElement("span", { style: { opacity: 0.55, fontStyle: "italic", textTransform: "none", letterSpacing: "0.09em", marginLeft: 8 } }, "\xB7 ", group.note)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 1, background: "var(--rule)" } }, group.items.map(function(s) {
           return /* @__PURE__ */ React.createElement(BkServiceRow, { key: s.id, service: s, active: !!selected.find(function(x) {
             return x.id === s.id;
@@ -482,7 +510,7 @@
       var [bookedRanges, setBookedRanges] = useState([]);
       var [loadingSlots, setLoadingSlots] = useState(true);
       useEffect(function() {
-        var staff = category === "barber" ? "eric" : "livi";
+        var staff = bkCategoryStaff(category);
         var endpoint = window.__booking && window.__booking.endpoint;
         if (!endpoint) {
           setLoadingSlots(false);
@@ -1085,7 +1113,7 @@
       });
       var PROGRESS = { category: 0, service: 0.15, datetime: 0.38, client: 0.58, waiver: 0.75, confirm: 0.88, done: 1 };
       var progress = PROGRESS[step] || 0;
-      var catLabel = category === "barber" ? "Barbering" : category === "tan" ? "Sunless" : category === "wax" ? "Waxing" : "Book now";
+      var catLabel = category === "barber" ? "Barbering" : category === "tan" ? "Sunless" : category === "wax" ? "Waxing" : category === "lashes" ? "Lashes" : "Book now";
       function needsIntakeForm(cat) {
         if (cat !== "tan" && cat !== "wax") return false;
         var form = cat === "tan" ? BK_INTAKE_FORMS.tan : BK_INTAKE_FORMS.wax;
