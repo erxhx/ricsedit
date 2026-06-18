@@ -2,7 +2,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Appointment } from '@/lib/admin-mock';
-import { getAppointmentColor, SERVICE_COLORS } from '@/lib/appointment-colors';
+import { getAppointmentColor } from '@/lib/appointment-colors';
+import { STAFF as ROSTER, STAFF_IDS, staffName } from '@/lib/staff';
 
 // ── layout constants ──────────────────────────────────────────────────────────
 const H0 = 8, H1 = 22;
@@ -63,9 +64,11 @@ function computePositions(apts: Appointment[]): Map<string, { leftPct: number; w
     if (overlaps.length === 0) {
       map.set(apt.id, { leftPct: 0, widthPct: 100 });
     } else {
-      const laneOrder = ['eric', 'livi'];
-      const lane = Math.max(0, laneOrder.indexOf(apt.staff));
-      map.set(apt.id, { leftPct: lane * 50, widthPct: 50 });
+      // Lay overlapping appointments out in per-staff lanes.
+      const laneCount = Math.max(1, STAFF_IDS.length);
+      const lane = Math.max(0, STAFF_IDS.indexOf(apt.staff));
+      const w = 100 / laneCount;
+      map.set(apt.id, { leftPct: lane * w, widthPct: w });
     }
   }
   return map;
@@ -91,7 +94,8 @@ type DragRef = {
 
 type DragConfirm  = { apt: Appointment; newStartTime: string; newEndTime: string; newDate: string } | null;
 type SlotAction   = { date: string; time: string } | null;
-type WGBlockSheet = { date: string; time: string; staff: 'eric' | 'livi' | 'both' } | null;
+// staff is a roster id, or 'all' to block every staff member at once
+type WGBlockSheet = { date: string; time: string; staff: string } | null;
 
 const QUICK_LABELS_WG = ['Lunch', 'Break', 'Personal', 'Studio closed'] as const;
 
@@ -389,7 +393,7 @@ export default function WeekGridView({
     const endTime = useCustomEnd ? customEndTime : addMin(blockSheet.time, blockDur);
     const dur     = useCustomEnd ? timeDiffWG(blockSheet.time, customEndTime) : blockDur;
     if (dur <= 0) return;
-    const staffList = blockSheet.staff === 'both' ? (['eric', 'livi'] as const) : [blockSheet.staff];
+    const staffList = blockSheet.staff === 'all' ? STAFF_IDS : [blockSheet.staff];
     const results = await Promise.all(
       staffList.map((staff) =>
         fetch('/api/admin/appointments', {
@@ -504,10 +508,10 @@ export default function WeekGridView({
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {modeToggle}
           <div style={{ display: 'flex', gap: 8 }}>
-            {(['eric', 'livi'] as const).map((s) => (
-              <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <div style={{ width: 6, height: 6, borderRadius: '50%', background: s === 'eric' ? SERVICE_COLORS.ericBarber : SERVICE_COLORS.liviWax }} />
-                <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-text3)' }}>{s === 'eric' ? 'Eric' : 'Livi'}</span>
+            {ROSTER.map((m) => (
+              <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: m.color }} />
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-text3)' }}>{m.name}</span>
               </div>
             ))}
           </div>
@@ -733,12 +737,13 @@ export default function WeekGridView({
               {fmtDateShort(slotAction.date)} · {fmt(slotAction.time)}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <SlotBtn label="Book Eric" variant="primary" onClick={() => { const { date, time } = slotAction; setSlotAction(null); router.push(`/admin/new-booking?date=${date}&staff=eric&time=${time}`); }} />
-              <SlotBtn label="Book Livi" variant="primary" onClick={() => { const { date, time } = slotAction; setSlotAction(null); router.push(`/admin/new-booking?date=${date}&staff=livi&time=${time}`); }} />
+              {ROSTER.map((m) => (
+                <SlotBtn key={m.id} label={`Book ${m.name}`} variant="primary" onClick={() => { const { date, time } = slotAction; setSlotAction(null); router.push(`/admin/new-booking?date=${date}&staff=${m.id}&time=${time}`); }} />
+              ))}
               <SlotBtn label="Block time off" variant="ghost" onClick={() => {
                 const { date, time } = slotAction;
                 setSlotAction(null);
-                setBlockSheet({ date, time, staff: 'eric' });
+                setBlockSheet({ date, time, staff: STAFF_IDS[0] });
                 setBlockLabel('');
                 setBlockDur(60);
                 setUseCustomEnd(false);
@@ -762,10 +767,10 @@ export default function WeekGridView({
 
             {/* Staff picker */}
             <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--admin-muted)', marginBottom: 8 }}>Staff</div>
-            <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
-              {(['eric', 'livi', 'both'] as const).map((s) => (
-                <button key={s} onClick={() => setBlockSheet({ ...blockSheet, staff: s })} style={{ flex: 1, padding: '10px 0', borderRadius: 8, border: blockSheet.staff === s ? '1.5px solid var(--admin-text)' : '1px solid var(--admin-border)', background: blockSheet.staff === s ? 'var(--admin-text-tint)' : 'none', fontFamily: 'var(--font-body)', fontSize: 13, color: blockSheet.staff === s ? 'var(--admin-text)' : 'var(--admin-text2)', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
-                  {s === 'both' ? 'Both' : s === 'eric' ? 'Eric' : 'Livi'}
+            <div style={{ display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap' }}>
+              {[...STAFF_IDS, 'all'].map((s) => (
+                <button key={s} onClick={() => setBlockSheet({ ...blockSheet, staff: s })} style={{ flex: '1 0 auto', padding: '10px 8px', borderRadius: 8, border: blockSheet.staff === s ? '1.5px solid var(--admin-text)' : '1px solid var(--admin-border)', background: blockSheet.staff === s ? 'var(--admin-text-tint)' : 'none', fontFamily: 'var(--font-body)', fontSize: 13, color: blockSheet.staff === s ? 'var(--admin-text)' : 'var(--admin-text2)', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
+                  {s === 'all' ? 'All' : staffName(s)}
                 </button>
               ))}
             </div>
@@ -818,7 +823,7 @@ export default function WeekGridView({
               {blockDelSheet.service && blockDelSheet.service !== 'Blocked' ? blockDelSheet.service : 'Blocked'}
             </div>
             <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-text3)', marginBottom: 24 }}>
-              {blockDelSheet.staff === 'eric' ? 'Eric' : 'Livi'} · {fmt(blockDelSheet.startTime)} – {fmt(blockDelSheet.endTime)}
+              {staffName(blockDelSheet.staff)} · {fmt(blockDelSheet.startTime)} – {fmt(blockDelSheet.endTime)}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <SlotBtn label="Remove block" variant="danger" onClick={() => deleteBlock(blockDelSheet)} />

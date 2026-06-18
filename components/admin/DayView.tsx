@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { Appointment } from '@/lib/admin-mock';
-import { SERVICE_COLORS, getAppointmentColor } from '@/lib/appointment-colors';
+import { getAppointmentColor } from '@/lib/appointment-colors';
+import { STAFF as ROSTER } from '@/lib/staff';
 import AppointmentCard from './AppointmentCard';
 
 // ── Day timeline ──────────────────────────────────────────────────────────────
@@ -31,8 +32,6 @@ function DayTimeline({
   }
 
   const active = appointments.filter((a) => a.status !== 'cancelled' && a.status !== 'blocked');
-  const ericApts = active.filter((a) => a.staff === 'eric');
-  const liviApts = active.filter((a) => a.staff === 'livi');
 
   const now = new Date();
   const nowMins = now.getHours() * 60 + now.getMinutes();
@@ -77,20 +76,19 @@ function DayTimeline({
       <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
         {/* Staff labels */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, height: 14 }}>
-            <div style={{ width: 5, height: 5, borderRadius: '50%', background: SERVICE_COLORS.ericBarber, flexShrink: 0 }} />
-            <span style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: 'var(--admin-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>E</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, height: 14 }}>
-            <div style={{ width: 5, height: 5, borderRadius: '50%', background: SERVICE_COLORS.liviWax, flexShrink: 0 }} />
-            <span style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: 'var(--admin-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>L</span>
-          </div>
+          {ROSTER.map((m) => (
+            <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 4, height: 14 }}>
+              <div style={{ width: 5, height: 5, borderRadius: '50%', background: m.color, flexShrink: 0 }} />
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: 'var(--admin-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>{m.name[0]}</span>
+            </div>
+          ))}
         </div>
 
         {/* Timeline bars */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {renderRow(ericApts)}
-          {renderRow(liviApts)}
+          {ROSTER.map((m) => (
+            <div key={m.id}>{renderRow(active.filter((a) => a.staff === m.id))}</div>
+          ))}
         </div>
       </div>
 
@@ -137,15 +135,10 @@ function StaffStatus({ appointments, dayHours }: {
     return { current, next, util };
   }
 
-  const ericInfo = staffInfo('eric');
-  const liviInfo  = staffInfo('livi');
-
   return (
     <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-      {[
-        { id: 'eric', label: 'Eric', color: SERVICE_COLORS.ericBarber, info: ericInfo },
-        { id: 'livi', label: 'Livi', color: SERVICE_COLORS.liviWax,   info: liviInfo },
-      ].map(({ id, label, color, info }) => {
+      {ROSTER.map((m) => {
+        const id = m.id, label = m.name, color = m.color, info = staffInfo(m.id);
         function fmtTime(t: string) {
           const [h, m] = t.split(':').map(Number);
           const p = h >= 12 ? 'pm' : 'am';
@@ -325,8 +318,6 @@ export default function DayView({
 
   // Revenue summary
   const active = appointments.filter((a) => a.status !== 'cancelled' && a.status !== 'blocked');
-  const ericApts = active.filter((a) => a.staff === 'eric');
-  const liviApts = active.filter((a) => a.staff === 'livi');
   const total = active.reduce((s, a) => s + a.price, 0);
 
   return (
@@ -410,27 +401,25 @@ export default function DayView({
               const color = pct >= 80 ? '#4a9b6f' : pct >= 50 ? '#b5824a' : 'var(--admin-muted)';
               return { pct, color };
             }
-            const ericUtil = util(ericApts);
-            const liviUtil = util(liviApts);
             return (
               <>
                 <Stat label="Total" value={total > 0 ? `$${total}` : '—'} />
-                <div style={{ width: 1, background: 'var(--admin-border)' }} />
-                <Stat
-                  label="Eric"
-                  value={ericApts.length > 0 ? `${ericApts.length} apt${ericApts.length !== 1 ? 's' : ''}` : '—'}
-                  color={ericApts.length > 0 ? SERVICE_COLORS.ericBarber : undefined}
-                  sub={ericUtil ? `${ericUtil.pct}% booked` : undefined}
-                  subColor={ericUtil?.color}
-                />
-                <div style={{ width: 1, background: 'var(--admin-border)' }} />
-                <Stat
-                  label="Livi"
-                  value={liviApts.length > 0 ? `${liviApts.length} apt${liviApts.length !== 1 ? 's' : ''}` : '—'}
-                  color={liviApts.length > 0 ? SERVICE_COLORS.liviWax : undefined}
-                  sub={liviUtil ? `${liviUtil.pct}% booked` : undefined}
-                  subColor={liviUtil?.color}
-                />
+                {ROSTER.map((m) => {
+                  const apts = active.filter((a) => a.staff === m.id);
+                  const u = util(apts);
+                  return (
+                    <span key={m.id} style={{ display: 'contents' }}>
+                      <div style={{ width: 1, background: 'var(--admin-border)' }} />
+                      <Stat
+                        label={m.name}
+                        value={apts.length > 0 ? `${apts.length} apt${apts.length !== 1 ? 's' : ''}` : '—'}
+                        color={apts.length > 0 ? m.color : undefined}
+                        sub={u ? `${u.pct}% booked` : undefined}
+                        subColor={u?.color}
+                      />
+                    </span>
+                  );
+                })}
               </>
             );
           })()}
