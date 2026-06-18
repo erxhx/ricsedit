@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import type { Appointment } from '@/lib/admin-mock';
 import { STAFF as ROSTER, STAFF_COLORS } from '@/lib/staff';
+import { useRevenueAccess } from './RevenueAccess';
 
 // ── types ─────────────────────────────────────────────────────────────────────
 type Range = 'today' | 'week' | 'month' | '3months';
@@ -78,6 +79,7 @@ function StatRow({ label, value }: { label: string; value: string }) {
 // ── main component ────────────────────────────────────────────────────────────
 
 export default function ReportsView({ appointments: initialAppointments }: { appointments: Appointment[] }) {
+  const { canSeeAllRevenue, viewerStaff } = useRevenueAccess();
   const [range, setRange]   = useState<Range>('month');
   const [apts,  setApts]    = useState<Appointment[]>(initialAppointments);
   const [loading, setLoading]       = useState(false);
@@ -115,13 +117,18 @@ export default function ReportsView({ appointments: initialAppointments }: { app
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [range]);
 
-  const active = apts.filter(a => a.status !== 'cancelled' && a.status !== 'blocked');
+  // When the viewer can't see studio-wide revenue, scope every figure on this
+  // page to their own appointments.
+  const scopedApts = canSeeAllRevenue ? apts : apts.filter(a => a.staff === viewerStaff);
+  const scopedComp = canSeeAllRevenue ? compApts : compApts.filter(a => a.staff === viewerStaff);
+
+  const active = scopedApts.filter(a => a.status !== 'cancelled' && a.status !== 'blocked');
 
   // ── Total revenue ─────────────────────────────────────────────────────────
   const totalRevenue = active.reduce((s, a) => s + a.price, 0);
 
   // ── Period-over-period comparison (shown for month & 3months) ───────────────
-  const compActive  = compApts.filter(a => a.status !== 'cancelled' && a.status !== 'blocked');
+  const compActive  = scopedComp.filter(a => a.status !== 'cancelled' && a.status !== 'blocked');
   const compRevenue = compActive.reduce((s, a) => s + a.price, 0);
   const pctChange   = compRevenue > 0
     ? Math.round((totalRevenue - compRevenue) / compRevenue * 100)
@@ -136,8 +143,9 @@ export default function ReportsView({ appointments: initialAppointments }: { app
   }
   const maxDowRevenue = Math.max(...revenueByDow, 1);
 
-  // ── Staff stats (one entry per roster member) ───────────────────────────────
-  const staffStats = ROSTER.map((m) => {
+  // ── Staff stats (one entry per roster member; just the viewer when restricted) ─
+  const staffRoster = canSeeAllRevenue ? ROSTER : ROSTER.filter(m => m.id === viewerStaff);
+  const staffStats = staffRoster.map((m) => {
     const days = new Set<string>();
     let apts = 0, revenue = 0;
     for (const a of active) {
@@ -177,8 +185,8 @@ export default function ReportsView({ appointments: initialAppointments }: { app
   const totalUniqueClients = newClients + returningClients;
 
   // ── Cancellation rate ─────────────────────────────────────────────────────
-  const cancelled  = apts.filter(a => a.status === 'cancelled').length;
-  const totalApts  = apts.filter(a => a.status !== 'blocked').length;
+  const cancelled  = scopedApts.filter(a => a.status === 'cancelled').length;
+  const totalApts  = scopedApts.filter(a => a.status !== 'blocked').length;
   const cancelRate = totalApts > 0 ? Math.round(cancelled / totalApts * 100) : 0;
 
   const showWoW = range === 'month' || range === '3months';
@@ -193,6 +201,12 @@ export default function ReportsView({ appointments: initialAppointments }: { app
       }}>
         Reports
       </h1>
+
+      {!canSeeAllRevenue && (
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)', margin: '-8px 0 16px' }}>
+          Showing your own numbers.
+        </div>
+      )}
 
       {/* ── Range selector ────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', gap: 6, marginBottom: 24 }}>

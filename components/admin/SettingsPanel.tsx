@@ -1,7 +1,8 @@
 'use client';
 import { useState } from 'react';
 import { useAdminTheme } from './AdminThemeProvider';
-import { staffColor } from '@/lib/staff';
+import { staffColor, STAFF as ROSTER } from '@/lib/staff';
+import type { StaffPermissions } from '@/lib/staff-permissions';
 
 // ── Migration types ───────────────────────────────────────────────────────────
 
@@ -42,8 +43,42 @@ function fmtTime(t: string): string {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function SettingsPanel() {
+export default function SettingsPanel({
+  viewerRole,
+  initialPermissions = {},
+}: {
+  viewerRole?: 'owner' | 'esti';
+  initialPermissions?: Record<string, StaffPermissions>;
+} = {}) {
   const { theme, toggle } = useAdminTheme();
+
+  // ── Staff permissions (owner only) ──────────────────────────────────────────
+  const [perms, setPerms]       = useState<Record<string, StaffPermissions>>(initialPermissions);
+  const [permSaving, setPermSaving] = useState<string | null>(null);
+
+  async function toggleRevenue(staffId: string) {
+    const next = !(perms[staffId]?.canSeeAllRevenue ?? false);
+    const optimistic = { ...perms, [staffId]: { ...perms[staffId], canSeeAllRevenue: next } };
+    setPerms(optimistic);
+    setPermSaving(staffId);
+    try {
+      const res = await fetch('/api/admin/staff-permissions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [staffId]: { canSeeAllRevenue: next } }),
+      });
+      if (res.ok) {
+        const saved = await res.json() as Record<string, StaffPermissions>;
+        setPerms(saved);
+      } else {
+        setPerms(perms); // revert
+      }
+    } catch {
+      setPerms(perms); // revert
+    } finally {
+      setPermSaving(null);
+    }
+  }
 
   const [migState,  setMigState]  = useState<MigState>('idle');
   const [migData,   setMigData]   = useState<MigData | null>(null);
@@ -160,6 +195,64 @@ export default function SettingsPanel() {
       <div style={{ marginTop: 10, fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)', lineHeight: 1.5 }}>
         Your preference is saved and will persist across sessions.
       </div>
+
+      {/* ── Staff permissions (owner only) ─────────────────────────────── */}
+      {viewerRole === 'owner' && (
+        <>
+          <div style={{
+            fontFamily: 'var(--font-body)', fontSize: 10, letterSpacing: '0.12em',
+            textTransform: 'uppercase', color: 'var(--admin-muted)',
+            marginTop: 36, marginBottom: 12,
+          }}>
+            Staff permissions
+          </div>
+
+          <div style={{
+            background: 'var(--admin-card)', border: '1px solid var(--admin-border)',
+            borderRadius: 12, overflow: 'hidden',
+          }}>
+            {ROSTER.map((m, i) => {
+              const on = perms[m.id]?.canSeeAllRevenue ?? false;
+              const isOwner = m.role === 'owner';
+              return (
+                <div key={m.id} style={{
+                  display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px',
+                  borderBottom: i < ROSTER.length - 1 ? '1px solid var(--admin-border-sub)' : 'none',
+                }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: staffColor(m.id), flexShrink: 0 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 15, color: 'var(--admin-text)' }}>{m.name}</div>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)' }}>
+                      {isOwner ? 'Owner — always sees all revenue' : (on ? 'Can see all studio revenue' : 'Sees only their own revenue')}
+                    </div>
+                  </div>
+                  {/* Toggle — owners are locked on */}
+                  <button
+                    onClick={() => { if (!isOwner && permSaving !== m.id) toggleRevenue(m.id); }}
+                    disabled={isOwner || permSaving === m.id}
+                    aria-label={`Toggle all-revenue access for ${m.name}`}
+                    style={{
+                      width: 44, height: 26, borderRadius: 13, border: 'none', padding: '0 3px',
+                      background: (isOwner || on) ? '#34C759' : 'var(--admin-border)',
+                      display: 'flex', alignItems: 'center',
+                      justifyContent: (isOwner || on) ? 'flex-end' : 'flex-start',
+                      cursor: isOwner ? 'default' : 'pointer',
+                      opacity: permSaving === m.id ? 0.6 : 1,
+                      transition: 'background 0.2s', flexShrink: 0,
+                      WebkitTapHighlightColor: 'transparent',
+                    }}
+                  >
+                    <span style={{ width: 20, height: 20, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ marginTop: 10, fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)', lineHeight: 1.5 }}>
+            Controls whether each person sees studio-wide revenue (Reports, day &amp; week totals) or only their own.
+          </div>
+        </>
+      )}
 
       {/* ── Booking system migration ──────────────────────────────────── */}
       <div style={{

@@ -1,7 +1,9 @@
+'use client';
 import { useState, useEffect } from 'react';
 import type { Appointment } from '@/lib/admin-mock';
 import { getAppointmentColor } from '@/lib/appointment-colors';
 import { STAFF as ROSTER } from '@/lib/staff';
+import { useRevenueAccess } from './RevenueAccess';
 import AppointmentCard from './AppointmentCard';
 
 // ── Day timeline ──────────────────────────────────────────────────────────────
@@ -316,9 +318,11 @@ export default function DayView({
   const open = openDays ? (openDays[date.getDay()] ?? true) : true;
   const dayHours: [number, number] = hoursByDay?.[date.getDay()] ?? [10, 18];
 
-  // Revenue summary
+  // Revenue summary — restricted viewers see only their own day total.
+  const { canSeeAllRevenue, viewerStaff } = useRevenueAccess();
   const active = appointments.filter((a) => a.status !== 'cancelled' && a.status !== 'blocked');
-  const total = active.reduce((s, a) => s + a.price, 0);
+  const total = (canSeeAllRevenue ? active : active.filter((a) => a.staff === viewerStaff))
+    .reduce((s, a) => s + a.price, 0);
 
   return (
     <div style={{ padding: '0 20px 40px' }}>
@@ -403,7 +407,7 @@ export default function DayView({
             }
             return (
               <>
-                <Stat label="Total" value={total > 0 ? `$${total}` : '—'} />
+                <Stat label={canSeeAllRevenue ? 'Total' : 'Your total'} value={total > 0 ? `$${total}` : '—'} />
                 {ROSTER.map((m) => {
                   const apts = active.filter((a) => a.staff === m.id);
                   const u = util(apts);

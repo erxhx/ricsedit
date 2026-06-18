@@ -1,5 +1,7 @@
+'use client';
 import type { Appointment } from '@/lib/admin-mock';
 import { STAFF as ROSTER } from '@/lib/staff';
+import { useRevenueAccess } from './RevenueAccess';
 
 interface Props {
   appointments: Appointment[];
@@ -40,8 +42,10 @@ function Stat({ label, value, color, sub, subColor }: {
 }
 
 export default function StatsBox({ appointments, hoursByDay, startDate, endDate }: Props) {
+  const { canSeeAllRevenue, viewerStaff } = useRevenueAccess();
   const active   = appointments.filter(a => a.status !== 'cancelled' && a.status !== 'blocked');
-  const total    = active.reduce((s, a) => s + a.price, 0);
+  const revenueApts = canSeeAllRevenue ? active : active.filter(a => a.staff === viewerStaff);
+  const total    = revenueApts.reduce((s, a) => s + a.price, 0);
 
   // Compute utilization across the date range using hoursByDay
   function utilization(staffApts: Appointment[]): { pct: number; color: string } | null {
@@ -72,7 +76,7 @@ export default function StatsBox({ appointments, hoursByDay, startDate, endDate 
       borderRadius: 12,
       boxShadow: '0 1px 6px rgba(0,0,0,0.08)',
     }}>
-      <Stat label="Total" value={total > 0 ? `$${total}` : '—'} />
+      <Stat label={canSeeAllRevenue ? 'Total' : 'Your total'} value={total > 0 ? `$${total}` : '—'} />
       {ROSTER.map((m) => {
         const apts = active.filter(a => a.staff === m.id);
         const util = utilization(apts);

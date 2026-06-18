@@ -3,8 +3,10 @@ import { redirect } from 'next/navigation';
 import { verifySession, SESSION_COOKIE } from '@/lib/admin-auth';
 import { dbGetAppointmentsForDate, dbGetAppointmentsForRange } from '@/lib/db';
 import { getAvailabilityConfig } from '@/lib/availability-store';
+import { getStaffPermissions, canViewAllRevenue } from '@/lib/staff-permissions';
 import AdminHeader from '@/components/admin/AdminHeader';
 import DashboardTabs from '@/components/admin/DashboardTabs';
+import { RevenueAccessProvider } from '@/components/admin/RevenueAccess';
 
 function localDateStr(d: Date): string {
   return d.toLocaleDateString('en-CA', { timeZone: 'America/Vancouver' });
@@ -47,11 +49,14 @@ export default async function AdminPage({
     : sundayOf(todayStr);
   const weekEndStr = addDaysToStr(weekStartStr, 6);
 
-  const [todayApts, weekApts, availability] = await Promise.all([
+  const [todayApts, weekApts, availability, perms] = await Promise.all([
     dbGetAppointmentsForDate(todayStr),
     dbGetAppointmentsForRange(weekStartStr, weekEndStr),
     getAvailabilityConfig(),
+    getStaffPermissions(),
   ]);
+
+  const canSeeAllRevenue = canViewAllRevenue(session.sub, session.role, perms);
 
   // Derive a simple open/closed map from the availability config
   const openDays: Record<number, boolean> = {};
@@ -60,18 +65,20 @@ export default async function AdminPage({
   return (
     <>
       <AdminHeader name={session.name} />
-      <DashboardTabs
-        todayApts={todayApts}
-        weekApts={weekApts}
-        todayStr={todayStr}
-        weekStartStr={weekStartStr}
-        openDays={openDays}
-        hoursByDay={availability.days}
-        staffHoursByDay={Object.fromEntries(
-          Object.entries(availability.staff).map(([id, s]) => [id, s.days]),
-        )}
-        barberThuClose={availability.barberThuClose}
-      />
+      <RevenueAccessProvider value={{ canSeeAllRevenue, viewerStaff: session.sub }}>
+        <DashboardTabs
+          todayApts={todayApts}
+          weekApts={weekApts}
+          todayStr={todayStr}
+          weekStartStr={weekStartStr}
+          openDays={openDays}
+          hoursByDay={availability.days}
+          staffHoursByDay={Object.fromEntries(
+            Object.entries(availability.staff).map(([id, s]) => [id, s.days]),
+          )}
+          barberThuClose={availability.barberThuClose}
+        />
+      </RevenueAccessProvider>
     </>
   );
 }
