@@ -24,7 +24,7 @@ const HERO_FOR = {
   home: {
     h1: <>You Found <em className="it">Us</em>.</>,
     sub: '',
-    cta: 'Swipe across services · pull down for details'
+    cta: 'Tap a service · pull down for details'
   },
   barber: {
     h1: <>Refined.<br />Intentional.<br /><em className="it">Crisp</em>.</>,
@@ -143,96 +143,6 @@ function ChromeNav({ services, idx, onSelect }) {
         ))}
       </div>
     </nav>);
-
-}
-
-// Tiny editorial line-glyphs per service, used in the bottom chrome instead of dots.
-const SERVICE_GLYPHS = {
-  home: (
-    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M2.5 7.2 L8 2.8 L13.5 7.2 V13 H2.5 Z" />
-      <path d="M6.6 13 V9.4 H9.4 V13" />
-    </svg>),
-
-  barber: (
-    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      {/* Scissors */}
-      <circle cx="4" cy="11.5" r="1.8" />
-      <circle cx="4" cy="4.5" r="1.8" />
-      <path d="M5.5 5.6 L14 12.5" />
-      <path d="M5.5 10.4 L14 3.5" />
-    </svg>),
-
-  tan: (
-    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      {/* Sun */}
-      <circle cx="8" cy="8" r="2.6" />
-      <path d="M8 1.5 V3" />
-      <path d="M8 13 V14.5" />
-      <path d="M1.5 8 H3" />
-      <path d="M13 8 H14.5" />
-      <path d="M3.4 3.4 L4.5 4.5" />
-      <path d="M11.5 11.5 L12.6 12.6" />
-      <path d="M3.4 12.6 L4.5 11.5" />
-      <path d="M11.5 4.5 L12.6 3.4" />
-    </svg>),
-
-  wax: (
-    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      {/* Wax applicator stick — diagonal, with horizontal wax line at bottom */}
-      <rect x="6.5" y="2" width="3" height="12" rx="1.5" transform="rotate(-45 8 8)" />
-      <line x1="2" y1="14" x2="14" y2="14" />
-    </svg>),
-
-  lashes: (
-    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      {/* Eye with lashes */}
-      <path d="M1.5 8 C 4 4.5, 12 4.5, 14.5 8" />
-      <circle cx="8" cy="8" r="2" />
-      <path d="M3.6 9.6 L2.7 11" />
-      <path d="M8 10 L8 11.6" />
-      <path d="M12.4 9.6 L13.3 11" />
-    </svg>),
-
-  visit: (
-    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      {/* Map pin */}
-      <path d="M8 14 C 4 9.5, 3 7.5, 3 5.8 A 5 5 0 0 1 13 5.8 C 13 7.5, 12 9.5, 8 14 Z" />
-      <circle cx="8" cy="6" r="1.6" />
-    </svg>)
-
-};
-
-function ChromeBot({ services, idx, vIdx, vCount }) {
-  return (
-    <div className="chrome-bot">
-      <div className="ticker">
-        {services.map((s, i) =>
-        <span key={s.id} className={`glyph-mark ${i === idx ? 'active' : ''}`} aria-label={s.label}>
-            {SERVICE_GLYPHS[s.id] || <span className="dot" />}
-          </span>
-        )}
-      </div>
-      <div className="arrows">
-        <span>← swipe →</span>
-        <span style={{ opacity: vIdx > 0 ? 1 : 0.5 }}>↑</span>
-        <span style={{ opacity: vIdx < vCount - 1 ? 1 : 0.5 }}>↓</span>
-      </div>
-    </div>);
-
-}
-
-function SideArrow({ side, service, onClick }) {
-  return (
-    <button
-      type="button"
-      className={`side-arrow ${side}`}
-      onClick={onClick}
-      aria-label={`Go to ${service.label}`} style={{ padding: "28px 22px" }}>
-      
-      <span className="side-arrow-label">{service.label}</span>
-      <span className="side-arrow-glyph">{side === 'left' ? '←' : '→'}</span>
-    </button>);
 
 }
 
@@ -1015,8 +925,6 @@ function App() {
 
   // container starts at -1 vw (slot -1), so active sits centered.
   const xOffsetPx = -w + hOffset;
-  const prevSvc = SERVICES_DEF[services[wrap(idx - 1)]];
-  const nextSvc = SERVICES_DEF[services[wrap(idx + 1)]];
 
   return (
     <div className="app" ref={appRef} data-screen-label={`Edit Studio — ${active.label}`} data-vidx={activeVIdx} data-announce={t.announceText && !announceDismissed && services[idx] === t.announceTarget ? 'true' : 'false'}>
@@ -1036,7 +944,6 @@ function App() {
       />
       <ChromeTop active={active} total={total} idx={idx} logoSrc={t.palette === 'noir' ? 'assets/logo-white.png' : 'assets/logo-black.png'} />
       <ChromeNav services={services.map((s) => SERVICES_DEF[s])} idx={idx} onSelect={(i) => setIdx(i)} />
-      <ChromeBot services={services.map((s) => SERVICES_DEF[s])} idx={idx} vIdx={activeVIdx} vCount={activeVCount} />
 
       <div style={{
         position: 'absolute', inset: 0,
@@ -1063,9 +970,6 @@ function App() {
 
         })}
       </div>
-
-      <SideArrow side="left" service={prevSvc} onClick={() => setIdx(wrap(idx - 1))} />
-      <SideArrow side="right" service={nextSvc} onClick={() => setIdx(wrap(idx + 1))} />
 
       <window.TweaksPanel title="Edit Studio · Tweaks">
         <window.TweakSection label="Palette" />

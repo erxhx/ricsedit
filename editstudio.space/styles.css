@@ -279,56 +279,6 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
   pointer-events: none;
 }
 
-/* Bottom chrome */
-.chrome-bot {
-  position: absolute; bottom: 0; left: 0; right: 0;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 20px 20px;
-  z-index: 50;
-  pointer-events: none;
-  color: var(--ink);
-  transition: opacity 0.4s ease;
-  /* Backdrop blur so text never reads through dark behind chrome */
-  background: linear-gradient(
-    to top,
-    color-mix(in srgb, var(--bg) 92%, transparent) 35%,
-    color-mix(in srgb, var(--bg) 60%, transparent) 70%,
-    transparent 100%
-  );
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-}
-.chrome-bot .ticker {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  display: flex; gap: 14px; align-items: center;
-}
-.chrome-bot .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: 0.6; }
-.chrome-bot .dot.active { opacity: 1; transform: scale(1.4); }
-.chrome-bot .glyph-mark {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 16px; height: 16px;
-  color: currentColor;
-  opacity: 0.42;
-  transition: opacity 0.3s ease, transform 0.3s var(--easing-spring);
-}
-.chrome-bot .glyph-mark.active {
-  opacity: 1;
-  transform: scale(1.08);
-}
-.chrome-bot .arrows {
-  font-family: var(--mono); font-size: 10px;
-  letter-spacing: 0.08em; text-transform: uppercase;
-  display: flex; gap: 14px; align-items: center;
-}
-/* Hide chrome-bot once user scrolls past the hero (vIdx > 0) */
-.app:not([data-vidx="0"]) .chrome-bot {
-  opacity: 0;
-  pointer-events: none;
-}
-
 /* ── Service strip (vertical scroll panels per service) ─── */
 .strip {
   position: absolute; inset: 0;
@@ -885,64 +835,6 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
 .edge.right { right: 0; }
 .dragging-h .edge { opacity: 0.85; }
 
-/* Side arrows — show next/prev service hint */
-.side-arrow {
-  position: absolute; top: 50%; transform: translateY(-50%);
-  z-index: 40;
-  appearance: none; border: 0; background: transparent;
-  display: flex; flex-direction: column; align-items: center; gap: 10px;
-  padding: 22px 14px;
-  color: var(--ink);
-  cursor: default;
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  opacity: 0.85;
-  transition: opacity 0.35s ease, gap 0.3s var(--easing-spring), visibility 0.35s ease;
-}
-/* Fade out once user has scrolled past the hero — gestures still work,
-   and the editorial vertical-text only appears where it doesn't block content. */
-.app:not([data-vidx="0"]) .side-arrow {
-  opacity: 0;
-  pointer-events: none;
-  visibility: hidden;
-}
-.side-arrow:hover { opacity: 1; }
-.side-arrow.left  { left: 4px; }
-.side-arrow.right { right: 4px; }
-.side-arrow-num {
-  font-family: var(--display); font-style: italic; font-weight: 300;
-  font-size: 22px; letter-spacing: -0.01em;
-  text-transform: none;
-  opacity: 0.75;
-}
-.side-arrow-label {
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-  font-size: 11px;
-  letter-spacing: 0.22em;
-  margin: 6px 0;
-}
-.side-arrow.right .side-arrow-label {
-  writing-mode: vertical-rl;
-  transform: rotate(0deg);
-}
-.side-arrow-glyph {
-  font-family: var(--display);
-  font-size: 26px;
-  font-style: italic;
-  line-height: 1;
-}
-
-@media (min-width: 760px) {
-  .side-arrow { padding: 28px 22px; opacity: 0.85; gap: 14px; }
-  .side-arrow.left  { left: 12px; }
-  .side-arrow.right { right: 12px; }
-  .side-arrow-num   { font-size: 28px; }
-  .side-arrow-label { font-size: 12px; }
-  .side-arrow-glyph { font-size: 32px; }
-}
 
 @media (min-width: 760px) {
   .hero { padding: 0 56px 110px; }

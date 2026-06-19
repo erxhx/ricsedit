@@ -20,7 +20,7 @@
     home: {
       h1: /* @__PURE__ */ React.createElement(React.Fragment, null, "You Found ", /* @__PURE__ */ React.createElement("em", { className: "it" }, "Us"), "."),
       sub: "",
-      cta: "Swipe across services \xB7 pull down for details"
+      cta: "Tap a service \xB7 pull down for details"
     },
     barber: {
       h1: /* @__PURE__ */ React.createElement(React.Fragment, null, "Refined.", /* @__PURE__ */ React.createElement("br", null), "Intentional.", /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement("em", { className: "it" }, "Crisp"), "."),
@@ -121,33 +121,6 @@
       },
       s.id === "home" ? "Home" : s.label
     ))));
-  }
-  const SERVICE_GLYPHS = {
-    home: /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 16 16", width: "14", height: "14", fill: "none", stroke: "currentColor", strokeWidth: "1.2", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement("path", { d: "M2.5 7.2 L8 2.8 L13.5 7.2 V13 H2.5 Z" }), /* @__PURE__ */ React.createElement("path", { d: "M6.6 13 V9.4 H9.4 V13" })),
-    barber: /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 16 16", width: "14", height: "14", fill: "none", stroke: "currentColor", strokeWidth: "1.2", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement("circle", { cx: "4", cy: "11.5", r: "1.8" }), /* @__PURE__ */ React.createElement("circle", { cx: "4", cy: "4.5", r: "1.8" }), /* @__PURE__ */ React.createElement("path", { d: "M5.5 5.6 L14 12.5" }), /* @__PURE__ */ React.createElement("path", { d: "M5.5 10.4 L14 3.5" })),
-    tan: /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 16 16", width: "14", height: "14", fill: "none", stroke: "currentColor", strokeWidth: "1.2", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement("circle", { cx: "8", cy: "8", r: "2.6" }), /* @__PURE__ */ React.createElement("path", { d: "M8 1.5 V3" }), /* @__PURE__ */ React.createElement("path", { d: "M8 13 V14.5" }), /* @__PURE__ */ React.createElement("path", { d: "M1.5 8 H3" }), /* @__PURE__ */ React.createElement("path", { d: "M13 8 H14.5" }), /* @__PURE__ */ React.createElement("path", { d: "M3.4 3.4 L4.5 4.5" }), /* @__PURE__ */ React.createElement("path", { d: "M11.5 11.5 L12.6 12.6" }), /* @__PURE__ */ React.createElement("path", { d: "M3.4 12.6 L4.5 11.5" }), /* @__PURE__ */ React.createElement("path", { d: "M11.5 4.5 L12.6 3.4" })),
-    wax: /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 16 16", width: "14", height: "14", fill: "none", stroke: "currentColor", strokeWidth: "1.2", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement("rect", { x: "6.5", y: "2", width: "3", height: "12", rx: "1.5", transform: "rotate(-45 8 8)" }), /* @__PURE__ */ React.createElement("line", { x1: "2", y1: "14", x2: "14", y2: "14" })),
-    lashes: /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 16 16", width: "14", height: "14", fill: "none", stroke: "currentColor", strokeWidth: "1.2", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement("path", { d: "M1.5 8 C 4 4.5, 12 4.5, 14.5 8" }), /* @__PURE__ */ React.createElement("circle", { cx: "8", cy: "8", r: "2" }), /* @__PURE__ */ React.createElement("path", { d: "M3.6 9.6 L2.7 11" }), /* @__PURE__ */ React.createElement("path", { d: "M8 10 L8 11.6" }), /* @__PURE__ */ React.createElement("path", { d: "M12.4 9.6 L13.3 11" })),
-    visit: /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 16 16", width: "14", height: "14", fill: "none", stroke: "currentColor", strokeWidth: "1.2", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true" }, /* @__PURE__ */ React.createElement("path", { d: "M8 14 C 4 9.5, 3 7.5, 3 5.8 A 5 5 0 0 1 13 5.8 C 13 7.5, 12 9.5, 8 14 Z" }), /* @__PURE__ */ React.createElement("circle", { cx: "8", cy: "6", r: "1.6" }))
-  };
-  function ChromeBot({ services, idx, vIdx, vCount }) {
-    return /* @__PURE__ */ React.createElement("div", { className: "chrome-bot" }, /* @__PURE__ */ React.createElement("div", { className: "ticker" }, services.map(
-      (s, i) => /* @__PURE__ */ React.createElement("span", { key: s.id, className: `glyph-mark ${i === idx ? "active" : ""}`, "aria-label": s.label }, SERVICE_GLYPHS[s.id] || /* @__PURE__ */ React.createElement("span", { className: "dot" }))
-    )), /* @__PURE__ */ React.createElement("div", { className: "arrows" }, /* @__PURE__ */ React.createElement("span", null, "\u2190 swipe \u2192"), /* @__PURE__ */ React.createElement("span", { style: { opacity: vIdx > 0 ? 1 : 0.5 } }, "\u2191"), /* @__PURE__ */ React.createElement("span", { style: { opacity: vIdx < vCount - 1 ? 1 : 0.5 } }, "\u2193")));
-  }
-  function SideArrow({ side, service, onClick }) {
-    return /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        type: "button",
-        className: `side-arrow ${side}`,
-        onClick,
-        "aria-label": `Go to ${service.label}`,
-        style: { padding: "28px 22px" }
-      },
-      /* @__PURE__ */ React.createElement("span", { className: "side-arrow-label" }, service.label),
-      /* @__PURE__ */ React.createElement("span", { className: "side-arrow-glyph" }, side === "left" ? "\u2190" : "\u2192")
-    );
   }
   const STUDIO_HOURS = {
     0: [10, 18],
@@ -791,8 +764,6 @@
       { slotIdx: 1, service: services[wrap(idx + 1)] }
     ];
     const xOffsetPx = -w + hOffset;
-    const prevSvc = SERVICES_DEF[services[wrap(idx - 1)]];
-    const nextSvc = SERVICES_DEF[services[wrap(idx + 1)]];
     return /* @__PURE__ */ React.createElement("div", { className: "app", ref: appRef, "data-screen-label": `Edit Studio \u2014 ${active.label}`, "data-vidx": activeVIdx, "data-announce": t.announceText && !announceDismissed && services[idx] === t.announceTarget ? "true" : "false" }, /* @__PURE__ */ React.createElement(
       AnnouncementStrip,
       {
@@ -811,7 +782,7 @@
           }
         }
       }
-    ), /* @__PURE__ */ React.createElement(ChromeTop, { active, total, idx, logoSrc: t.palette === "noir" ? "assets/logo-white.png" : "assets/logo-black.png" }), /* @__PURE__ */ React.createElement(ChromeNav, { services: services.map((s) => SERVICES_DEF[s]), idx, onSelect: (i) => setIdx(i) }), /* @__PURE__ */ React.createElement(ChromeBot, { services: services.map((s) => SERVICES_DEF[s]), idx, vIdx: activeVIdx, vCount: activeVCount }), /* @__PURE__ */ React.createElement("div", { style: {
+    ), /* @__PURE__ */ React.createElement(ChromeTop, { active, total, idx, logoSrc: t.palette === "noir" ? "assets/logo-white.png" : "assets/logo-black.png" }), /* @__PURE__ */ React.createElement(ChromeNav, { services: services.map((s) => SERVICES_DEF[s]), idx, onSelect: (i) => setIdx(i) }), /* @__PURE__ */ React.createElement("div", { style: {
       position: "absolute",
       inset: 0,
       display: "flex",
@@ -837,7 +808,7 @@
           } : void 0
         }
       ));
-    })), /* @__PURE__ */ React.createElement(SideArrow, { side: "left", service: prevSvc, onClick: () => setIdx(wrap(idx - 1)) }), /* @__PURE__ */ React.createElement(SideArrow, { side: "right", service: nextSvc, onClick: () => setIdx(wrap(idx + 1)) }), /* @__PURE__ */ React.createElement(window.TweaksPanel, { title: "Edit Studio \xB7 Tweaks" }, /* @__PURE__ */ React.createElement(window.TweakSection, { label: "Palette" }), /* @__PURE__ */ React.createElement(
+    })), /* @__PURE__ */ React.createElement(window.TweaksPanel, { title: "Edit Studio \xB7 Tweaks" }, /* @__PURE__ */ React.createElement(window.TweakSection, { label: "Palette" }), /* @__PURE__ */ React.createElement(
       window.TweakRadio,
       {
         label: "Theme",
