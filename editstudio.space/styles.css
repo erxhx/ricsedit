@@ -301,19 +301,26 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
   justify-content: flex-end;
   padding: 0 24px 96px;
 }
-/* Mobile: vertically centre the hero content and even out the side spacing.
-   Overrides the per-element inline padding/margins (80px left / 56px right +
-   small left indents) that read well on wide screens but bottom-weight and
-   off-centre the content on tall phones. */
+/* Mobile: keep the bottom-anchored composition, but centre the content
+   horizontally on the narrow screen and sit it lower. (The inline 80px-left
+   padding + small left indents skewed it right; here we override them.) */
 @media (max-width: 759px) {
   .hero {
-    justify-content: center !important;
-    padding: 0 24px 40px !important;
+    justify-content: flex-end !important;
+    align-items: center !important;
+    text-align: center !important;
+    padding: 0 24px 72px !important;
   }
+  .hero h1,
+  .hero .book { width: 100%; }
   .hero .sub,
   .hero .swipe-hint,
   .hero .book,
-  .hero .hero-contact { margin-left: 0 !important; }
+  .hero .hero-contact {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+  .hero .hero-contact { justify-content: center !important; }
 }
 .hero .number {
   font-family: var(--mono);
