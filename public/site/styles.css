@@ -301,10 +301,10 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
   justify-content: flex-end;
   padding: 0 24px 96px;
 }
-/* Mobile: sit the (bottom-anchored) hero content ~100px lower by trimming the
-   bottom padding. Overrides the inline 110px bottom set on .hero. */
+/* Mobile: sit the (bottom-anchored) hero content lower by trimming the bottom
+   padding (110px → 30px, ~80px lower). Overrides the inline bottom on .hero. */
 @media (max-width: 759px) {
-  .hero { padding-bottom: 10px !important; }
+  .hero { padding-bottom: 30px !important; }
 }
 .hero .number {
   font-family: var(--mono);
