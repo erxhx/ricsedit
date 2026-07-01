@@ -204,15 +204,24 @@ function LashesContent({ headline }) {
       <div className="rule" />
       <window.BookingEmbed category="lashes" />
 
-      {/* TODO: add a lash gallery here once photos are available (mirror the
-          .gallery markup used on the Barbering / Waxing pages). */}
+      <div className="rule" />
+      <Eyebrow left="Gallery" right="Lash &amp; brow work" />
+      {/* Placeholder tiles — swap each .ph for an <img> once photos are ready
+          (mirror the Barbering / Waxing gallery markup). */}
+      <div className="gallery">
+        <div className="tile tall"><div className="ph">Classic set</div></div>
+        <div className="tile square"><div className="ph">Volume set</div></div>
+        <div className="tile"><div className="ph">Lash lift</div></div>
+        <div className="tile wide"><div className="ph">Brow lamination</div></div>
+      </div>
 
       <div className="rule" />
       <Eyebrow left="Your artist" right="Lash + brow" />
       <div className="stylists">
         <div className="stylist">
-          {/* TODO: swap in Niamh's headshot — backgroundImage: url('assets/niamh-frazer-headshot.webp') */}
-          <div className="avatar" style={{ background: 'oklch(0.55 0.13 290)' }} />
+          {/* Placeholder headshot — shows "NF" initials until a photo is set.
+              To add: style={{ backgroundImage: "url('assets/niamh-frazer-headshot.webp')" }} */}
+          <div className="avatar" data-initials="NF" />
           <div>
             <h3>Niamh Frazer</h3>
             <div className="role">Lash Artist</div>
