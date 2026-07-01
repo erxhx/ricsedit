@@ -309,6 +309,14 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
     padding-bottom: 50px !important;
     padding-left: 75px !important;
   }
+  /* Centre the full-width pills on screen despite the asymmetric hero padding
+     (left 75 / right 56): pull their left edge in to match the 56px right inset,
+     leaving the left-aligned text where it is. */
+  .hero .book,
+  .hero .next-avail {
+    margin-left: -19px !important;
+    margin-right: 0 !important;
+  }
 }
 .hero .number {
   font-family: var(--mono);
