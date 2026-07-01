@@ -152,7 +152,10 @@ export async function POST(req: NextRequest) {
 
     // ── Build appointment ─────────────────────────────────────────────────────
     const staff = staffForCategory(category) ?? 'eric';
-    const dateStr = new Date(date).toISOString().slice(0, 10);
+    // Prefer a plain YYYY-MM-DD from the client (its local calendar date). Fall
+    // back to parsing an ISO string for older cached clients — but never via
+    // toISOString(), which would shift the day for non-Pacific visitors.
+    const dateStr = /^\d{4}-\d{2}-\d{2}/.test(date) ? date.slice(0, 10) : new Date(date).toISOString().slice(0, 10);
     const startTime = `${pad(time.h)}:${pad(time.m ?? 0)}`;
 
     const allServices = [...services, ...(addons ?? [])];

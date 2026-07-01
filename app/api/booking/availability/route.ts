@@ -34,7 +34,9 @@ export async function GET(req: NextRequest) {
   const appointments = await dbGetAppointmentsForDate(date);
 
   const bookedRanges = appointments
-    .filter((a) => a.staff === staff && a.status !== 'cancelled' && a.status !== 'blocked')
+    // Keep everything that actually occupies the staff member's time — including
+    // admin "blocked" slots (lunch, personal, closures). Only cancelled frees up.
+    .filter((a) => a.staff === staff && a.status !== 'cancelled')
     .map((a) => {
       const [h, m] = a.startTime.split(':').map(Number);
       return {

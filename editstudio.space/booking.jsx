@@ -1333,7 +1333,7 @@
           var res = await fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ category: category, services: services, addons: addons, date: date.toISOString(), time: time, client: client, intakeResponses: intakeResponses, _hp: document.getElementById('bk-hp') ? document.getElementById('bk-hp').value : '' }),
+            body: JSON.stringify({ category: category, services: services, addons: addons, date: (date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0')), time: time, client: client, intakeResponses: intakeResponses, _hp: document.getElementById('bk-hp') ? document.getElementById('bk-hp').value : '' }),
           });
           if (!res.ok) {
             var errData = await res.json().catch(function() { return {}; });
