@@ -9,6 +9,7 @@
 
 import { db } from './supabase';
 import { STAFF } from './staff';
+import type { Appointment } from './admin-mock';
 
 export interface StaffPermissions {
   canSeeAllRevenue: boolean;
@@ -62,4 +63,19 @@ export function canViewAllRevenue(
 ): boolean {
   if (role === 'owner') return true;
   return perms[staffId]?.canSeeAllRevenue ?? false;
+}
+
+/**
+ * Redact revenue from appointments the viewer isn't allowed to see. When the
+ * viewer can't see studio-wide revenue, zero the `price` on any appointment
+ * that isn't their own — so other staff's revenue never reaches the client,
+ * not just gets hidden in the UI.
+ */
+export function redactRevenue(
+  appts: Appointment[],
+  viewerStaff: string,
+  canSeeAll: boolean,
+): Appointment[] {
+  if (canSeeAll) return appts;
+  return appts.map((a) => (a.staff === viewerStaff ? a : { ...a, price: 0 }));
 }

@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { verifySession, SESSION_COOKIE } from '@/lib/admin-auth';
 import { dbGetAppointmentsForDate } from '@/lib/db';
 import { getAvailabilityConfig } from '@/lib/availability-store';
+import { getStaffPermissions, canViewAllRevenue, redactRevenue } from '@/lib/staff-permissions';
 import AdminHeader from '@/components/admin/AdminHeader';
 import DaySchedule from '@/components/admin/DaySchedule';
 
@@ -27,10 +28,13 @@ export default async function DayPage({ params }: { params: Promise<{ date: stri
   const { date } = await params;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) redirect('/admin');
 
-  const [appointments, availability] = await Promise.all([
+  const [appointments, availability, perms] = await Promise.all([
     dbGetAppointmentsForDate(date),
     getAvailabilityConfig(),
+    getStaffPermissions(),
   ]);
+  const canSeeAllRevenue = canViewAllRevenue(session.sub, session.role, perms);
+  const visibleAppointments = redactRevenue(appointments, session.sub, canSeeAllRevenue);
 
   return (
     <>
@@ -72,7 +76,7 @@ export default async function DayPage({ params }: { params: Promise<{ date: stri
         {/* Right spacer to keep date centred */}
         <div style={{ width: 60 }} />
       </div>
-      <DaySchedule appointments={appointments} date={date} hoursByDay={availability.days} staffHoursByDay={{ eric: availability.staff.eric.days, livi: availability.staff.livi.days }} barberThuClose={availability.barberThuClose} />
+      <DaySchedule appointments={visibleAppointments} date={date} hoursByDay={availability.days} staffHoursByDay={Object.fromEntries(Object.entries(availability.staff).map(([id, s]) => [id, s.days]))} barberThuClose={availability.barberThuClose} />
     </>
   );
 }

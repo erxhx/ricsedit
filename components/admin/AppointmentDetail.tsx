@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import type { Appointment, AppointmentStatus } from '@/lib/admin-mock';
 import { getAppointmentColor } from '@/lib/appointment-colors';
 import { staffName } from '@/lib/staff';
+import { useRevenueAccess } from './RevenueAccess';
 
 // Time slots 9 am – 7 pm in 15-min increments
 const TIME_SLOTS: string[] = [];
@@ -67,6 +68,7 @@ export default function AppointmentDetail({
   history?: Appointment[];
 }) {
   const router = useRouter();
+  const { canSeeAllRevenue, viewerStaff } = useRevenueAccess();
   const [apt, setApt] = useState(initial);
   const [note,          setNote]          = useState(initial.notes ?? '');
   const [editingNote,      setEditingNote]      = useState(false);
@@ -233,7 +235,9 @@ export default function AppointmentDetail({
           <Row label="Service" value={apt.service} />
           <Row label="Time" value={`${fmtTime(apt.startTime)} – ${fmtTime(apt.endTime)}`} />
           <Row label="Duration" value={`${apt.durationMinutes} min`} />
-          <Row label="Price" value={`$${apt.price}`} />
+          {(canSeeAllRevenue || apt.staff === viewerStaff) && (
+            <Row label="Price" value={`$${apt.price}`} />
+          )}
           <Row label="Staff">
             <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ width: 7, height: 7, borderRadius: '50%', background: color, display: 'inline-block' }} />
@@ -473,7 +477,7 @@ export default function AppointmentDetail({
                     {/* Price + status */}
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
                       <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-text)' }}>
-                        ${h.price}
+                        {(canSeeAllRevenue || h.staff === viewerStaff) ? `$${h.price}` : '—'}
                       </div>
                       <div style={{
                         fontFamily: 'var(--font-body)', fontSize: 10,
