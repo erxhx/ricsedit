@@ -427,12 +427,7 @@ export default function WeekGridView({
 
   const navArrow: React.CSSProperties = {
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    width: 32, height: 32, borderRadius: 10,
-    background: 'var(--admin-glass-bg)',
-    backdropFilter: 'blur(16px)',
-    WebkitBackdropFilter: 'blur(16px)',
-    border: '1px solid var(--admin-glass-border)',
-    boxShadow: 'var(--admin-glass-shadow)',
+    width: 34, height: 32,
     color: 'var(--admin-text2)', fontSize: 16, lineHeight: 1,
     flexShrink: 0, cursor: 'pointer',
     WebkitTapHighlightColor: 'transparent',
@@ -472,7 +467,7 @@ export default function WeekGridView({
 
         {/* Week range flanked by arrows */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <button onClick={onPrevWeek} style={navArrow}>‹</button>
+          <button onClick={onPrevWeek} className="lg lg-capsule lg-press" style={navArrow}>‹</button>
           <button
             style={{
               fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 500,
@@ -485,7 +480,7 @@ export default function WeekGridView({
             {fmtWeekRange(weekStart)}
             {isThisWeek && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4a9b6f', display: 'inline-block' }} />}
           </button>
-          <button onClick={onNextWeek} style={navArrow}>›</button>
+          <button onClick={onNextWeek} className="lg lg-capsule lg-press" style={navArrow}>›</button>
           {!isThisWeek && onGoCurrentWeek && (
             <button
               onClick={onGoCurrentWeek}

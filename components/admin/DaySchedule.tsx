@@ -450,8 +450,7 @@ export default function DaySchedule({
 
   const navArrow: React.CSSProperties = {
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    width: 32, height: 32, borderRadius: 7,
-    border: '1px solid var(--admin-border)', background: 'none',
+    width: 34, height: 32,
     color: 'var(--admin-text2)', fontSize: 16, lineHeight: 1,
     flexShrink: 0, cursor: 'pointer',
     WebkitTapHighlightColor: 'transparent',
@@ -473,7 +472,7 @@ export default function DaySchedule({
 
           {/* Date flanked by arrows */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            {onPrev && <button onClick={onPrev} style={navArrow}>‹</button>}
+            {onPrev && <button onClick={onPrev} className="lg lg-capsule lg-press" style={navArrow}>‹</button>}
             <button
               style={{
                 fontFamily: 'var(--font-body)', fontSize: 13,
@@ -490,17 +489,15 @@ export default function DaySchedule({
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4a9b6f', display: 'inline-block', flexShrink: 0 }} />
               )}
             </button>
-            {onNext && <button onClick={onNext} style={navArrow}>›</button>}
+            {onNext && <button onClick={onNext} className="lg lg-capsule lg-press" style={navArrow}>›</button>}
             {!isToday && onGoToday && (
               <button
                 onClick={onGoToday}
+                className="lg lg-capsule lg-press"
                 style={{
                   fontFamily: 'var(--font-body)', fontSize: 11, color: '#b5824a',
-                  letterSpacing: '0.04em', background: 'var(--admin-glass-bg)',
-                  backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-                  border: '1px solid var(--admin-glass-border)',
-                  boxShadow: 'var(--admin-glass-shadow)',
-                  borderRadius: 8, cursor: 'pointer', padding: '4px 10px',
+                  letterSpacing: '0.04em', fontWeight: 500,
+                  cursor: 'pointer', padding: '7px 12px',
                   WebkitTapHighlightColor: 'transparent',
                 }}
               >
@@ -635,7 +632,7 @@ export default function DaySchedule({
                 return (
                   <div style={{
                     position: 'absolute',
-                    top: topPx, left: 2, right: 2,
+                    top: topPx, left: 2, width: 'calc(100% - 4px)',
                     height: 15 * PPM,
                     background: `${color}20`,
                     border: `1.5px solid ${color}`,
@@ -680,7 +677,10 @@ export default function DaySchedule({
                     onTouchCancel={() => onAptTouchCancel(apt)}
                     onMouseDown={(e) => onAptMouseDown(e, apt)}
                     style={{
-                      position: 'absolute', top: topPx, left: 3, right: 3, height: hPx,
+                      // Explicit width instead of left+right stretch — iOS Safari
+                      // fails to re-stretch abs-pos boxes in flex columns on
+                      // post-hydration re-renders (blocks collapsed to slivers).
+                      position: 'absolute', top: topPx, left: 3, width: 'calc(100% - 6px)', height: hPx,
                       background: blocked ? 'var(--admin-blocked)' : completed ? `${col}18` : `${col}22`,
                       border: `1px solid ${blocked ? 'var(--admin-blocked-border)' : completed ? `${col}40` : `${col}60`}`,
                       borderLeft: `2.5px solid ${blocked ? 'var(--admin-blocked-border)' : completed ? `${col}70` : col}`,
@@ -737,7 +737,7 @@ export default function DaySchedule({
                     style={{
                       position: 'absolute',
                       top: t2m(ghostApt.startTime) * PPM,
-                      left: 3, right: 3,
+                      left: 3, width: 'calc(100% - 6px)',
                       height: Math.max(ghostApt.durationMinutes * PPM - 2, 22),
                       background: `${ghostCol}28`,
                       border: `1.5px dashed ${ghostCol}`,

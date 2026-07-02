@@ -194,12 +194,7 @@ function fmtDate(date: Date): string {
 
 const navArrow: React.CSSProperties = {
   display: 'flex', alignItems: 'center', justifyContent: 'center',
-  width: 36, height: 36, borderRadius: 10,
-  background: 'var(--admin-glass-bg)',
-  backdropFilter: 'blur(16px)',
-  WebkitBackdropFilter: 'blur(16px)',
-  border: '1px solid var(--admin-glass-border)',
-  boxShadow: 'var(--admin-glass-shadow)',
+  width: 38, height: 36,
   color: 'var(--admin-text2)', fontSize: 18, lineHeight: 1,
   cursor: 'pointer', flexShrink: 0,
   WebkitTapHighlightColor: 'transparent',
@@ -348,15 +343,11 @@ export default function DayView({
               {!isToday && onGoToday && (
                 <button
                   onClick={onGoToday}
+                  className="lg lg-capsule lg-press"
                   style={{
                     fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500,
                     color: '#b5824a', cursor: 'pointer',
-                    padding: '5px 10px', borderRadius: 9999,
-                    background: 'var(--admin-glass-bg)',
-                    backdropFilter: 'blur(16px)',
-                    WebkitBackdropFilter: 'blur(16px)',
-                    border: '1px solid var(--admin-glass-border)',
-                    boxShadow: 'var(--admin-glass-shadow)',
+                    padding: '8px 12px',
                     WebkitTapHighlightColor: 'transparent',
                     marginRight: 2,
                   }}
@@ -364,8 +355,8 @@ export default function DayView({
                   Today
                 </button>
               )}
-              <button onClick={onPrev} style={navArrow}>‹</button>
-              <button onClick={onNext} style={navArrow}>›</button>
+              <button onClick={onPrev} className="lg lg-capsule lg-press" style={navArrow}>‹</button>
+              <button onClick={onNext} className="lg lg-capsule lg-press" style={navArrow}>›</button>
             </div>
           )}
         </div>

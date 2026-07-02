@@ -45,9 +45,9 @@ export default function LoginPage() {
       background: 'var(--admin-bg)',
       padding: '0 24px',
     }}>
-      <div style={{ width: '100%', maxWidth: 320 }}>
+      <div style={{ width: '100%', maxWidth: 340 }}>
         {/* Logo / wordmark */}
-        <div style={{ marginBottom: 40, textAlign: 'center' }}>
+        <div style={{ marginBottom: 32, textAlign: 'center' }}>
           <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, letterSpacing: '0.12em', color: 'var(--admin-text)', fontWeight: 500 }}>
             EDIT STUDIO
           </div>
@@ -56,7 +56,8 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <form onSubmit={submit}>
+        {/* Floating glass card */}
+        <form onSubmit={submit} className="lg-sheet" style={{ borderRadius: 28, padding: '18px 16px' }}>
           <input
             ref={inputRef}
             type="password"
@@ -68,10 +69,10 @@ export default function LoginPage() {
             required
             style={{
               width: '100%', boxSizing: 'border-box',
-              background: 'var(--admin-card)',
-              border: `1px solid ${error ? 'var(--admin-error)' : 'var(--admin-border)'}`,
-              borderRadius: 10,
-              padding: '14px 16px',
+              background: 'var(--lg-active-pill)',
+              border: `1px solid ${error ? 'var(--admin-error)' : 'transparent'}`,
+              borderRadius: 9999, // concentric capsule inside the 28px card
+              padding: '14px 18px',
               fontFamily: 'var(--font-body)', fontSize: 15, color: 'var(--admin-text)',
               outline: 'none',
               marginBottom: error ? 8 : 12,
@@ -79,7 +80,7 @@ export default function LoginPage() {
           />
 
           {error && (
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-error)', marginBottom: 12 }}>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-error)', margin: '0 6px 12px' }}>
               {error}
             </div>
           )}
@@ -87,12 +88,14 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
+            className="lg-press"
             style={{
               width: '100%',
               background: !loading ? 'var(--admin-btn-primary-bg)' : 'var(--admin-btn)',
               color: !loading ? 'var(--admin-btn-primary-fg)' : 'var(--admin-muted)',
-              border: 'none', borderRadius: 10,
+              border: 'none', borderRadius: 9999,
               padding: '14px',
+              boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.25), 0 6px 18px rgba(0,0,0,0.18)',
               fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 500,
               cursor: !loading ? 'pointer' : 'default',
               transition: 'background 0.15s, color 0.15s',
