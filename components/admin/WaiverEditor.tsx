@@ -53,13 +53,9 @@ export default function WaiverEditor() {
   return (
     <div style={{ padding: '0 0 80px' }}>
       {/* Sub-header */}
-      <div style={{
+      <div className="lg-scroll-edge" style={{
         display: 'flex', alignItems: 'center',
         height: 52, padding: '0 20px',
-        borderBottom: '1px solid var(--admin-border)',
-        background: 'var(--admin-glass-bg)',
-        backdropFilter: 'blur(24px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
         position: 'sticky', top: 52, zIndex: 9,
         gap: 12,
       }}>

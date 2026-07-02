@@ -484,13 +484,11 @@ export default function WeekGridView({
           {!isThisWeek && onGoCurrentWeek && (
             <button
               onClick={onGoCurrentWeek}
+              className="lg lg-capsule lg-press"
               style={{
                 fontFamily: 'var(--font-body)', fontSize: 11, color: '#b5824a',
-                letterSpacing: '0.04em', background: 'var(--admin-glass-bg)',
-                backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-                border: '1px solid var(--admin-glass-border)',
-                boxShadow: 'var(--admin-glass-shadow)',
-                borderRadius: 8, cursor: 'pointer', padding: '4px 10px',
+                letterSpacing: '0.04em', fontWeight: 500,
+                cursor: 'pointer', padding: '7px 12px',
                 WebkitTapHighlightColor: 'transparent',
               }}
             >
@@ -514,7 +512,9 @@ export default function WeekGridView({
       </div>
 
       {/* ── day headers ── sticky ─────────────────────────────────────────── */}
-      <div style={{ display: 'flex', paddingLeft: TW, position: 'sticky', top: stickyTop + (navShown ? NAV_H : 0), zIndex: 6, transition: 'top 0.25s cubic-bezier(0.22, 1, 0.36, 1)', background: 'var(--admin-glass-bg)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)', borderBottom: '1px solid var(--admin-glass-border)' }}>
+      {/* Day-header row — content-layer header, kept opaque (glass is reserved
+          for floating chrome per Liquid Glass guidance) */}
+      <div style={{ display: 'flex', paddingLeft: TW, position: 'sticky', top: stickyTop + (navShown ? NAV_H : 0), zIndex: 6, transition: 'top 0.25s cubic-bezier(0.22, 1, 0.36, 1)', background: 'var(--admin-bg)', borderBottom: '1px solid var(--admin-border)' }}>
         {days.map((day) => (
           <div key={day.dateStr} style={{ flex: 1, textAlign: 'center', padding: '8px 2px', opacity: day.isOpen ? 1 : 0.3 }}>
             <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', lineHeight: 1 }}>

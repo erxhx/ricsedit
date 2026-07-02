@@ -147,10 +147,7 @@ export default function MonthView({
 
   const navArrow: React.CSSProperties = {
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    width: 36, height: 36, borderRadius: 9,
-    border: '1px solid var(--admin-border)',
-    background: 'var(--admin-glass-bg)',
-    backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+    width: 36, height: 34,
     color: 'var(--admin-text2)', fontSize: 16,
     cursor: 'pointer', flexShrink: 0,
     WebkitTapHighlightColor: 'transparent',
@@ -171,12 +168,13 @@ export default function MonthView({
           <button
             onClick={onPrevMonth}
             disabled={!canPrevMonth}
-            style={{ ...navArrow, opacity: canPrevMonth ? 1 : 0.25, border: 'none', background: 'none' }}
+            className="lg lg-capsule lg-press"
+            style={{ ...navArrow, opacity: canPrevMonth ? 1 : 0.35 }}
           >‹</button>
           <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 500, color: 'var(--admin-text)', letterSpacing: '-0.01em' }}>
             {MONTH_NAMES[month]} {year}
           </div>
-          <button onClick={onNextMonth} style={{ ...navArrow, border: 'none', background: 'none' }}>›</button>
+          <button onClick={onNextMonth} className="lg lg-capsule lg-press" style={navArrow}>›</button>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -184,7 +182,8 @@ export default function MonthView({
           <button
             onClick={openBlockRange}
             title="Block date range"
-            style={{ ...navArrow, fontSize: 15, border: '1px solid var(--admin-border)' }}
+            className="lg lg-capsule lg-press"
+            style={{ ...navArrow, fontSize: 15 }}
           >
             ⊘
           </button>

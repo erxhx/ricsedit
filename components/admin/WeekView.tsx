@@ -71,12 +71,7 @@ export default function WeekView({ appointments, weekStart, isLoading, onPrevWee
 
   const navArrow: React.CSSProperties = {
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    width: 36, height: 36, borderRadius: 10,
-    background: 'var(--admin-glass-bg)',
-    backdropFilter: 'blur(16px)',
-    WebkitBackdropFilter: 'blur(16px)',
-    border: '1px solid var(--admin-glass-border)',
-    boxShadow: 'var(--admin-glass-shadow)',
+    width: 38, height: 36,
     color: 'var(--admin-text2)', fontSize: 18, lineHeight: 1,
     flexShrink: 0, cursor: 'pointer',
     WebkitTapHighlightColor: 'transparent',
@@ -102,15 +97,11 @@ export default function WeekView({ appointments, weekStart, isLoading, onPrevWee
             {!isThisWeek && onGoCurrentWeek && (
               <button
                 onClick={onGoCurrentWeek}
+                className="lg lg-capsule lg-press"
                 style={{
                   fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500,
                   color: '#b5824a', cursor: 'pointer',
-                  padding: '5px 10px', borderRadius: 9999,
-                  background: 'var(--admin-glass-bg)',
-                  backdropFilter: 'blur(16px)',
-                  WebkitBackdropFilter: 'blur(16px)',
-                  border: '1px solid var(--admin-glass-border)',
-                  boxShadow: 'var(--admin-glass-shadow)',
+                  padding: '8px 12px',
                   WebkitTapHighlightColor: 'transparent',
                   marginRight: 2,
                 }}
@@ -118,8 +109,8 @@ export default function WeekView({ appointments, weekStart, isLoading, onPrevWee
                 Today
               </button>
             )}
-            <button onClick={onPrevWeek} style={navArrow}>‹</button>
-            <button onClick={onNextWeek} style={navArrow}>›</button>
+            <button onClick={onPrevWeek} className="lg lg-capsule lg-press" style={navArrow}>‹</button>
+            <button onClick={onNextWeek} className="lg lg-capsule lg-press" style={navArrow}>›</button>
           </div>
         </div>
       </div>
