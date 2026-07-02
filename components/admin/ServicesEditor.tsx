@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import useScrollLock from './useScrollLock';
 import type { ServicesData } from '@/lib/services-store';
 import type { AddTarget } from '@/lib/services-store';
 import type { Service, ServiceGroup } from '@/lib/services';
@@ -75,6 +76,9 @@ export default function ServicesEditor({ initial }: { initial: ServicesData }) {
   const [sheet, setSheet]   = useState<SheetState>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState('');
+
+  // Freeze the page while the edit sheet is open
+  useScrollLock(!!sheet);
 
   // Open sheet to edit an existing service
   function openEdit(svc: Service) {

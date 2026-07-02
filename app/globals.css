@@ -47,6 +47,8 @@ h1, h2 {
 
 /* Heavier variant for large overlays (sheets, drawer) */
 .lg-sheet {
+  /* Inner scrolling must never chain to the page behind the overlay */
+  overscroll-behavior: contain;
   background:
     linear-gradient(160deg, var(--lg-sheen) 0%, transparent 38%),
     var(--lg-sheet-bg);

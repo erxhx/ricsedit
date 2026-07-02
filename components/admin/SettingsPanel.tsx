@@ -345,7 +345,7 @@ export default function SettingsPanel({
             </div>
 
             {/* Appointment rows */}
-            <div style={{ maxHeight: 340, overflowY: 'auto' }}>
+            <div style={{ maxHeight: 340, overflowY: 'auto', overscrollBehavior: 'contain' }}>
               {listApts.length === 0 ? (
                 <div style={{ padding: '20px 16px', fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-muted)', textAlign: 'center' }}>
                   {tab === 'pending' ? 'No pending appointments.' : 'No emails sent yet.'}

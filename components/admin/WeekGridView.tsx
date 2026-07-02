@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import type { Appointment } from '@/lib/admin-mock';
 import { getAppointmentColor } from '@/lib/appointment-colors';
 import { STAFF as ROSTER, STAFF_IDS, staffName } from '@/lib/staff';
+import useScrollLock from './useScrollLock';
 
 // ── layout constants ──────────────────────────────────────────────────────────
 const H0 = 8, H1 = 22;
@@ -159,6 +160,9 @@ export default function WeekGridView({
   const [useCustomEnd,  setUseCustomEnd]  = useState(false);
   const [customEndTime, setCustomEndTime] = useState('');
 
+  // Freeze the page while any bottom sheet is open
+  useScrollLock(!!(dragConfirm || slotAction || blockSheet || blockDelSheet));
+
   const today    = new Date();
   const todayStr = localStr(today);
 
@@ -208,7 +212,7 @@ export default function WeekGridView({
   // ── scroll to current time on mount ──────────────────────────────────────────
   useEffect(() => {
     if (nowRef.current) {
-      nowRef.current.scrollIntoView({ block: 'center', behavior: 'instant' });
+      nowRef.current.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' });
     }
   }, []);
 

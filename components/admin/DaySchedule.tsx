@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import type { Appointment } from '@/lib/admin-mock';
 import { getAppointmentColor } from '@/lib/appointment-colors';
 import { STAFF as ROSTER, STAFF_IDS, staffName, staffColor } from '@/lib/staff';
+import useScrollLock from './useScrollLock';
 
 // ── layout constants ──────────────────────────────────────────────────────────
 const H0 = 8, H1 = 22;          // visible range: 8 am – 10 pm
@@ -135,6 +136,9 @@ export default function DaySchedule({
     return (d.getHours() - H0) * 60 + d.getMinutes();
   });
 
+  // Freeze the page while any bottom sheet is open
+  useScrollLock(!!(dragConfirm || slotAction || blockSheet || blockDelSheet));
+
   // sync appointments when the parent navigates to a different day
   useEffect(() => {
     setApts(initial);
@@ -181,7 +185,9 @@ export default function DaySchedule({
   // scroll to current time on mount
   useEffect(() => {
     if (nowRef.current) {
-      nowRef.current.scrollIntoView({ block: 'center', behavior: 'instant' });
+      // inline:'nearest' pins the horizontal axis — the now-line lives inside the
+      // horizontally scrollable track and must not yank it sideways on mount.
+      nowRef.current.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' });
     }
   }, []);
 
@@ -524,7 +530,7 @@ export default function DaySchedule({
         <div
           ref={headerScrollRef}
           onScroll={() => syncScroll('header')}
-          style={{ flex: 1, overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}
+          style={{ flex: 1, overflowX: 'auto', overscrollBehaviorX: 'contain', scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}
         >
           <div style={{ display: 'flex' }}>
             {ROSTER.map((m) => (
@@ -561,7 +567,13 @@ export default function DaySchedule({
         <div
           ref={bodyScrollRef}
           onScroll={() => syncScroll('body')}
-          style={{ flex: 1, overflowX: 'auto', position: 'relative' }}
+          style={{
+            flex: 1, overflowX: 'auto', position: 'relative',
+            // Contain edge overscroll (don't chain into page rubber-banding) and
+            // gently snap column starts into place after a horizontal fling.
+            overscrollBehaviorX: 'contain',
+            scrollSnapType: 'x proximity',
+          }}
         >
           <div ref={gridRef} style={{ display: 'flex', position: 'relative', height: TOTAL_PX }}>
 
@@ -583,7 +595,7 @@ export default function DaySchedule({
           const staffApts = visible.filter((a) => a.staff === staff);
 
           return (
-            <div key={staff} style={{ flex: `1 0 ${COL_W}px`, position: 'relative', height: TOTAL_PX, borderLeft: '1px solid var(--admin-border-sub)' }}>
+            <div key={staff} style={{ flex: `1 0 ${COL_W}px`, position: 'relative', height: TOTAL_PX, borderLeft: '1px solid var(--admin-border-sub)', scrollSnapAlign: 'start' }}>
 
               {/* hour gridlines */}
               {HOURS.map((h) => (

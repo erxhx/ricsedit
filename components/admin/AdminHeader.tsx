@@ -3,6 +3,7 @@ import { useState, useCallback } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAdminTheme } from './AdminThemeProvider';
+import useScrollLock from './useScrollLock';
 
 interface NavItem {
   label: string;
@@ -58,6 +59,9 @@ export default function AdminHeader({ name }: { name: string }) {
   const [open, setOpen] = useState(false);
   const [spinning, setSpinning] = useState(false);
   const { theme } = useAdminTheme();
+
+  // Freeze the page while the drawer is open
+  useScrollLock(open);
 
   const refresh = useCallback(() => {
     setSpinning(true);
@@ -218,7 +222,7 @@ export default function AdminHeader({ name }: { name: string }) {
         </div>
 
         {/* Nav — active item gets a concentric capsule pill */}
-        <nav style={{ flex: 1, padding: '4px 10px', overflowY: 'auto' }}>
+        <nav style={{ flex: 1, padding: '4px 10px', overflowY: 'auto', overscrollBehavior: 'contain' }}>
           {NAV.map((item) => {
             const active = isActive(item.href, pathname, searchParams);
             return (

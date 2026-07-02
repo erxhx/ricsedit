@@ -3,6 +3,7 @@ import { useState } from 'react';
 import type { Appointment } from '@/lib/admin-mock';
 import { STAFF as ROSTER, STAFF_IDS, STAFF_COLORS, staffName } from '@/lib/staff';
 import StatsBox from './StatsBox';
+import useScrollLock from './useScrollLock';
 
 const DAY_ABBR  = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 const MONTH_NAMES = [
@@ -92,6 +93,9 @@ export default function MonthView({
   const [brLabel,   setBrLabel]   = useState('');
   const [brStaff,   setBrStaff]   = useState<string>('all');
   const [brLoading, setBrLoading] = useState(false);
+
+  // Freeze the page while the block-range sheet is open
+  useScrollLock(showBlockRange);
 
   function openBlockRange() {
     const y = monthStart.getFullYear();
@@ -293,7 +297,7 @@ export default function MonthView({
       {/* Block range sheet */}
       {showBlockRange && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 60 }} onClick={() => setShowBlockRange(false)}>
-          <div onClick={e => e.stopPropagation()} style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'var(--admin-sheet)', borderRadius: '16px 16px 0 0', padding: '24px 20px 44px', overflowY: 'auto', maxHeight: '90vh' }}>
+          <div onClick={e => e.stopPropagation()} className="lg-sheet lg-bottom-sheet" style={{ padding: '24px 20px 34px', overflowY: 'auto', maxHeight: '90vh' }}>
             <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 500, color: 'var(--admin-text)', marginBottom: 20 }}>Block date range</div>
 
             {/* Date range */}
