@@ -697,7 +697,7 @@ export default function WeekGridView({
       {/* ── drag confirm sheet ────────────────────────────────────────────── */}
       {dragConfirm && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 60 }} onClick={() => setDragConfirm(null)}>
-          <div onClick={(e) => e.stopPropagation()} style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'var(--admin-sheet)', borderRadius: '16px 16px 0 0', padding: '24px 20px 44px' }}>
+          <div onClick={(e) => e.stopPropagation()} className="lg-sheet lg-bottom-sheet" style={{ padding: '24px 20px 34px' }}>
             <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 500, color: 'var(--admin-text)', marginBottom: 4 }}>Reschedule</div>
             <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text3)', marginBottom: 20 }}>
               Move {dragConfirm.apt.clientName} to{' '}
@@ -732,7 +732,7 @@ export default function WeekGridView({
       {/* ── slot action sheet ─────────────────────────────────────────────── */}
       {slotAction && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50 }} onClick={() => setSlotAction(null)}>
-          <div onClick={(e) => e.stopPropagation()} style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'var(--admin-sheet)', borderRadius: '16px 16px 0 0', padding: '20px 20px 44px' }}>
+          <div onClick={(e) => e.stopPropagation()} className="lg-sheet lg-bottom-sheet" style={{ padding: '20px 20px 34px' }}>
             <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-muted)', marginBottom: 16, textAlign: 'center' }}>
               {fmtDateShort(slotAction.date)} · {fmt(slotAction.time)}
             </div>
@@ -758,7 +758,7 @@ export default function WeekGridView({
       {/* ── block-time sheet ──────────────────────────────────────────────── */}
       {blockSheet && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 60 }} onClick={() => setBlockSheet(null)}>
-          <div onClick={(e) => e.stopPropagation()} style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'var(--admin-sheet)', borderRadius: '16px 16px 0 0', padding: '24px 20px 44px', overflowY: 'auto', maxHeight: '90vh' }}>
+          <div onClick={(e) => e.stopPropagation()} className="lg-sheet lg-bottom-sheet" style={{ padding: '24px 20px 34px', overflowY: 'auto', maxHeight: '90vh' }}>
 
             <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 500, color: 'var(--admin-text)', marginBottom: 2 }}>Block time off</div>
             <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-text3)', marginBottom: 16 }}>
@@ -818,7 +818,7 @@ export default function WeekGridView({
       {/* ── block delete sheet ────────────────────────────────────────────── */}
       {blockDelSheet && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 60 }} onClick={() => setBlockDelSheet(null)}>
-          <div onClick={(e) => e.stopPropagation()} style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'var(--admin-sheet)', borderRadius: '16px 16px 0 0', padding: '24px 20px 44px' }}>
+          <div onClick={(e) => e.stopPropagation()} className="lg-sheet lg-bottom-sheet" style={{ padding: '24px 20px 34px' }}>
             <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 500, color: 'var(--admin-text)', marginBottom: 2 }}>
               {blockDelSheet.service && blockDelSheet.service !== 'Blocked' ? blockDelSheet.service : 'Blocked'}
             </div>

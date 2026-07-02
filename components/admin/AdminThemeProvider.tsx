@@ -44,18 +44,21 @@ export default function AdminThemeProvider({
             background: 'var(--admin-bg)',
             color: 'var(--admin-text)',
             paddingTop: 'env(safe-area-inset-top)',
-            paddingBottom: 'calc(82px + env(safe-area-inset-bottom))',
+            paddingBottom: 'calc(96px + env(safe-area-inset-bottom))',
             colorScheme: theme === 'dark' ? 'dark' : 'light',
           },
           vars,
         ) as React.CSSProperties}
       >
-        {/* Warm radial gradient overlay so glass has something to refract */}
+        {/* Ambient colour pools so the Liquid Glass chrome has light to bend —
+            warm at the top, a faint cool pool low where the tab bar floats. */}
         <div style={{
           position: 'fixed', inset: 0, zIndex: -1, pointerEvents: 'none',
           background: theme === 'dark'
-            ? 'radial-gradient(ellipse 80% 60% at 50% -10%, rgba(100,80,40,0.15) 0%, transparent 70%)'
-            : 'radial-gradient(ellipse 80% 60% at 50% -10%, rgba(220,200,160,0.3) 0%, transparent 70%)',
+            ? `radial-gradient(ellipse 80% 60% at 50% -10%, rgba(105,84,44,0.16) 0%, transparent 70%),
+               radial-gradient(ellipse 90% 45% at 50% 108%, rgba(64,74,96,0.12) 0%, transparent 70%)`
+            : `radial-gradient(ellipse 80% 60% at 50% -10%, rgba(222,200,158,0.32) 0%, transparent 70%),
+               radial-gradient(ellipse 90% 45% at 50% 108%, rgba(176,190,208,0.22) 0%, transparent 70%)`,
         }} />
         {children}
       </div>

@@ -761,11 +761,8 @@ export default function DaySchedule({
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            style={{
-              position: 'fixed', bottom: 0, left: 0, right: 0,
-              background: 'var(--admin-sheet)', borderRadius: '16px 16px 0 0',
-              padding: '24px 20px 44px',
-            }}
+            className="lg-sheet lg-bottom-sheet"
+            style={{ padding: '24px 20px 34px' }}
           >
             <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 500, color: 'var(--admin-text)', marginBottom: 6 }}>
               Reschedule
@@ -811,11 +808,8 @@ export default function DaySchedule({
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            style={{
-              position: 'fixed', bottom: 0, left: 0, right: 0,
-              background: 'var(--admin-sheet)', borderRadius: '16px 16px 0 0',
-              padding: '20px 20px 44px',
-            }}
+            className="lg-sheet lg-bottom-sheet"
+            style={{ padding: '20px 20px 34px' }}
           >
             <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-muted)', marginBottom: 16, textAlign: 'center' }}>
               {fmt(slotAction.time)} · {staffName(slotAction.staff)}
@@ -851,7 +845,7 @@ export default function DaySchedule({
       {/* ── block-time sheet ─────────────────────────────────────────────── */}
       {blockSheet && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 60 }} onClick={() => setBlockSheet(null)}>
-          <div onClick={(e) => e.stopPropagation()} style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'var(--admin-sheet)', borderRadius: '16px 16px 0 0', padding: '24px 20px 44px', overflowY: 'auto', maxHeight: '90vh' }}>
+          <div onClick={(e) => e.stopPropagation()} className="lg-sheet lg-bottom-sheet" style={{ padding: '24px 20px 34px', overflowY: 'auto', maxHeight: '90vh' }}>
 
             <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 500, color: 'var(--admin-text)', marginBottom: 2 }}>Block time off</div>
             <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-text3)', marginBottom: 20 }}>
@@ -930,7 +924,7 @@ export default function DaySchedule({
       {/* ── block delete sheet ───────────────────────────────────────────── */}
       {blockDelSheet && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 60 }} onClick={() => setBlockDelSheet(null)}>
-          <div onClick={(e) => e.stopPropagation()} style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'var(--admin-sheet)', borderRadius: '16px 16px 0 0', padding: '24px 20px 44px' }}>
+          <div onClick={(e) => e.stopPropagation()} className="lg-sheet lg-bottom-sheet" style={{ padding: '24px 20px 34px' }}>
             <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 500, color: 'var(--admin-text)', marginBottom: 2 }}>
               {blockDelSheet.service && blockDelSheet.service !== 'Blocked' ? blockDelSheet.service : 'Blocked'}
             </div>

@@ -72,69 +72,61 @@ export default function AdminHeader({ name }: { name: string }) {
     router.refresh();
   }
 
+  // Shared style for the buttons inside the top control capsule — the capsule
+  // itself carries the glass material; buttons stay transparent.
+  const clusterBtn: React.CSSProperties = {
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    width: 44, height: 38,
+    background: 'transparent', border: 'none',
+    cursor: 'pointer', color: 'var(--admin-text2)',
+    WebkitTapHighlightColor: 'transparent',
+  };
+
   return (
     <>
-      {/* Top bar */}
-      <header style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 20px',
-        height: 52,
-        background: 'var(--admin-glass-bg)',
-        backdropFilter: 'blur(24px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-        borderBottom: '1px solid var(--admin-glass-border)',
-        boxShadow: 'var(--admin-glass-shadow)',
-        position: 'sticky', top: 0, zIndex: 10,
-      }}>
+      {/* ── Top chrome ─────────────────────────────────────────────────────
+          Liquid Glass: no opaque slab — a transparent row over a scroll-edge
+          effect (progressive blur that fades to nothing), with the controls
+          grouped into a single floating glass capsule. */}
+      <header
+        className="lg-scroll-edge"
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '0 14px 0 20px',
+          height: 52,
+          position: 'sticky', top: 0, zIndex: 10,
+        }}
+      >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={theme === 'dark' ? '/assets/ES-LogoHori-White.png' : '/assets/ES-LogoHorizontal-Blk.png'}
           alt="Edit Studio"
-          style={{ height: 36, width: 'auto', display: 'block' }}
+          style={{ height: 34, width: 'auto', display: 'block' }}
         />
 
-        {/* Right-side controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          {/* Refresh button */}
-          <button
-            onClick={refresh}
-            aria-label="Refresh"
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              width: 36, height: 36, borderRadius: 10,
-              background: 'var(--admin-glass-bg)',
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)',
-              border: '1px solid var(--admin-glass-border)',
-              boxShadow: 'var(--admin-glass-shadow)',
-              cursor: 'pointer', color: 'var(--admin-text2)', fontSize: 22, lineHeight: 1,
-              WebkitTapHighlightColor: 'transparent',
-              transform: spinning ? 'rotate(450deg)' : 'rotate(90deg)',
-              transition: spinning ? 'transform 0.6s ease' : 'none',
-            }}
-          >
+        {/* Grouped control capsule — refresh · menu */}
+        <div
+          className="lg lg-capsule"
+          style={{ display: 'flex', alignItems: 'center', height: 38 }}
+        >
+          <button onClick={refresh} aria-label="Refresh" className="lg-press" style={{
+            ...clusterBtn,
+            borderRadius: '9999px 0 0 9999px',
+            fontSize: 20, lineHeight: 1,
+            transform: spinning ? 'rotate(450deg)' : 'rotate(90deg)',
+            transition: spinning ? 'transform 0.6s ease' : 'none',
+          }}>
             ↻
           </button>
-
-          {/* Hamburger button */}
-          <button
-            onClick={() => setOpen(true)}
-          aria-label="Open menu"
-          style={{
-            display: 'flex', flexDirection: 'column', justifyContent: 'center',
-            gap: 5, width: 36, height: 36, borderRadius: 10,
-            background: 'var(--admin-glass-bg)',
-            backdropFilter: 'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
-            border: '1px solid var(--admin-glass-border)',
-            boxShadow: 'var(--admin-glass-shadow)',
-            cursor: 'pointer', padding: '6px 0 6px 6px',
-            WebkitTapHighlightColor: 'transparent',
-          }}
-        >
+          <span aria-hidden style={{ width: 1, height: 18, background: 'var(--admin-border-sub)', opacity: 0.8 }} />
+          <button onClick={() => setOpen(true)} aria-label="Open menu" className="lg-press" style={{
+            ...clusterBtn,
+            borderRadius: '0 9999px 9999px 0',
+            flexDirection: 'column', gap: 5, padding: 0,
+          }}>
             {[0, 1, 2].map((i) => (
               <span key={i} style={{
-                display: 'block', width: 20, height: 1.5,
+                display: 'block', width: 18, height: 1.5,
                 background: 'var(--admin-text)', borderRadius: 2,
               }} />
             ))}
@@ -142,24 +134,19 @@ export default function AdminHeader({ name }: { name: string }) {
         </div>
       </header>
 
-      {/* Floating + New button — hidden on the new-booking page itself, floats above tab bar */}
+      {/* ── Floating + New — the single prominent (tinted) action ─────────── */}
       {pathname !== '/admin/new-booking' && (
         <a
           href="/admin/new-booking"
+          className="lg-prominent lg-capsule lg-press"
           style={{
             position: 'fixed',
-            bottom: 'calc(76px + env(safe-area-inset-bottom))',
-            right: 20,
+            bottom: 'calc(92px + env(safe-area-inset-bottom))',
+            right: 16,
             zIndex: 30,
             display: 'flex', alignItems: 'center', gap: 6,
             height: 52,
             padding: '0 22px',
-            borderRadius: 9999,
-            background: 'var(--admin-glass-dark-bg)',
-            backdropFilter: 'blur(24px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-            border: '1px solid var(--admin-glass-dark-border)',
-            boxShadow: 'var(--admin-glass-dark-shadow)',
             color: '#ece9e2',
             fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 600,
             letterSpacing: '0.01em',
@@ -177,7 +164,7 @@ export default function AdminHeader({ name }: { name: string }) {
         onClick={() => setOpen(false)}
         style={{
           position: 'fixed', inset: 0,
-          background: 'rgba(0,0,0,0.45)',
+          background: 'rgba(0,0,0,0.35)',
           zIndex: 40,
           opacity: open ? 1 : 0,
           pointerEvents: open ? 'auto' : 'none',
@@ -185,23 +172,28 @@ export default function AdminHeader({ name }: { name: string }) {
         }}
       />
 
-      {/* Drawer */}
-      <div style={{
-        position: 'fixed', top: 0, right: 0, bottom: 0,
-        width: 270,
-        background: 'var(--admin-card)',
-        borderLeft: '1px solid var(--admin-border)',
-        zIndex: 41,
-        transform: open ? 'translateX(0)' : 'translateX(100%)',
-        transition: 'transform 0.25s cubic-bezier(0.4,0,0.2,1)',
-        display: 'flex', flexDirection: 'column',
-      }}>
+      {/* ── Drawer — floating inset glass sheet ────────────────────────────── */}
+      <div
+        className="lg-sheet"
+        style={{
+          position: 'fixed',
+          top: 'calc(10px + env(safe-area-inset-top))',
+          right: 10,
+          bottom: 'calc(10px + env(safe-area-inset-bottom))',
+          width: 280,
+          borderRadius: 28,
+          zIndex: 41,
+          transform: open ? 'translateX(0)' : 'translateX(calc(100% + 14px))',
+          transition: 'transform 0.32s cubic-bezier(0.32, 0.9, 0.35, 1)',
+          display: 'flex', flexDirection: 'column',
+          overflow: 'hidden',
+        }}
+      >
 
         {/* Drawer header */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '0 20px', height: 52,
-          borderBottom: '1px solid var(--admin-border)', flexShrink: 0,
+          padding: '0 22px', height: 56, flexShrink: 0,
         }}>
           <span style={{
             fontFamily: 'var(--font-body)', fontSize: 11,
@@ -212,18 +204,21 @@ export default function AdminHeader({ name }: { name: string }) {
           <button
             onClick={() => setOpen(false)}
             aria-label="Close menu"
+            className="lg-press"
             style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: 'var(--admin-text2)', fontSize: 18, lineHeight: 1,
-              padding: '4px', WebkitTapHighlightColor: 'transparent',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: 32, height: 32, borderRadius: 9999,
+              background: 'var(--lg-active-pill)', border: 'none', cursor: 'pointer',
+              color: 'var(--admin-text2)', fontSize: 14, lineHeight: 1,
+              WebkitTapHighlightColor: 'transparent',
             }}
           >
             ✕
           </button>
         </div>
 
-        {/* Nav */}
-        <nav style={{ flex: 1, padding: '8px 0', overflowY: 'auto' }}>
+        {/* Nav — active item gets a concentric capsule pill */}
+        <nav style={{ flex: 1, padding: '4px 10px', overflowY: 'auto' }}>
           {NAV.map((item) => {
             const active = isActive(item.href, pathname, searchParams);
             return (
@@ -231,17 +226,20 @@ export default function AdminHeader({ name }: { name: string }) {
                 key={item.href}
                 href={item.href}
                 onClick={() => setOpen(false)}
+                className="lg-press"
                 style={{
                   display: 'flex', alignItems: 'center', gap: 12,
-                  padding: '0 20px', height: 52,
-                  borderLeft: `2px solid ${active ? '#7db83e' : 'transparent'}`,
-                  background: active ? 'var(--admin-nav-active)' : 'transparent',
+                  padding: '0 14px', height: 50,
+                  margin: '2px 0',
+                  borderRadius: 18, // concentric with the drawer's 28px radius (28 − 10 inset)
+                  background: active ? 'var(--lg-active-pill)' : 'transparent',
+                  boxShadow: active ? 'inset 0 1px 0 var(--lg-sheen)' : 'none',
                   textDecoration: 'none',
                   WebkitTapHighlightColor: 'transparent',
                 }}
               >
                 <span style={{
-                  fontSize: 14, color: active ? '#7db83e' : 'var(--admin-muted)',
+                  fontSize: 14, color: active ? 'var(--admin-text)' : 'var(--admin-muted)',
                   width: 16, textAlign: 'center',
                 }}>
                   {item.icon}
@@ -260,7 +258,7 @@ export default function AdminHeader({ name }: { name: string }) {
 
         {/* Footer */}
         <div style={{
-          padding: '16px 20px 32px',
+          padding: '16px 20px 22px',
           borderTop: '1px solid var(--admin-border-sub)',
           flexShrink: 0,
         }}>
@@ -272,11 +270,12 @@ export default function AdminHeader({ name }: { name: string }) {
           </div>
           <button
             onClick={logout}
+            className="lg-press"
             style={{
               fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-text2)',
-              background: 'none', border: '1px solid var(--admin-border)',
-              borderRadius: 8, cursor: 'pointer',
-              padding: '10px 16px', width: '100%', textAlign: 'left',
+              background: 'var(--lg-active-pill)', border: 'none',
+              borderRadius: 18, cursor: 'pointer',
+              padding: '12px 16px', width: '100%', textAlign: 'left',
               WebkitTapHighlightColor: 'transparent',
             }}
           >
@@ -285,47 +284,37 @@ export default function AdminHeader({ name }: { name: string }) {
         </div>
       </div>
 
-      {/* ── Bottom tab bar — floating glass pill ──────────────────────────── */}
-      <nav style={{
-        position: 'fixed',
-        bottom: 'calc(12px + env(safe-area-inset-bottom))',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 20,
-        display: 'flex',
-        borderRadius: 9999,
-        overflow: 'hidden',
-        background: 'var(--admin-glass-bg)',
-        backdropFilter: 'blur(24px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-        border: '1px solid var(--admin-glass-border)',
-        boxShadow: 'var(--admin-glass-shadow)',
-      }}>
+      {/* ── Bottom tab bar — floating Liquid Glass capsule ─────────────────── */}
+      <nav
+        className="lg lg-capsule"
+        style={{
+          position: 'fixed',
+          bottom: 'calc(16px + env(safe-area-inset-bottom))',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 20,
+          display: 'flex',
+          padding: '0 2px',
+          overflow: 'hidden',
+        }}
+      >
         {BOTTOM_NAV.map((item) => {
           const active = isActive(item.href, pathname, searchParams);
           return (
             <Link
               key={item.href}
               href={item.href}
+              className={`lg-tab${active ? ' active' : ''}`}
               style={{
-                width: 68, height: 58,
+                width: 66, height: 62,
                 display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center',
-                gap: 3, textDecoration: 'none',
+                gap: 4, textDecoration: 'none',
                 color: active ? 'var(--admin-text)' : 'var(--admin-muted)',
                 WebkitTapHighlightColor: 'transparent',
-                position: 'relative',
               }}
             >
-              {active && (
-                <span style={{
-                  position: 'absolute', top: 7, left: '50%',
-                  transform: 'translateX(-50%)',
-                  width: 20, height: 2, borderRadius: 1,
-                  background: 'var(--admin-text)',
-                }} />
-              )}
-              <span style={{ fontSize: 16, lineHeight: 1 }}>{item.icon}</span>
+              <span style={{ fontSize: 17, lineHeight: 1 }}>{item.icon}</span>
               <span style={{
                 fontFamily: 'var(--font-body)', fontSize: 9,
                 letterSpacing: '0.06em', textTransform: 'uppercase',

@@ -224,10 +224,12 @@ export default function ServicesEditor({ initial }: { initial: ServicesData }) {
         >
           <div
             onClick={(e) => e.stopPropagation()}
+            className="lg-sheet"
             style={{
-              width: '100%', background: 'var(--admin-sheet)',
-              borderRadius: '16px 16px 0 0',
-              padding: '24px 20px 48px',
+              width: 'calc(100% - 20px)',
+              margin: '0 10px calc(10px + env(safe-area-inset-bottom))',
+              borderRadius: 32,
+              padding: '24px 20px 34px',
               maxHeight: '90vh', overflowY: 'auto',
             }}
           >

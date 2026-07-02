@@ -56,6 +56,15 @@ export const THEME_VARS: Record<AdminTheme, Record<string, string>> = {
     '--admin-glass-dark-bg':     'rgba(16,14,12,0.82)',
     '--admin-glass-dark-border': 'rgba(255,255,255,0.14)',
     '--admin-glass-dark-shadow': '0 4px 28px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.10)',
+    // ── Liquid Glass tokens (see .lg utilities in globals.css) ──────────────
+    '--lg-bg':          'rgba(245,240,231,0.55)',
+    '--lg-sheet-bg':    'rgba(246,241,233,0.68)',
+    '--lg-sheen':       'rgba(255,255,255,0.55)',
+    // Specular rim: bright top edge, softer sides/bottom — the "light catch"
+    '--lg-rim':         'inset 0 1.5px 1px rgba(255,255,255,0.85), inset 1px 0 1px rgba(255,255,255,0.30), inset -1px 0 1px rgba(255,255,255,0.30), inset 0 -1px 1px rgba(255,255,255,0.18)',
+    '--lg-shadow':      '0 8px 24px rgba(20,18,16,0.10), 0 1px 3px rgba(20,18,16,0.07)',
+    '--lg-shadow-lg':   '0 -12px 48px rgba(20,18,16,0.14), 0 2px 8px rgba(20,18,16,0.08)',
+    '--lg-active-pill': 'rgba(20,18,16,0.09)',
   },
   dark: {
     '--admin-bg':                '#0d0c0a',
@@ -99,5 +108,13 @@ export const THEME_VARS: Record<AdminTheme, Record<string, string>> = {
     '--admin-glass-dark-bg':     'rgba(16,14,12,0.88)',
     '--admin-glass-dark-border': 'rgba(255,255,255,0.18)',
     '--admin-glass-dark-shadow': '0 4px 28px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.12)',
+    // ── Liquid Glass tokens (see .lg utilities in globals.css) ──────────────
+    '--lg-bg':          'rgba(38,35,30,0.60)',
+    '--lg-sheet-bg':    'rgba(34,31,27,0.74)',
+    '--lg-sheen':       'rgba(255,255,255,0.09)',
+    '--lg-rim':         'inset 0 1.5px 1px rgba(255,255,255,0.22), inset 1px 0 1px rgba(255,255,255,0.08), inset -1px 0 1px rgba(255,255,255,0.08), inset 0 -1px 1px rgba(255,255,255,0.05)',
+    '--lg-shadow':      '0 10px 30px rgba(0,0,0,0.45), 0 1px 3px rgba(0,0,0,0.35)',
+    '--lg-shadow-lg':   '0 -14px 56px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.40)',
+    '--lg-active-pill': 'rgba(236,233,226,0.12)',
   },
 };
