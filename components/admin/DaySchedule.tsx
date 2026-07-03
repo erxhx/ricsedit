@@ -136,6 +136,26 @@ export default function DaySchedule({
     return (d.getHours() - H0) * 60 + d.getMinutes();
   });
 
+  // Column width in explicit pixels, measured from the track. iOS Safari
+  // mis-resolves %/left+right widths of absolutely-positioned children inside
+  // flex-basis-sized columns under an accelerated horizontal scroller (blocks
+  // collapsed to slivers on-device while every desktop engine was fine), so
+  // nothing in this grid may rely on relative widths: columns and their
+  // absolute children all get pixel values derived from this state.
+  const [colW, setColW] = useState<number>(COL_W);
+  useEffect(() => {
+    const el = bodyScrollRef.current;
+    if (!el) return;
+    const measure = () => {
+      // Columns fill the track when it's wide enough, else fixed COL_W + h-scroll
+      setColW(Math.max(COL_W, Math.floor(el.clientWidth / ROSTER.length)));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   // Freeze the page while any bottom sheet is open
   useScrollLock(!!(dragConfirm || slotAction || blockSheet || blockDelSheet));
 
@@ -534,7 +554,7 @@ export default function DaySchedule({
         >
           <div style={{ display: 'flex' }}>
             {ROSTER.map((m) => (
-              <div key={m.id} style={{ flex: `1 0 ${COL_W}px`, display: 'flex', alignItems: 'center', gap: 6, padding: '9px 12px', borderLeft: '1px solid var(--admin-border-sub)' }}>
+              <div key={m.id} style={{ width: colW, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6, padding: '9px 12px', borderLeft: '1px solid var(--admin-border-sub)' }}>
                 <span style={{ width: 7, height: 7, borderRadius: '50%', background: staffColor(m.id), flexShrink: 0, display: 'inline-block' }} />
                 <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-text)' }}>
                   {m.name}
@@ -595,7 +615,7 @@ export default function DaySchedule({
           const staffApts = visible.filter((a) => a.staff === staff);
 
           return (
-            <div key={staff} style={{ flex: `1 0 ${COL_W}px`, position: 'relative', height: TOTAL_PX, borderLeft: '1px solid var(--admin-border-sub)' }}>
+            <div key={staff} style={{ width: colW, flexShrink: 0, position: 'relative', height: TOTAL_PX, borderLeft: '1px solid var(--admin-border-sub)' }}>
 
               {/* hour gridlines */}
               {HOURS.map((h) => (
@@ -644,7 +664,7 @@ export default function DaySchedule({
                 return (
                   <div style={{
                     position: 'absolute',
-                    top: topPx, left: 2, width: 'calc(100% - 4px)',
+                    top: topPx, left: 2, width: colW - 4,
                     height: 15 * PPM,
                     background: `${color}20`,
                     border: `1.5px solid ${color}`,
@@ -689,10 +709,8 @@ export default function DaySchedule({
                     onTouchCancel={() => onAptTouchCancel(apt)}
                     onMouseDown={(e) => onAptMouseDown(e, apt)}
                     style={{
-                      // Explicit width instead of left+right stretch — iOS Safari
-                      // fails to re-stretch abs-pos boxes in flex columns on
-                      // post-hydration re-renders (blocks collapsed to slivers).
-                      position: 'absolute', top: topPx, left: 3, width: 'calc(100% - 6px)', height: hPx,
+                      // Pixel width from measured colW — see the colW comment above.
+                      position: 'absolute', top: topPx, left: 3, width: colW - 6, height: hPx,
                       background: blocked ? 'var(--admin-blocked)' : completed ? `${col}18` : `${col}22`,
                       border: `1px solid ${blocked ? 'var(--admin-blocked-border)' : completed ? `${col}40` : `${col}60`}`,
                       borderLeft: `2.5px solid ${blocked ? 'var(--admin-blocked-border)' : completed ? `${col}70` : col}`,
@@ -749,7 +767,7 @@ export default function DaySchedule({
                     style={{
                       position: 'absolute',
                       top: t2m(ghostApt.startTime) * PPM,
-                      left: 3, width: 'calc(100% - 6px)',
+                      left: 3, width: colW - 6,
                       height: Math.max(ghostApt.durationMinutes * PPM - 2, 22),
                       background: `${ghostCol}28`,
                       border: `1.5px dashed ${ghostCol}`,
