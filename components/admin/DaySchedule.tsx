@@ -569,10 +569,10 @@ export default function DaySchedule({
           onScroll={() => syncScroll('body')}
           style={{
             flex: 1, overflowX: 'auto', position: 'relative',
-            // Contain edge overscroll (don't chain into page rubber-banding) and
-            // gently snap column starts into place after a horizontal fling.
+            // Contain edge overscroll so a fling doesn't chain into page
+            // rubber-banding. No scroll-snap here: snapping fights diagonal
+            // pans on a 2-axis grid (feels like it bounces back).
             overscrollBehaviorX: 'contain',
-            scrollSnapType: 'x proximity',
           }}
         >
           <div ref={gridRef} style={{ display: 'flex', position: 'relative', height: TOTAL_PX }}>
@@ -595,7 +595,7 @@ export default function DaySchedule({
           const staffApts = visible.filter((a) => a.staff === staff);
 
           return (
-            <div key={staff} style={{ flex: `1 0 ${COL_W}px`, position: 'relative', height: TOTAL_PX, borderLeft: '1px solid var(--admin-border-sub)', scrollSnapAlign: 'start' }}>
+            <div key={staff} style={{ flex: `1 0 ${COL_W}px`, position: 'relative', height: TOTAL_PX, borderLeft: '1px solid var(--admin-border-sub)' }}>
 
               {/* hour gridlines */}
               {HOURS.map((h) => (
