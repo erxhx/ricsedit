@@ -91,20 +91,26 @@ h1, h2 {
 .lg-scroll-edge::before {
   content: '';
   position: absolute;
-  inset: 0;
+  left: 0;
+  right: 0;
+  /* Cover the safe area above AND extend 26px BELOW the bar: the bar's own
+     box stays fully solid (nothing reads through beside the logo) and the
+     dissolve tail lives underneath it — matching Apple's scroll-edge effect,
+     where the fade happens outside the bar, not across its content. Where a
+     solid sub-bar sits directly below, the tail lands on opaque background
+     and is invisible, so the extension is safe on every page. */
   top: calc(-1 * env(safe-area-inset-top, 0px));
+  bottom: -26px;
   z-index: -1;
   pointer-events: none;
   background: linear-gradient(to bottom,
     color-mix(in srgb, var(--admin-bg) 98%, transparent) 0%,
-    color-mix(in srgb, var(--admin-bg) 90%, transparent) calc(100% - 26px),
+    color-mix(in srgb, var(--admin-bg) 92%, transparent) calc(100% - 26px),
     transparent 100%);
   -webkit-backdrop-filter: blur(15px) saturate(1.5);
   backdrop-filter: blur(15px) saturate(1.5);
-  /* Solid until a short fixed tail at the bottom edge. The tail must be
-     pixel-based, not percentage: in the installed PWA this layer extends up
-     through the safe area, and a %-fade would start dissolving mid-logo,
-     letting dense list text read through the header. */
+  /* Pixel-based tail (not %): the layer's height varies with the safe area,
+     and a %-fade would creep up into the bar on tall-safe-area devices. */
   -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 26px), transparent 100%);
   mask-image: linear-gradient(to bottom, black calc(100% - 26px), transparent 100%);
 }
