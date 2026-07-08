@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import type { AdminTheme } from '@/lib/admin-theme';
 import AdminThemeProvider from '@/components/admin/AdminThemeProvider';
+import UpdateCheck from '@/components/admin/UpdateCheck';
 
 export const metadata: Metadata = {
   title: 'Edit Studio Admin',
@@ -31,8 +32,10 @@ export async function generateViewport() {
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies();
   const initialTheme = (cookieStore.get('admin-theme')?.value ?? 'light') as AdminTheme;
+  const buildSha = (process.env.VERCEL_GIT_COMMIT_SHA ?? 'dev').slice(0, 12);
   return (
     <AdminThemeProvider initialTheme={initialTheme}>
+      <UpdateCheck current={buildSha} />
       {children}
     </AdminThemeProvider>
   );
