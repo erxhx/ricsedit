@@ -56,7 +56,7 @@ export default function WaiverEditor() {
       <div className="lg-scroll-edge" style={{
         display: 'flex', alignItems: 'center',
         height: 52, padding: '0 20px',
-        position: 'sticky', top: 52, zIndex: 9,
+        position: 'sticky', top: 'calc(52px + var(--admin-safe-top))', zIndex: 9,
         gap: 12,
       }}>
         <Link

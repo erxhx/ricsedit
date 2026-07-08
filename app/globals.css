@@ -97,14 +97,16 @@ h1, h2 {
   pointer-events: none;
   background: linear-gradient(to bottom,
     color-mix(in srgb, var(--admin-bg) 98%, transparent) 0%,
-    color-mix(in srgb, var(--admin-bg) 82%, transparent) 55%,
+    color-mix(in srgb, var(--admin-bg) 90%, transparent) calc(100% - 26px),
     transparent 100%);
   -webkit-backdrop-filter: blur(15px) saturate(1.5);
   backdrop-filter: blur(15px) saturate(1.5);
-  /* Long fade so the blur dissolves with no visible boundary — strong enough
-     up top that grid content can't read through behind the logo */
-  -webkit-mask-image: linear-gradient(to bottom, black 40%, transparent 98%);
-  mask-image: linear-gradient(to bottom, black 40%, transparent 98%);
+  /* Solid until a short fixed tail at the bottom edge. The tail must be
+     pixel-based, not percentage: in the installed PWA this layer extends up
+     through the safe area, and a %-fade would start dissolving mid-logo,
+     letting dense list text read through the header. */
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 26px), transparent 100%);
+  mask-image: linear-gradient(to bottom, black calc(100% - 26px), transparent 100%);
 }
 
 /* Tab bar items — concentric highlight capsule behind the active item */

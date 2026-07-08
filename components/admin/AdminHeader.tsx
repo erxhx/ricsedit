@@ -98,7 +98,7 @@ export default function AdminHeader({ name }: { name: string }) {
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '0 14px 0 20px',
           height: 52,
-          position: 'sticky', top: 0, zIndex: 10,
+          position: 'sticky', top: 'var(--admin-safe-top)', zIndex: 10,
         }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}

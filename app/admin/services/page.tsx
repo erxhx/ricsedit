@@ -23,7 +23,7 @@ export default async function ServicesPage() {
         display: 'flex', alignItems: 'center', gap: 12,
         padding: '0 20px', height: 52,
         borderBottom: '1px solid var(--admin-border)',
-        position: 'sticky', top: 52, background: 'var(--admin-bg)', zIndex: 8,
+        position: 'sticky', top: 'calc(52px + var(--admin-safe-top))', background: 'var(--admin-bg)', zIndex: 8,
       }}>
         <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-text3)' }}>
           Services & Pricing

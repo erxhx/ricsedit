@@ -43,6 +43,9 @@ export default function AdminThemeProvider({
             minHeight: '100dvh',
             background: 'var(--admin-bg)',
             color: 'var(--admin-text)',
+            // Shared by every sticky header so they pin below the status bar /
+            // Dynamic Island in the installed PWA (0px in a normal browser tab).
+            '--admin-safe-top': 'env(safe-area-inset-top, 0px)',
             paddingTop: 'env(safe-area-inset-top)',
             paddingBottom: 'calc(96px + env(safe-area-inset-bottom))',
             colorScheme: theme === 'dark' ? 'dark' : 'light',

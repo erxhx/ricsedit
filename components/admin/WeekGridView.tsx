@@ -463,9 +463,9 @@ export default function WeekGridView({
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '8px 12px', borderBottom: '1px solid var(--admin-border-sub)',
-        position: 'sticky', top: stickyTop, zIndex: 7,
+        position: 'sticky', top: `calc(${stickyTop}px + var(--admin-safe-top))`, zIndex: 7,
         background: 'var(--admin-bg)',
-        transform: navShown ? 'translateY(0)' : `translateY(calc(-100% - ${stickyTop}px))`,
+        transform: navShown ? 'translateY(0)' : `translateY(calc(-100% - ${stickyTop}px - var(--admin-safe-top)))`,
         transition: 'transform 0.25s cubic-bezier(0.22, 1, 0.36, 1)',
       }}>
 
@@ -516,7 +516,7 @@ export default function WeekGridView({
       {/* ── day headers ── sticky ─────────────────────────────────────────── */}
       {/* Day-header row — content-layer header, kept opaque (glass is reserved
           for floating chrome per Liquid Glass guidance) */}
-      <div style={{ display: 'flex', paddingLeft: TW, position: 'sticky', top: stickyTop + (navShown ? NAV_H : 0), zIndex: 6, transition: 'top 0.25s cubic-bezier(0.22, 1, 0.36, 1)', background: 'var(--admin-bg)', borderBottom: '1px solid var(--admin-border)' }}>
+      <div style={{ display: 'flex', paddingLeft: TW, position: 'sticky', top: `calc(${stickyTop + (navShown ? NAV_H : 0)}px + var(--admin-safe-top))`, zIndex: 6, transition: 'top 0.25s cubic-bezier(0.22, 1, 0.36, 1)', background: 'var(--admin-bg)', borderBottom: '1px solid var(--admin-border)' }}>
         {days.map((day) => (
           <div key={day.dateStr} style={{ flex: 1, textAlign: 'center', padding: '8px 2px', opacity: day.isOpen ? 1 : 0.3 }}>
             <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', lineHeight: 1 }}>

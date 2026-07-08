@@ -19,7 +19,7 @@ export default async function ClientsPage() {
       <div style={{
         padding: '0 0 8px',
         borderBottom: '1px solid var(--admin-border)',
-        position: 'sticky', top: 52, background: 'var(--admin-bg)', zIndex: 8,
+        position: 'sticky', top: 'calc(52px + var(--admin-safe-top))', background: 'var(--admin-bg)', zIndex: 8,
       }}>
         <div style={{
           padding: '14px 16px 0',

@@ -184,7 +184,7 @@ export default function AppointmentDetail({
         display: 'flex', alignItems: 'center', gap: 12,
         padding: '0 20px', height: 52,
         borderBottom: '1px solid var(--admin-border)',
-        position: 'sticky', top: 52, background: 'var(--admin-bg)', zIndex: 8,
+        position: 'sticky', top: 'calc(52px + var(--admin-safe-top))', background: 'var(--admin-bg)', zIndex: 8,
       }}>
         <button onClick={() => router.back()} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, height: 40, margin: '0 -8px 0 -12px', color: 'var(--admin-text2)', background: 'none', border: 'none', fontSize: 20, lineHeight: 1, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
           ‹

@@ -490,9 +490,9 @@ export default function DaySchedule({
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '8px 12px', borderBottom: '1px solid var(--admin-border-sub)',
-          position: 'sticky', top: stickyTop, zIndex: 7,
+          position: 'sticky', top: `calc(${stickyTop}px + var(--admin-safe-top))`, zIndex: 7,
           background: 'var(--admin-bg)',
-          transform: navShown ? 'translateY(0)' : `translateY(calc(-100% - ${stickyTop}px))`,
+          transform: navShown ? 'translateY(0)' : `translateY(calc(-100% - ${stickyTop}px - var(--admin-safe-top)))`,
           transition: 'transform 0.25s cubic-bezier(0.22, 1, 0.36, 1)',
         }}>
 
@@ -540,7 +540,7 @@ export default function DaySchedule({
       {/* ── staff column headers ──────────────────────────────────────────── */}
       <div style={{
         display: 'flex',
-        position: 'sticky', top: stickyTop + (navShown ? NAV_H : 0), zIndex: 6,
+        position: 'sticky', top: `calc(${stickyTop + (navShown ? NAV_H : 0)}px + var(--admin-safe-top))`, zIndex: 6,
         transition: 'top 0.25s cubic-bezier(0.22, 1, 0.36, 1)',
         background: 'var(--admin-bg)', borderBottom: '1px solid var(--admin-border)',
       }}>

@@ -80,7 +80,7 @@ export default function ClientProfile({
         display: 'flex', alignItems: 'center', gap: 12,
         padding: '0 16px', height: 44,
         borderBottom: '1px solid var(--admin-border)',
-        position: 'sticky', top: 52, background: 'var(--admin-bg)', zIndex: 8,
+        position: 'sticky', top: 'calc(52px + var(--admin-safe-top))', background: 'var(--admin-bg)', zIndex: 8,
       }}>
         <Link href="/admin/clients" style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',

@@ -31,7 +31,7 @@ export default function ClientList({ clients }: { clients: ClientSummary[] }) {
       <div style={{
         padding: '12px 16px',
         borderBottom: '1px solid var(--admin-border)',
-        position: 'sticky', top: 52, background: 'var(--admin-bg)', zIndex: 7,
+        position: 'sticky', top: 'calc(52px + var(--admin-safe-top))', background: 'var(--admin-bg)', zIndex: 7,
       }}>
         <input
           type="search"

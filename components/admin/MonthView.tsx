@@ -164,7 +164,7 @@ export default function MonthView({
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '14px 16px',
-        position: 'sticky', top: 52, zIndex: 6,
+        position: 'sticky', top: 'calc(52px + var(--admin-safe-top))', zIndex: 6,
         background: 'var(--admin-bg)',
         borderBottom: '1px solid var(--admin-border-sub)',
       }}>
