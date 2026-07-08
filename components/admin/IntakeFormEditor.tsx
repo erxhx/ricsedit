@@ -388,17 +388,19 @@ export default function IntakeFormEditor() {
                     borderRadius: 10, padding: '12px 14px',
                     display: 'flex', alignItems: 'center', gap: 10,
                   }}>
-                    {/* Reorder */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 1, flexShrink: 0 }}>
+                    {/* Reorder — ≥32px hit areas (the glyphs are small; the buttons must not be) */}
+                    <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0, margin: '-6px 0 -6px -8px' }}>
                       <button
                         onClick={() => moveField(field.id, -1)}
                         disabled={idx === 0}
-                        style={{ background: 'none', border: 'none', cursor: idx === 0 ? 'default' : 'pointer', color: idx === 0 ? 'var(--admin-border)' : 'var(--admin-muted)', fontSize: 10, lineHeight: 1, padding: '1px 3px' }}
+                        aria-label="Move field up"
+                        style={{ background: 'none', border: 'none', cursor: idx === 0 ? 'default' : 'pointer', color: idx === 0 ? 'var(--admin-border)' : 'var(--admin-muted)', fontSize: 11, lineHeight: 1, width: 34, height: 26, WebkitTapHighlightColor: 'transparent' }}
                       >▲</button>
                       <button
                         onClick={() => moveField(field.id, 1)}
                         disabled={idx === config.fields.length - 1}
-                        style={{ background: 'none', border: 'none', cursor: idx === config.fields.length - 1 ? 'default' : 'pointer', color: idx === config.fields.length - 1 ? 'var(--admin-border)' : 'var(--admin-muted)', fontSize: 10, lineHeight: 1, padding: '1px 3px' }}
+                        aria-label="Move field down"
+                        style={{ background: 'none', border: 'none', cursor: idx === config.fields.length - 1 ? 'default' : 'pointer', color: idx === config.fields.length - 1 ? 'var(--admin-border)' : 'var(--admin-muted)', fontSize: 11, lineHeight: 1, width: 34, height: 26, WebkitTapHighlightColor: 'transparent' }}
                       >▼</button>
                     </div>
 

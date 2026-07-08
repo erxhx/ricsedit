@@ -20,6 +20,9 @@ export async function generateViewport() {
   return {
     width: 'device-width',
     initialScale: 1,
+    // Stops iOS auto-zooming when focusing the admin's sub-16px inputs.
+    // Users can still pinch-zoom — iOS ignores the cap for user gestures.
+    maximumScale: 1,
     viewportFit: 'cover',
     themeColor: theme === 'dark' ? '#0d0c0a' : '#efeae0',
   };

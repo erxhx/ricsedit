@@ -186,7 +186,7 @@ export default function AppointmentDetail({
         borderBottom: '1px solid var(--admin-border)',
         position: 'sticky', top: 52, background: 'var(--admin-bg)', zIndex: 8,
       }}>
-        <button onClick={() => router.back()} style={{ color: 'var(--admin-text2)', background: 'none', border: 'none', fontSize: 20, lineHeight: 1, cursor: 'pointer', padding: '0 4px', WebkitTapHighlightColor: 'transparent' }}>
+        <button onClick={() => router.back()} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, height: 40, margin: '0 -8px 0 -12px', color: 'var(--admin-text2)', background: 'none', border: 'none', fontSize: 20, lineHeight: 1, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
           ‹
         </button>
         <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-text3)' }}>
@@ -265,12 +265,13 @@ export default function AppointmentDetail({
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
             <a
               href={`tel:${apt.clientPhone}`}
+              className="lg-press"
               style={{
                 flex: 1, textAlign: 'center',
-                padding: '13px 0', borderRadius: 10,
-                border: 'none',
-                background: '#34C759',
-                color: '#fff',
+                padding: '13px 0', borderRadius: 9999,
+                border: '1px solid var(--admin-call-border)',
+                background: 'var(--admin-call-bg)',
+                color: 'var(--admin-call-text)',
                 fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 500,
                 textDecoration: 'none',
                 WebkitTapHighlightColor: 'transparent',
@@ -280,12 +281,13 @@ export default function AppointmentDetail({
             </a>
             <a
               href={`sms:${apt.clientPhone}`}
+              className="lg-press"
               style={{
                 flex: 1, textAlign: 'center',
-                padding: '13px 0', borderRadius: 10,
-                border: 'none',
-                background: '#007AFF',
-                color: '#fff',
+                padding: '13px 0', borderRadius: 9999,
+                border: '1px solid var(--admin-sms-border)',
+                background: 'var(--admin-sms-bg)',
+                color: 'var(--admin-sms-text)',
                 fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 500,
                 textDecoration: 'none',
                 WebkitTapHighlightColor: 'transparent',

@@ -50,25 +50,30 @@ export default async function DayPage({ params }: { params: Promise<{ date: stri
           color: 'var(--admin-text3)', textDecoration: 'none',
           fontFamily: 'var(--font-body)', fontSize: 13,
           display: 'flex', alignItems: 'center', gap: 4,
-          paddingRight: 12,
+          padding: '10px 12px 10px 0', // comfortable tap target
+          WebkitTapHighlightColor: 'transparent',
         }}>
           <span style={{ fontSize: 18, lineHeight: 1 }}>‹</span>
           <span>Week</span>
         </Link>
 
         {/* Date + prev/next arrows — centred in remaining space */}
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
-          <Link href={`/admin/day/${shiftDay(date, -1)}`} style={{
-            color: 'var(--admin-text3)', textDecoration: 'none', fontSize: 20, lineHeight: 1,
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          <Link href={`/admin/day/${shiftDay(date, -1)}`} className="lg lg-capsule lg-press" style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: 34, height: 30, flexShrink: 0,
+            color: 'var(--admin-text2)', textDecoration: 'none', fontSize: 16, lineHeight: 1,
             WebkitTapHighlightColor: 'transparent',
           }}>‹</Link>
 
-          <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-text)', whiteSpace: 'nowrap' }}>
+          <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 500, color: 'var(--admin-text)', whiteSpace: 'nowrap', padding: '0 4px' }}>
             {fmtDate(date)}
           </span>
 
-          <Link href={`/admin/day/${shiftDay(date, 1)}`} style={{
-            color: 'var(--admin-text3)', textDecoration: 'none', fontSize: 20, lineHeight: 1,
+          <Link href={`/admin/day/${shiftDay(date, 1)}`} className="lg lg-capsule lg-press" style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: 34, height: 30, flexShrink: 0,
+            color: 'var(--admin-text2)', textDecoration: 'none', fontSize: 16, lineHeight: 1,
             WebkitTapHighlightColor: 'transparent',
           }}>›</Link>
         </div>

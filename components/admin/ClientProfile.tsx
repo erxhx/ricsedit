@@ -83,8 +83,11 @@ export default function ClientProfile({
         position: 'sticky', top: 52, background: 'var(--admin-bg)', zIndex: 8,
       }}>
         <Link href="/admin/clients" style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          width: 40, height: 40, margin: '0 -10px 0 -12px',
           color: 'var(--admin-text3)', textDecoration: 'none',
           fontSize: 18, lineHeight: 1,
+          WebkitTapHighlightColor: 'transparent',
         }}>‹</Link>
         <span style={{
           fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-text3)',

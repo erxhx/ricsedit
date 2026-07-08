@@ -96,14 +96,15 @@ h1, h2 {
   z-index: -1;
   pointer-events: none;
   background: linear-gradient(to bottom,
-    color-mix(in srgb, var(--admin-bg) 96%, transparent) 0%,
-    color-mix(in srgb, var(--admin-bg) 70%, transparent) 45%,
+    color-mix(in srgb, var(--admin-bg) 98%, transparent) 0%,
+    color-mix(in srgb, var(--admin-bg) 82%, transparent) 55%,
     transparent 100%);
-  -webkit-backdrop-filter: blur(12px) saturate(1.5);
-  backdrop-filter: blur(12px) saturate(1.5);
-  /* Long, early fade so the blur dissolves with no visible boundary */
-  -webkit-mask-image: linear-gradient(to bottom, black 20%, transparent 96%);
-  mask-image: linear-gradient(to bottom, black 20%, transparent 96%);
+  -webkit-backdrop-filter: blur(15px) saturate(1.5);
+  backdrop-filter: blur(15px) saturate(1.5);
+  /* Long fade so the blur dissolves with no visible boundary — strong enough
+     up top that grid content can't read through behind the logo */
+  -webkit-mask-image: linear-gradient(to bottom, black 40%, transparent 98%);
+  mask-image: linear-gradient(to bottom, black 40%, transparent 98%);
 }
 
 /* Tab bar items — concentric highlight capsule behind the active item */

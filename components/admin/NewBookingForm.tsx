@@ -219,7 +219,7 @@ export default function NewBookingForm({
         borderBottom: '1px solid var(--admin-border)',
         position: 'sticky', top: 52, background: 'var(--admin-bg)', zIndex: 8,
       }}>
-        <button onClick={() => router.back()} style={{ color: 'var(--admin-text2)', background: 'none', border: 'none', fontSize: 20, lineHeight: 1, cursor: 'pointer', padding: '0 4px', WebkitTapHighlightColor: 'transparent' }}>
+        <button onClick={() => router.back()} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, height: 40, margin: '0 -8px 0 -12px', color: 'var(--admin-text2)', background: 'none', border: 'none', fontSize: 20, lineHeight: 1, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
           ‹
         </button>
         <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-text3)' }}>

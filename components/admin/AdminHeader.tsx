@@ -188,7 +188,12 @@ export default function AdminHeader({ name }: { name: string }) {
           borderRadius: 28,
           zIndex: 41,
           transform: open ? 'translateX(0)' : 'translateX(calc(100% + 14px))',
-          transition: 'transform 0.32s cubic-bezier(0.32, 0.9, 0.35, 1)',
+          // visibility keeps the off-canvas drawer out of the tab order / a11y
+          // tree; the delay lets the slide-out finish before it hides.
+          visibility: open ? 'visible' : 'hidden',
+          transition: open
+            ? 'transform 0.32s cubic-bezier(0.32, 0.9, 0.35, 1), visibility 0s'
+            : 'transform 0.32s cubic-bezier(0.32, 0.9, 0.35, 1), visibility 0s 0.32s',
           display: 'flex', flexDirection: 'column',
           overflow: 'hidden',
         }}
@@ -320,8 +325,8 @@ export default function AdminHeader({ name }: { name: string }) {
             >
               <span style={{ fontSize: 17, lineHeight: 1 }}>{item.icon}</span>
               <span style={{
-                fontFamily: 'var(--font-body)', fontSize: 9,
-                letterSpacing: '0.06em', textTransform: 'uppercase',
+                fontFamily: 'var(--font-body)', fontSize: 10,
+                letterSpacing: '0.05em', textTransform: 'uppercase',
                 fontWeight: active ? 600 : 400,
               }}>
                 {item.label}

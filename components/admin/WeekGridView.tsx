@@ -501,15 +501,13 @@ export default function WeekGridView({
           )}
         </div>
 
-        {/* Mode toggle + staff legend */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        {/* Mode toggle + staff legend (dots only — names don't fit a phone with
+            3+ staff and overflowed the page horizontally; colours match blocks) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
           {modeToggle}
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
             {ROSTER.map((m) => (
-              <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <div style={{ width: 6, height: 6, borderRadius: '50%', background: m.color }} />
-                <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-text3)' }}>{m.name}</span>
-              </div>
+              <div key={m.id} title={m.name} style={{ width: 7, height: 7, borderRadius: '50%', background: m.color }} />
             ))}
           </div>
         </div>
