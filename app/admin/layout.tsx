@@ -10,7 +10,11 @@ export const metadata: Metadata = {
   manifest: '/admin-manifest.json',
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'default',
+    // Page extends under the status bar; the theme provider paints that zone
+    // with an ink strip so the white system text is always readable — with
+    // 'default', iOS colours the bar from the SYSTEM theme (grey slab over
+    // the beige app when the phone is in dark mode).
+    statusBarStyle: 'black-translucent',
     title: 'ES Admin',
   },
 };
