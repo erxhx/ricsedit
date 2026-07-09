@@ -1,5 +1,6 @@
 import { dbGetAppointmentByToken, dbUpdateAppointment } from '@/lib/db';
 import { sendRescheduleNotification } from '@/lib/notifications';
+import { validateSlot } from '@/lib/booking-validation';
 
 function addMinutes(t: string, mins: number): string {
   const [h, m] = t.split(':').map(Number);
@@ -26,13 +27,23 @@ export async function POST(
   if (!body.date || !body.startTime) {
     return Response.json({ error: 'Please select a date and time.' }, { status: 400 });
   }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(body.date) || !/^\d{1,2}:\d{2}$/.test(body.startTime)) {
+    return Response.json({ error: 'Invalid date or time format.' }, { status: 400 });
+  }
 
-  const todayPacific = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/Vancouver',
-    year: 'numeric', month: '2-digit', day: '2-digit',
-  }).format(new Date());
-  if (body.date < todayPacific) {
-    return Response.json({ error: 'Please choose a future date.' }, { status: 400 });
+  // Re-validate the requested slot server-side (past / working hours /
+  // conflicts incl. blocked time) — never trust the client's availability UI.
+  // The appointment being moved is excluded from the conflict check.
+  const [h, m] = body.startTime.split(':').map(Number);
+  const check = await validateSlot({
+    staff: apt.staff,
+    dateStr: body.date,
+    startMin: h * 60 + m,
+    durationMinutes: apt.durationMinutes,
+    excludeId: apt.id,
+  });
+  if (!check.ok) {
+    return Response.json({ error: check.error }, { status: check.status });
   }
 
   const endTime = addMinutes(body.startTime, apt.durationMinutes);

@@ -5,7 +5,8 @@
  */
 
 import { NextRequest } from 'next/server';
-import { dbCreateAppointment, dbGetAppointmentsForDate } from '@/lib/db';
+import { dbCreateAppointment } from '@/lib/db';
+import { validateSlot } from '@/lib/booking-validation';
 import { sendBookingConfirmation } from '@/lib/notifications';
 import { staffForCategory } from '@/lib/staff';
 import { getServicesStoreAsync, getAllServices } from '@/lib/services-store';
@@ -29,20 +30,6 @@ function addMinutes(time: string, mins: number): string {
   const [h, m] = time.split(':').map(Number);
   const total = h * 60 + m + mins;
   return `${pad(Math.floor(total / 60))}:${pad(total % 60)}`;
-}
-
-/** Current Pacific date (YYYY-MM-DD) and minutes-since-midnight — for past-slot guards. */
-function pacificNow(): { dateStr: string; minutes: number } {
-  const now = new Date();
-  const dateStr = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/Vancouver', year: 'numeric', month: '2-digit', day: '2-digit',
-  }).format(now);
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/Vancouver', hour: '2-digit', minute: '2-digit', hour12: false,
-  }).formatToParts(now);
-  const h = parseInt(parts.find(p => p.type === 'hour')!.value, 10) % 24;
-  const m = parseInt(parts.find(p => p.type === 'minute')!.value, 10);
-  return { dateStr, minutes: h * 60 + m };
 }
 
 // ── Input validation ──────────────────────────────────────────────────────────
@@ -195,33 +182,16 @@ export async function POST(req: NextRequest) {
     const clientName    = `${client.firstName.trim()} ${client.lastName.trim()}`.trim();
 
     // ── Slot re-validation (never trust the client's availability UI) ──────────
-    const startMin = (time.h ?? 0) * 60 + (time.m ?? 0);
-    const endMin   = startMin + totalDuration;
-
-    // Reject past dates / past same-day times (Pacific).
-    const nowP = pacificNow();
-    if (dateStr < nowP.dateStr || (dateStr === nowP.dateStr && startMin < nowP.minutes)) {
-      return Response.json(
-        { error: 'That time has already passed. Please choose a later slot.' },
-        { status: 400, headers: CORS },
-      );
-    }
-
-    // Reject overlaps with the staff member's existing (non-cancelled) bookings.
-    const dayAppts = await dbGetAppointmentsForDate(dateStr);
-    const conflict = dayAppts.some((a) => {
-      if (a.staff !== staff || a.status === 'cancelled') return false;
-      const [sh, sm] = a.startTime.split(':').map(Number);
-      const [eh, em] = a.endTime.split(':').map(Number);
-      const aStart = sh * 60 + (sm || 0);
-      const aEnd   = eh * 60 + (em || 0);
-      return startMin < aEnd && endMin > aStart; // half-open overlap
+    // Shared with the self-serve reschedule endpoint: past-slot guard,
+    // working-hours check, and conflict check (including blocked time).
+    const check = await validateSlot({
+      staff,
+      dateStr,
+      startMin: (time.h ?? 0) * 60 + (time.m ?? 0),
+      durationMinutes: totalDuration,
     });
-    if (conflict) {
-      return Response.json(
-        { error: 'That time slot was just booked by someone else. Please go back and choose a different time.' },
-        { status: 409, headers: CORS },
-      );
+    if (!check.ok) {
+      return Response.json({ error: check.error }, { status: check.status, headers: CORS });
     }
 
     const apt = await dbCreateAppointment({
