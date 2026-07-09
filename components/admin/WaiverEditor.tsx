@@ -91,10 +91,8 @@ export default function WaiverEditor() {
                     {label}
                   </div>
                   <div style={{
-                    background: 'rgba(252,248,240,0.85)',
-                    backdropFilter: 'blur(8px)',
-                    WebkitBackdropFilter: 'blur(8px)',
-                    border: '1px solid rgba(255,255,255,0.55)',
+                    background: 'var(--admin-card)',
+                    border: '1px solid var(--admin-border)',
                     borderRadius: 12,
                     boxShadow: '0 1px 8px rgba(0,0,0,0.05)',
                     padding: '4px 16px',

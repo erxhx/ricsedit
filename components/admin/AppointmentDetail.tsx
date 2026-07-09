@@ -766,7 +766,7 @@ function IntakeResponsesPanel({ intakeResponses }: {
         <span style={{ fontSize: 11, color: 'var(--admin-muted)' }}>{expanded ? '▲' : '▼'}</span>
       </button>
 
-      <div style={{ background: 'rgba(252,248,240,0.85)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.55)', borderRadius: 12, boxShadow: '0 1px 8px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
+      <div style={{ background: 'var(--admin-card)', border: '1px solid var(--admin-border)', borderRadius: 12, boxShadow: '0 1px 8px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
         {(expanded ? entries : preview).map(([id, value], i) => (
           <div key={id} style={{
             padding: '11px 16px',
@@ -820,7 +820,7 @@ function Section({ label, children }: { label?: React.ReactNode; children: React
           {label}
         </div>
       )}
-      <div style={{ background: 'rgba(252,248,240,0.85)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.55)', borderRadius: 12, boxShadow: '0 1px 8px rgba(0,0,0,0.05)', overflow: 'hidden', padding: '4px 16px' }}>
+      <div style={{ background: 'var(--admin-card)', border: '1px solid var(--admin-border)', borderRadius: 12, boxShadow: '0 1px 8px rgba(0,0,0,0.05)', overflow: 'hidden', padding: '4px 16px' }}>
         {children}
       </div>
     </div>
@@ -853,11 +853,13 @@ function ActionButton({
   children: React.ReactNode;
   disabled?: boolean;
 }) {
+  // Themed variants — hardcoded white/iOS-system colors broke dark mode and
+  // clashed with the warm palette (same fix as the Call/Text buttons).
   const styles: Record<string, React.CSSProperties> = {
-    primary: { background: 'var(--admin-btn-primary-bg)', color: 'var(--admin-btn-primary-fg)' }, // black
-    danger:  { background: '#FF3B30', color: '#fff' },  // iOS red — cancel
-    ghost:   { background: '#fff', color: '#000', border: '1px solid rgba(0,0,0,0.12)' },        // white
-    noshow:  { background: '#FF9500', color: '#fff' },  // iOS orange — no-show
+    primary: { background: 'var(--admin-btn-primary-bg)', color: 'var(--admin-btn-primary-fg)' },
+    danger:  { background: 'var(--admin-danger-bg)', color: 'var(--admin-danger-text)', border: '1px solid var(--admin-danger-border)' },
+    ghost:   { background: 'var(--admin-btn)', color: 'var(--admin-text)', border: '1px solid var(--admin-btn-border)' },
+    noshow:  { background: 'var(--admin-note)', color: '#b5824a', border: '1px solid var(--admin-note-border)' },
   };
   return (
     <button

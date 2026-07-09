@@ -39,12 +39,12 @@ const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 // ── sub-components ────────────────────────────────────────────────────────────
 
 function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  // Opaque themed surface — content cards don't get glass (that's reserved
+  // for floating chrome), and hardcoded light backgrounds break dark mode.
   return (
     <div style={{
-      background: 'rgba(252,248,240,0.85)',
-      backdropFilter: 'blur(8px)',
-      WebkitBackdropFilter: 'blur(8px)',
-      border: '1px solid rgba(255,255,255,0.55)',
+      background: 'var(--admin-card)',
+      border: '1px solid var(--admin-border)',
       borderRadius: 12,
       boxShadow: '0 1px 8px rgba(0,0,0,0.05)',
       padding: '16px',
@@ -255,7 +255,7 @@ export default function ReportsView({ appointments: initialAppointments }: { app
                     <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>{RANGE_LABELS[range]}</div>
                     <div style={{ fontFamily: 'var(--font-body)', fontSize: 28, fontWeight: 500, color: 'var(--admin-text)', letterSpacing: '-0.02em' }}>{fmtMoney(totalRevenue)}</div>
                     {pctChange !== null && (
-                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, marginTop: 4, color: pctChange >= 0 ? '#4a9b6f' : '#b03030' }}>
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, marginTop: 4, color: pctChange >= 0 ? 'var(--admin-call-text)' : 'var(--admin-error)' }}>
                         {pctChange >= 0 ? '+' : ''}{pctChange}% vs prior period
                       </div>
                     )}
@@ -302,7 +302,7 @@ export default function ReportsView({ appointments: initialAppointments }: { app
                     <div style={{
                       width: '100%', borderRadius: 3,
                       height: `${Math.max(pct * 52, revenueByDow[dow] > 0 ? 4 : 0)}px`,
-                      background: isToday ? STAFF_COLORS.ericBarber : 'var(--admin-border)',
+                      background: isToday ? STAFF_COLORS.ericBarber : 'var(--admin-btn-border)',
                       transition: 'height 0.3s ease',
                     }} />
                     <div style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: isToday ? 'var(--admin-text)' : 'var(--admin-muted)', letterSpacing: '0.04em', fontWeight: isToday ? 600 : 400 }}>
@@ -374,7 +374,7 @@ export default function ReportsView({ appointments: initialAppointments }: { app
                 <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
                   <div>
                     <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>New</div>
-                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 500, color: '#4a9b6f' }}>{newClients}</div>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 500, color: 'var(--admin-call-text)' }}>{newClients}</div>
                   </div>
                   <div>
                     <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Returning</div>
@@ -385,7 +385,7 @@ export default function ReportsView({ appointments: initialAppointments }: { app
               <div style={{ width: 1, background: 'var(--admin-border)', margin: '0 20px' }} />
               <div style={{ flex: 1 }}>
                 <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>Cancellation rate</div>
-                <div style={{ fontFamily: 'var(--font-body)', fontSize: 24, fontWeight: 500, color: cancelRate >= 20 ? '#b03030' : cancelRate >= 10 ? '#b5824a' : 'var(--admin-text)' }}>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 24, fontWeight: 500, color: cancelRate >= 20 ? 'var(--admin-error)' : cancelRate >= 10 ? '#b5824a' : 'var(--admin-text)' }}>
                   {cancelRate}%
                 </div>
                 <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-muted)', marginTop: 8 }}>
