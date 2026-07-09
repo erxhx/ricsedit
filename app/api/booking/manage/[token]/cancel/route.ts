@@ -1,5 +1,6 @@
 import { dbGetAppointmentByToken, dbUpdateAppointment } from '@/lib/db';
 import { sendCancellationNotification } from '@/lib/notifications';
+import { withinSelfServeCutoff } from '@/lib/booking-validation';
 
 export async function POST(
   _req: Request,
@@ -14,6 +15,11 @@ export async function POST(
   }
   if (apt.status !== 'confirmed') {
     return Response.json({ error: 'This appointment can no longer be cancelled online. Please call or text us at 778 535 3348.' }, { status: 400 });
+  }
+
+  // Online cancellation closes 3 hours before the appointment.
+  if (withinSelfServeCutoff(apt.date, apt.startTime)) {
+    return Response.json({ error: 'Your appointment starts soon, so online cancellation is closed. Please call or text us at 778 535 3348 and we’ll sort it out.' }, { status: 400 });
   }
 
   await dbUpdateAppointment(apt.id, { status: 'cancelled' });

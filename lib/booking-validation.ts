@@ -26,6 +26,29 @@ export function pacificNow(): { dateStr: string; minutes: number } {
   return { dateStr, minutes: h * 60 + m };
 }
 
+/** Online cancel/reschedule closes this many hours before the appointment. */
+export const SELF_SERVE_CUTOFF_HOURS = 3;
+
+/**
+ * Minutes from now (Pacific) until an appointment's start. Negative when the
+ * appointment has already started.
+ */
+export function minutesUntilSlot(dateStr: string, startTime: string): number {
+  const nowP = pacificNow();
+  const [y1, m1, d1] = nowP.dateStr.split('-').map(Number);
+  const [y2, m2, d2] = dateStr.split('-').map(Number);
+  const dayDiff = Math.round(
+    (new Date(y2, m2 - 1, d2).getTime() - new Date(y1, m1 - 1, d1).getTime()) / 86_400_000,
+  );
+  const [h, m] = startTime.split(':').map(Number);
+  return dayDiff * 1440 + (h * 60 + (m || 0)) - nowP.minutes;
+}
+
+/** True when the appointment is inside the self-serve cutoff window. */
+export function withinSelfServeCutoff(dateStr: string, startTime: string): boolean {
+  return minutesUntilSlot(dateStr, startTime) < SELF_SERVE_CUTOFF_HOURS * 60;
+}
+
 export async function validateSlot({
   staff,
   dateStr,

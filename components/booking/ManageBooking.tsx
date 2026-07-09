@@ -417,6 +417,17 @@ export default function ManageBooking({
   const isPast = apt.date < today;
   const isActive = apt.status === 'confirmed' && !isPast;
 
+  // Online changes close 3 hours before the appointment (mirrors the server
+  // guard — the buttons are replaced with a call-us note inside the window).
+  const withinCutoff = (() => {
+    if (!isActive) return false;
+    const nowPac = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Vancouver' }));
+    const [y, mo, d] = apt.date.split('-').map(Number);
+    const [h, m] = apt.startTime.split(':').map(Number);
+    const start = new Date(y, mo - 1, d, h, m);
+    return start.getTime() - nowPac.getTime() < 3 * 60 * 60 * 1000;
+  })();
+
   async function doCancel() {
     setLoading(true); setError('');
     try {
@@ -518,7 +529,18 @@ export default function ManageBooking({
       {apt.status === 'completed' && <p style={{ fontSize: 13, textAlign: 'center', opacity: 0.5 }}>This appointment has been completed.</p>}
       {isPast && apt.status === 'confirmed' && <p style={{ fontSize: 13, textAlign: 'center', opacity: 0.5 }}>This appointment has already passed.</p>}
 
-      {isActive && (
+      {isActive && withinCutoff && (
+        <div style={{ border: '1px solid rgba(0,0,0,0.08)', borderRadius: 16, padding: '16px 18px', textAlign: 'center' }}>
+          <p style={{ fontSize: 13, margin: '0 0 6px', fontWeight: 500 }}>Your appointment starts soon</p>
+          <p style={{ fontSize: 13, opacity: 0.6, margin: 0 }}>
+            Online changes are closed within 3 hours of your appointment.
+            Need to make a change? Call or text us at{' '}
+            <a href="tel:+17785353348" style={{ color: 'inherit' }}>778 535 3348</a>.
+          </p>
+        </div>
+      )}
+
+      {isActive && !withinCutoff && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <button onClick={() => setView('reschedule')} style={{ width: '100%', padding: '16px 0', borderRadius: 16, background: 'none', border: '1px solid rgba(0,0,0,0.1)', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
             Reschedule
@@ -529,9 +551,9 @@ export default function ManageBooking({
         </div>
       )}
 
-      {isActive && (
+      {isActive && !withinCutoff && (
         <p style={{ fontSize: 11, opacity: 0.3, textAlign: 'center' }}>
-          You can reschedule or cancel up to 24 hours before your appointment.
+          You can reschedule or cancel up to 3 hours before your appointment.
         </p>
       )}
     </div>

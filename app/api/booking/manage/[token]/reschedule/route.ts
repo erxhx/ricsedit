@@ -1,6 +1,6 @@
 import { dbGetAppointmentByToken, dbUpdateAppointment } from '@/lib/db';
 import { sendRescheduleNotification } from '@/lib/notifications';
-import { validateSlot } from '@/lib/booking-validation';
+import { validateSlot, withinSelfServeCutoff } from '@/lib/booking-validation';
 
 function addMinutes(t: string, mins: number): string {
   const [h, m] = t.split(':').map(Number);
@@ -21,6 +21,11 @@ export async function POST(
   }
   if (apt.status !== 'confirmed') {
     return Response.json({ error: 'This appointment can no longer be rescheduled online. Please call or text us at 778 535 3348.' }, { status: 400 });
+  }
+
+  // Online rescheduling closes 3 hours before the appointment.
+  if (withinSelfServeCutoff(apt.date, apt.startTime)) {
+    return Response.json({ error: 'Your appointment starts soon, so online rescheduling is closed. Please call or text us at 778 535 3348 and we’ll sort it out.' }, { status: 400 });
   }
 
   const body = await req.json() as { date: string; startTime: string };

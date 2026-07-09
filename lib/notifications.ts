@@ -182,7 +182,7 @@ export async function sendBookingConfirmation(apt: Appointment): Promise<void> {
     <p style="margin:0 0 0;font-family:'Inter Tight',Helvetica,sans-serif;font-size:14px;color:#4a4540;">Hi ${firstName(apt.clientName)}, your appointment is confirmed.</p>
     ${aptDetailsHtml(apt)}
     ${ctaBtn('Manage your appointment →', url)}
-    ${muted('Need to cancel or reschedule? Use the link above up to 24 hours before your appointment.')}
+    ${muted('Need to cancel or reschedule? Use the link above up to 3 hours before your appointment.')}
   `);
 
   const ownerHtml = emailLayout(`
@@ -312,7 +312,7 @@ export async function sendMigrationNotification(apt: Appointment): Promise<void>
     <p style="margin:0 0 0;font-family:'Inter Tight',Helvetica,sans-serif;font-size:14px;color:#4a4540;">Hi ${firstName(apt.clientName)}, we've made a few improvements to our booking platform behind the scenes. Your appointment is confirmed — your manage link below has been updated.</p>
     ${aptDetailsHtml(apt)}
     ${ctaBtn('Manage your appointment →', url)}
-    ${muted('Use the link above to cancel or reschedule up to 24 hours before your appointment.')}
+    ${muted('Use the link above to cancel or reschedule up to 3 hours before your appointment.')}
   `);
 
   await sendEmail(
