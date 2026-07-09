@@ -50,7 +50,7 @@ function BarberingContent({ headline }) {
       <Eyebrow left="The chair" right="Your barber" />
       <div className="stylists">
         <div className="stylist">
-          <div className="avatar" style={{ backgroundImage: "url('assets/eric-he-headshot.webp')", backgroundSize: "cover", backgroundPosition: "center 22%" }} />
+          <div className="avatar" style={{ backgroundImage: "url('assets/eric-he-headshot.jpg')", backgroundSize: "cover", backgroundPosition: "center 22%" }} />
           <div>
             <h3>Eric He <a className="ig" href="https://www.instagram.com/ricthesurgeon/" target="_blank" rel="noopener noreferrer" aria-label="Eric He on Instagram — @ricthesurgeon"><em>@ricthesurgeon</em></a></h3>
             <div className="role">CoFounder · Barber</div>
