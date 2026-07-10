@@ -24,7 +24,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const isCancelling   = patch.status === 'cancelled' && existing.status !== 'cancelled';
   const isNoShow       = patch.status === 'no_show'   && existing.status !== 'no_show';
   const isRescheduling = (patch.date      && patch.date      !== existing.date) ||
-                         (patch.startTime && patch.startTime !== existing.startTime);
+                         (patch.startTime && patch.startTime !== existing.startTime) ||
+                         (patch.endTime   && patch.endTime   !== existing.endTime); // duration resize counts too
 
   if (isCancelling)            sendCancellationNotification(existing, 'admin', cancellationNote || undefined).catch(() => {});
   else if (isNoShow)           sendNoShowNotification(existing, { sms: noShowSms }).catch(() => {});

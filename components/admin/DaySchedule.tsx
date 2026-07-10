@@ -49,6 +49,12 @@ type DragRef = {
   longPressReady: boolean;
   longPressTimer: ReturnType<typeof setTimeout> | null;
   scrollCancelled: boolean;
+  /** 'move' repositions the block; 'resize' (bottom-edge grab) changes duration. */
+  mode: 'move' | 'resize';
+  /** resize: live height in px, snapped to 15-min steps. */
+  currentHeightPx: number;
+  /** resize: clamp — next appointment in the column or the staff day end. */
+  maxHeightPx: number;
 };
 
 type DragConfirm = {
@@ -56,6 +62,17 @@ type DragConfirm = {
   newStartTime: string;
   newEndTime: string;
 } | null;
+
+type ResizeConfirm = {
+  apt: Appointment;
+  newEndTime: string;
+  newDuration: number;
+} | null;
+
+/** Bottom-edge grab zone (px) that starts a resize instead of a move. */
+const RESIZE_ZONE = 18;
+/** Blocks shorter than this resize via the detail page (zone would swallow moves). */
+const RESIZE_MIN_BLOCK = 36;
 
 type SlotAction    = { staff: string; time: string } | null;
 type BlockSheet    = { staff: string; time: string } | null;
@@ -114,6 +131,7 @@ export default function DaySchedule({
   const gridRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<DragRef | null>(null);
   const ghostRef = useRef<HTMLDivElement | null>(null);
+  const ghostLabelRef = useRef<HTMLSpanElement | null>(null);
   const aptEls = useRef<Map<string, HTMLElement>>(new Map());
   const nowRef = useRef<HTMLDivElement>(null);
   const headerScrollRef = useRef<HTMLDivElement>(null);
@@ -122,6 +140,9 @@ export default function DaySchedule({
   const [apts, setApts] = useState(initial);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragConfirm, setDragConfirm] = useState<DragConfirm>(null);
+  const [resizeConfirm, setResizeConfirm] = useState<ResizeConfirm>(null);
+  // Duration changes usually happen with the client in the chair — default off.
+  const [notifyResize, setNotifyResize] = useState(false);
   const [notifyReschedule, setNotifyReschedule] = useState(true);
   const [slotAction,    setSlotAction]    = useState<SlotAction>(null);
   const [blockSheet,    setBlockSheet]    = useState<BlockSheet>(null);
@@ -157,7 +178,7 @@ export default function DaySchedule({
   }, []);
 
   // Freeze the page while any bottom sheet is open
-  useScrollLock(!!(dragConfirm || slotAction || blockSheet || blockDelSheet));
+  useScrollLock(!!(dragConfirm || resizeConfirm || slotAction || blockSheet || blockDelSheet));
 
   // sync appointments when the parent navigates to a different day
   useEffect(() => {
@@ -258,16 +279,48 @@ export default function DaySchedule({
         setDraggingId(drag.aptId);
       }
       if (drag.hasMoved) {
-        const maxPx = TOTAL_PX - drag.durationPx;
-        const raw = drag.origTopPx + dy;
-        const snp = Math.round(Math.max(0, Math.min(maxPx, raw)) / (15 * PPM)) * (15 * PPM);
-        drag.currentTopPx = snp;
-        if (ghostRef.current) ghostRef.current.style.top = `${snp}px`;
+        if (drag.mode === 'resize') {
+          // Grow/shrink from the bottom edge, snapped to 15-min steps, clamped
+          // to [15 min, next appointment / staff day end].
+          const raw = drag.durationPx + dy;
+          const snp = Math.round(Math.max(15 * PPM, Math.min(drag.maxHeightPx, raw)) / (15 * PPM)) * (15 * PPM);
+          drag.currentHeightPx = snp;
+          if (ghostRef.current) ghostRef.current.style.height = `${Math.max(snp - 2, 22)}px`;
+          if (ghostLabelRef.current) {
+            const apt = apts.find((a) => a.id === drag.aptId);
+            if (apt) ghostLabelRef.current.textContent = `→ ${fmt(addMin(apt.startTime, snp / PPM))}`;
+          }
+        } else {
+          const maxPx = TOTAL_PX - drag.durationPx;
+          const raw = drag.origTopPx + dy;
+          const snp = Math.round(Math.max(0, Math.min(maxPx, raw)) / (15 * PPM)) * (15 * PPM);
+          drag.currentTopPx = snp;
+          if (ghostRef.current) ghostRef.current.style.top = `${snp}px`;
+        }
       }
     }
     grid.addEventListener('touchmove', onMove, { passive: false });
     return () => grid.removeEventListener('touchmove', onMove);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apts]);
+
+  /**
+   * Resize clamp for a block: grow at most to the next appointment in the
+   * column, or the staff member's day end (incl. barber Thursday/flex rules),
+   * whichever comes first.
+   */
+  function resizeMaxPx(apt: Appointment): number {
+    const topPx = t2m(apt.startTime) * PPM;
+    let limit = TOTAL_PX;
+    const { postTop } = closedBands(apt.staff);
+    if (postTop > topPx) limit = Math.min(limit, postTop);
+    for (const a of apts) {
+      if (a.id === apt.id || a.staff !== apt.staff || a.status === 'cancelled') continue;
+      const aTop = t2m(a.startTime) * PPM;
+      if (aTop > topPx && aTop < limit) limit = aTop;
+    }
+    return Math.max(limit - topPx, 15 * PPM); // never below one 15-min step
+  }
 
   function clearDragVisuals(aptId: string) {
     const el = aptEls.current.get(aptId);
@@ -284,6 +337,13 @@ export default function DaySchedule({
     const origTopPx = t2m(apt.startTime) * PPM;
     const col = getAppointmentColor(apt.staff, apt.service);
 
+    // Pressing the bottom-edge grab zone starts a resize instead of a move.
+    // Short blocks stay move-only (the zone would swallow the whole block).
+    const rect = e.currentTarget.getBoundingClientRect();
+    const mode: 'move' | 'resize' =
+      rect.height >= RESIZE_MIN_BLOCK && e.touches[0].clientY >= rect.bottom - RESIZE_ZONE
+        ? 'resize' : 'move';
+
     const timer = setTimeout(() => {
       const drag = dragRef.current;
       if (!drag || drag.aptId !== apt.id || drag.scrollCancelled) return;
@@ -291,7 +351,7 @@ export default function DaySchedule({
       // Visual feedback: lift the block so user knows drag is ready
       const el = aptEls.current.get(apt.id);
       if (el) {
-        el.style.transform = 'scale(1.04)';
+        el.style.transform = drag.mode === 'resize' ? 'none' : 'scale(1.04)';
         el.style.boxShadow = `0 4px 16px rgba(20,18,16,0.2), 0 0 0 1.5px ${col}`;
         el.style.zIndex = '5';
         el.style.transition = 'transform 0.12s ease, box-shadow 0.12s ease';
@@ -309,6 +369,9 @@ export default function DaySchedule({
       longPressReady: false,
       longPressTimer: timer,
       scrollCancelled: false,
+      mode,
+      currentHeightPx: apt.durationMinutes * PPM,
+      maxHeightPx: mode === 'resize' ? resizeMaxPx(apt) : TOTAL_PX,
     };
   }
 
@@ -340,9 +403,16 @@ export default function DaySchedule({
 
     // Drag completed — ask for confirmation before committing
     if (drag.longPressReady && drag.hasMoved) {
-      const newStart = m2t(Math.round(drag.currentTopPx / PPM / 15) * 15);
-      const newEnd = addMin(newStart, apt.durationMinutes);
-      setDragConfirm({ apt, newStartTime: newStart, newEndTime: newEnd });
+      if (drag.mode === 'resize') {
+        const newDuration = Math.round(drag.currentHeightPx / PPM);
+        if (newDuration !== apt.durationMinutes) {
+          setResizeConfirm({ apt, newDuration, newEndTime: addMin(apt.startTime, newDuration) });
+        }
+      } else {
+        const newStart = m2t(Math.round(drag.currentTopPx / PPM / 15) * 15);
+        const newEnd = addMin(newStart, apt.durationMinutes);
+        setDragConfirm({ apt, newStartTime: newStart, newEndTime: newEnd });
+      }
     }
   }
 
@@ -360,6 +430,13 @@ export default function DaySchedule({
 
     const origTopPx = t2m(apt.startTime) * PPM;
     const col = getAppointmentColor(apt.staff, apt.service);
+
+    // Bottom-edge grab = resize (immediate on mouse, matching move behavior)
+    const rect = e.currentTarget.getBoundingClientRect();
+    const mode: 'move' | 'resize' =
+      rect.height >= RESIZE_MIN_BLOCK && e.clientY >= rect.bottom - RESIZE_ZONE
+        ? 'resize' : 'move';
+
     dragRef.current = {
       aptId: apt.id, color: col,
       startTouchY: e.clientY, origTopPx,
@@ -367,6 +444,9 @@ export default function DaySchedule({
       currentTopPx: origTopPx,
       hasMoved: false, longPressReady: true, // no long-press delay for mouse
       longPressTimer: null, scrollCancelled: false,
+      mode,
+      currentHeightPx: apt.durationMinutes * PPM,
+      maxHeightPx: mode === 'resize' ? resizeMaxPx(apt) : TOTAL_PX,
     };
 
     function onMouseMove(ev: MouseEvent) {
@@ -380,10 +460,18 @@ export default function DaySchedule({
         setDraggingId(drag.aptId);
       }
       if (drag.hasMoved) {
-        const maxPx = TOTAL_PX - drag.durationPx;
-        const snp = Math.round(Math.max(0, Math.min(maxPx, drag.origTopPx + dy)) / (15 * PPM)) * (15 * PPM);
-        drag.currentTopPx = snp;
-        if (ghostRef.current) ghostRef.current.style.top = `${snp}px`;
+        if (drag.mode === 'resize') {
+          const raw = drag.durationPx + dy;
+          const snp = Math.round(Math.max(15 * PPM, Math.min(drag.maxHeightPx, raw)) / (15 * PPM)) * (15 * PPM);
+          drag.currentHeightPx = snp;
+          if (ghostRef.current) ghostRef.current.style.height = `${Math.max(snp - 2, 22)}px`;
+          if (ghostLabelRef.current) ghostLabelRef.current.textContent = `→ ${fmt(addMin(apt.startTime, snp / PPM))}`;
+        } else {
+          const maxPx = TOTAL_PX - drag.durationPx;
+          const snp = Math.round(Math.max(0, Math.min(maxPx, drag.origTopPx + dy)) / (15 * PPM)) * (15 * PPM);
+          drag.currentTopPx = snp;
+          if (ghostRef.current) ghostRef.current.style.top = `${snp}px`;
+        }
       }
     }
 
@@ -399,12 +487,29 @@ export default function DaySchedule({
         if (apt.status === 'blocked') { setBlockDelSheet(apt); } else { router.push(`/admin/appointments/${apt.id}`); }
         return;
       }
+      if (drag.mode === 'resize') {
+        const newDuration = Math.round(drag.currentHeightPx / PPM);
+        if (newDuration !== apt.durationMinutes) {
+          setResizeConfirm({ apt, newDuration, newEndTime: addMin(apt.startTime, newDuration) });
+        }
+        return;
+      }
       const newStart = m2t(Math.round(drag.currentTopPx / PPM / 15) * 15);
       setDragConfirm({ apt, newStartTime: newStart, newEndTime: addMin(newStart, apt.durationMinutes) });
     }
 
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
+  }
+
+  /** Desktop affordance: ns-resize cursor over the bottom grab zone. */
+  function onAptMouseHover(e: React.MouseEvent, apt: Appointment) {
+    if (dragRef.current) return;
+    const el = e.currentTarget as HTMLElement;
+    const rect = el.getBoundingClientRect();
+    el.style.cursor =
+      rect.height >= RESIZE_MIN_BLOCK && e.clientY >= rect.bottom - RESIZE_ZONE
+        ? 'ns-resize' : 'grab';
   }
 
   async function confirmReschedule() {
@@ -421,6 +526,24 @@ export default function DaySchedule({
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ startTime: newStartTime, endTime: newEndTime, notify }),
+      });
+    } catch { /* fail silently */ }
+  }
+
+  async function confirmResize() {
+    if (!resizeConfirm) return;
+    const { apt, newEndTime, newDuration } = resizeConfirm;
+    const notify = notifyResize;
+    setApts((prev) =>
+      prev.map((a) => a.id === apt.id ? { ...a, endTime: newEndTime, durationMinutes: newDuration } : a)
+    );
+    setResizeConfirm(null);
+    setNotifyResize(false); // reset to the quiet default for next resize
+    try {
+      await fetch(`/api/admin/appointments/${apt.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endTime: newEndTime, durationMinutes: newDuration, notify }),
       });
     } catch { /* fail silently */ }
   }
@@ -708,6 +831,7 @@ export default function DaySchedule({
                     onTouchEnd={(e) => onAptTouchEnd(e, apt)}
                     onTouchCancel={() => onAptTouchCancel(apt)}
                     onMouseDown={(e) => onAptMouseDown(e, apt)}
+                    onMouseMove={(e) => onAptMouseHover(e, apt)}
                     style={{
                       // Pixel width from measured colW — see the colW comment above.
                       position: 'absolute', top: topPx, left: 3, width: colW - 6, height: hPx,
@@ -721,9 +845,19 @@ export default function DaySchedule({
                     }}
                   >
                     {blocked ? (
-                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', fontStyle: 'italic' }}>
-                        {apt.service && apt.service !== 'Blocked' ? apt.service : 'Blocked'}
-                      </div>
+                      <>
+                        <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', fontStyle: 'italic' }}>
+                          {apt.service && apt.service !== 'Blocked' ? apt.service : 'Blocked'}
+                        </div>
+                        {hPx >= RESIZE_MIN_BLOCK && (
+                          <div aria-hidden style={{
+                            position: 'absolute', bottom: 3, left: '50%',
+                            transform: 'translateX(-50%)',
+                            width: 22, height: 3, borderRadius: 2,
+                            background: 'var(--admin-blocked-border)',
+                          }} />
+                        )}
+                      </>
                     ) : (
                       <>
                         <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500, color: 'var(--admin-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: apt.notes ? 14 : 0 }}>
@@ -752,6 +886,15 @@ export default function DaySchedule({
                             ✓
                           </div>
                         )}
+                        {/* resize grip — marks the bottom grab zone */}
+                        {hPx >= RESIZE_MIN_BLOCK && (
+                          <div aria-hidden style={{
+                            position: 'absolute', bottom: 3, left: '50%',
+                            transform: 'translateX(-50%)',
+                            width: 22, height: 3, borderRadius: 2,
+                            background: `${col}55`,
+                          }} />
+                        )}
                       </>
                     )}
                   </div>
@@ -773,7 +916,17 @@ export default function DaySchedule({
                       border: `1.5px dashed ${ghostCol}`,
                       borderRadius: 5, pointerEvents: 'none', zIndex: 10,
                     }}
-                  />
+                  >
+                    {/* live end-time readout while resizing */}
+                    <span
+                      ref={ghostLabelRef}
+                      style={{
+                        position: 'absolute', bottom: 2, right: 6,
+                        fontFamily: 'var(--font-body)', fontSize: 10, fontWeight: 600,
+                        color: ghostCol, whiteSpace: 'nowrap',
+                      }}
+                    />
+                  </div>
                 );
               })()}
             </div>
@@ -824,6 +977,55 @@ export default function DaySchedule({
                 label="Cancel"
                 variant="ghost"
                 onClick={() => setDragConfirm(null)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── resize confirm sheet ─────────────────────────────────────────── */}
+      {resizeConfirm && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 60 }}
+          onClick={() => { setResizeConfirm(null); setNotifyResize(false); }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="lg-sheet lg-bottom-sheet"
+            style={{ padding: '24px 20px 34px' }}
+          >
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 500, color: 'var(--admin-text)', marginBottom: 6 }}>
+              Change duration
+            </div>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text3)', marginBottom: 6 }}>
+              {resizeConfirm.apt.clientName} · {resizeConfirm.apt.durationMinutes} min →{' '}
+              <span style={{ color: 'var(--admin-text)' }}>
+                {resizeConfirm.newDuration} min ({fmt(resizeConfirm.apt.startTime)} – {fmt(resizeConfirm.newEndTime)})
+              </span>
+            </div>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)', marginBottom: 16 }}>
+              Price unchanged — edit the appointment to change the service.
+            </div>
+            {/* Notify client toggle — off by default for duration tweaks */}
+            <button
+              onClick={() => setNotifyResize(n => !n)}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '13px 0', background: 'none', border: 'none', cursor: 'pointer', WebkitTapHighlightColor: 'transparent', marginBottom: 16 }}
+            >
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)' }}>Notify client</span>
+              <span style={{ width: 44, height: 26, borderRadius: 13, background: notifyResize ? '#34C759' : 'var(--admin-border)', display: 'flex', alignItems: 'center', padding: '0 3px', transition: 'background 0.2s', justifyContent: notifyResize ? 'flex-end' : 'flex-start', flexShrink: 0 }}>
+                <span style={{ width: 20, height: 20, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+              </span>
+            </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <SlotBtn
+                label={`Save ${resizeConfirm.newDuration} min`}
+                variant="primary"
+                onClick={confirmResize}
+              />
+              <SlotBtn
+                label="Cancel"
+                variant="ghost"
+                onClick={() => { setResizeConfirm(null); setNotifyResize(false); }}
               />
             </div>
           </div>
