@@ -1,6 +1,7 @@
 import { dbGetAppointmentByToken, dbUpdateAppointment } from '@/lib/db';
 import { sendRescheduleNotification } from '@/lib/notifications';
 import { validateSlot, withinSelfServeCutoff } from '@/lib/booking-validation';
+import { sendPushToStaff, fmtWhen } from '@/lib/push';
 
 function addMinutes(t: string, mins: number): string {
   const [h, m] = t.split(':').map(Number);
@@ -54,5 +55,11 @@ export async function POST(
   const endTime = addMinutes(body.startTime, apt.durationMinutes);
   const updated = await dbUpdateAppointment(apt.id, { date: body.date, startTime: body.startTime, endTime });
   if (updated) sendRescheduleNotification(updated).catch(() => {});
+  sendPushToStaff(apt.staff, {
+    title: `Rescheduled — ${apt.clientName}`,
+    body: `${apt.service} → ${fmtWhen(body.date, body.startTime)}`,
+    url: `/admin/appointments/${apt.id}`,
+    tag: `apt-${apt.id}`,
+  }).catch(() => {});
   return Response.json({ ok: true, date: body.date, startTime: body.startTime, endTime });
 }

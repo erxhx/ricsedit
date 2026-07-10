@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useAdminTheme } from './AdminThemeProvider';
+import PushToggle from './PushToggle';
 import { staffColor, STAFF as ROSTER } from '@/lib/staff';
 import type { StaffPermissions } from '@/lib/staff-permissions';
 
@@ -194,6 +195,21 @@ export default function SettingsPanel({
       </div>
       <div style={{ marginTop: 10, fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)', lineHeight: 1.5 }}>
         Your preference is saved and will persist across sessions.
+      </div>
+
+      {/* ── Notifications ─────────────────────────────────────────────── */}
+      <div style={{
+        fontFamily: 'var(--font-body)', fontSize: 10, letterSpacing: '0.12em',
+        textTransform: 'uppercase', color: 'var(--admin-muted)',
+        marginTop: 36, marginBottom: 12,
+      }}>
+        Notifications
+      </div>
+      <div style={{
+        background: 'var(--admin-card)', border: '1px solid var(--admin-border)',
+        borderRadius: 12, overflow: 'hidden',
+      }}>
+        <PushToggle />
       </div>
 
       {/* ── Staff permissions (owner only) ─────────────────────────────── */}

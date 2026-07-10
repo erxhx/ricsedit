@@ -1,6 +1,7 @@
 import { dbGetAppointmentByToken, dbUpdateAppointment } from '@/lib/db';
 import { sendCancellationNotification } from '@/lib/notifications';
 import { withinSelfServeCutoff } from '@/lib/booking-validation';
+import { sendPushToStaff, fmtWhen } from '@/lib/push';
 
 export async function POST(
   _req: Request,
@@ -24,5 +25,11 @@ export async function POST(
 
   await dbUpdateAppointment(apt.id, { status: 'cancelled' });
   sendCancellationNotification(apt, 'client').catch(() => {});
+  sendPushToStaff(apt.staff, {
+    title: `Cancelled — ${apt.clientName}`,
+    body: `${apt.service} · ${fmtWhen(apt.date, apt.startTime)}`,
+    url: `/admin/appointments/${apt.id}`,
+    tag: `apt-${apt.id}`,
+  }).catch(() => {});
   return Response.json({ ok: true });
 }

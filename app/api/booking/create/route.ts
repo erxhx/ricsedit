@@ -7,6 +7,7 @@
 import { NextRequest } from 'next/server';
 import { dbCreateAppointment } from '@/lib/db';
 import { validateSlot } from '@/lib/booking-validation';
+import { sendPushToStaff, fmtWhen } from '@/lib/push';
 import { sendBookingConfirmation } from '@/lib/notifications';
 import { staffForCategory } from '@/lib/staff';
 import { getServicesStoreAsync, getAllServices } from '@/lib/services-store';
@@ -210,6 +211,14 @@ export async function POST(req: NextRequest) {
     });
 
     await sendBookingConfirmation(apt).catch(() => {});
+
+    // Buzz the assigned staff member's devices (fire-and-forget)
+    sendPushToStaff(staff, {
+      title: `New booking — ${clientName}`,
+      body: `${serviceName} · ${fmtWhen(dateStr, startTime)}`,
+      url: `/admin/appointments/${apt.id}`,
+      tag: `apt-${apt.id}`,
+    }).catch(() => {});
 
     return Response.json(
       { ok: true, id: apt.id, manageToken: apt.manageToken },
