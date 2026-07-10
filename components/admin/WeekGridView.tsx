@@ -536,7 +536,7 @@ export default function WeekGridView({
       </div>
 
       {/* ── time grid ─────────────────────────────────────────────────────── */}
-      <div ref={gridRef} style={{ display: 'flex', position: 'relative', paddingBottom: 24, opacity: isLoading ? 0.4 : 1, transition: 'opacity 0.15s ease' }}>
+      <div ref={gridRef} className="no-select" style={{ display: 'flex', position: 'relative', paddingBottom: 24, opacity: isLoading ? 0.4 : 1, transition: 'opacity 0.15s ease' }}>
 
         {/* Hour labels */}
         <div style={{ width: TW, flexShrink: 0, position: 'relative', height: TOTAL_PX }}>

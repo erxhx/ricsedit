@@ -132,6 +132,15 @@ h1, h2 {
   box-shadow: inset 0 1px 0 var(--lg-sheen);
 }
 
+/* Calendar grids: long-press is a gesture, never a text selection. React
+   inline styles don't emit -webkit- prefixes, and iOS Safari needs both the
+   prefixed user-select AND touch-callout (the long-press magnifier/menu). */
+.no-select, .no-select * {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
 /* Floating bottom sheet geometry — inset from the edges like an iOS 26 sheet,
    pairs with .lg-sheet for the material. Padding stays per-instance. */
 .lg-bottom-sheet {

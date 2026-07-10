@@ -718,7 +718,7 @@ export default function DaySchedule({
             overscrollBehaviorX: 'contain',
           }}
         >
-          <div ref={gridRef} style={{ display: 'flex', position: 'relative', height: TOTAL_PX }}>
+          <div ref={gridRef} className="no-select" style={{ display: 'flex', position: 'relative', height: TOTAL_PX }}>
 
             {/* current-time bar — spans all columns */}
             {nowMin >= 0 && nowMin <= (H1 - H0) * 60 && (
@@ -917,11 +917,12 @@ export default function DaySchedule({
                       borderRadius: 5, pointerEvents: 'none', zIndex: 10,
                     }}
                   >
-                    {/* live end-time readout while resizing */}
+                    {/* live end-time readout while resizing — bottom-LEFT so the
+                        dragging thumb doesn't cover it */}
                     <span
                       ref={ghostLabelRef}
                       style={{
-                        position: 'absolute', bottom: 2, right: 6,
+                        position: 'absolute', bottom: 2, left: 6,
                         fontFamily: 'var(--font-body)', fontSize: 10, fontWeight: 600,
                         color: ghostCol, whiteSpace: 'nowrap',
                       }}
