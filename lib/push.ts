@@ -25,7 +25,7 @@ function vapidConfigured(): boolean {
 
 function configure() {
   webpush.setVapidDetails(
-    process.env.VAPID_SUBJECT ?? 'mailto:bookings@editstudio.space',
+    process.env.VAPID_SUBJECT ?? 'mailto:editstudiospace@gmail.com',
     process.env.VAPID_PUBLIC_KEY!,
     process.env.VAPID_PRIVATE_KEY!,
   );
