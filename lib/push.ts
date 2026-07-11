@@ -90,6 +90,39 @@ export interface PushPayload {
   tag?: string;
 }
 
+export interface PushSendResult {
+  endpoint: string;   // truncated for display — never expose full endpoints
+  ok: boolean;
+  status?: number;
+  error?: string;
+}
+
+/**
+ * Diagnostic variant: send to every device and return per-device results
+ * (Apple/Google's actual status codes). Used by the Settings test button.
+ */
+export async function sendPushToStaffDetailed(staffId: string, payload: PushPayload): Promise<PushSendResult[]> {
+  if (!vapidConfigured()) return [{ endpoint: '—', ok: false, error: 'VAPID keys not configured on server' }];
+  configure();
+  const all = await loadAll();
+  const list = all[staffId] ?? [];
+  if (!list.length) return [{ endpoint: '—', ok: false, error: 'No devices subscribed for this account' }];
+
+  return Promise.all(list.map(async (sub): Promise<PushSendResult> => {
+    const short = sub.endpoint.replace(/^https:\/\//, '').slice(0, 40) + '…';
+    try {
+      const res = await webpush.sendNotification(sub as webpush.PushSubscription, JSON.stringify(payload));
+      return { endpoint: short, ok: true, status: res.statusCode };
+    } catch (err: unknown) {
+      const e = err as { statusCode?: number; body?: string; message?: string };
+      return {
+        endpoint: short, ok: false, status: e.statusCode,
+        error: (e.body || e.message || 'send failed').toString().slice(0, 160),
+      };
+    }
+  }));
+}
+
 /**
  * Send a push to every device a staff member has enabled. Expired
  * subscriptions (404/410 from the push service) are pruned. Never throws —
@@ -108,9 +141,11 @@ export async function sendPushToStaff(staffId: string, payload: PushPayload): Pr
       try {
         await webpush.sendNotification(sub as webpush.PushSubscription, JSON.stringify(payload));
       } catch (err: unknown) {
-        const status = (err as { statusCode?: number })?.statusCode;
-        if (status === 404 || status === 410) dead.push(sub.endpoint);
-        // other failures: transient — keep the subscription
+        const e = err as { statusCode?: number; body?: string };
+        if (e.statusCode === 404 || e.statusCode === 410) dead.push(sub.endpoint);
+        // Other failures: transient — keep the subscription, but LOG loudly so
+        // Vercel function logs show systemic problems (e.g. VAPID mismatch 403).
+        else console.error('[push] send failed', e.statusCode, (e.body || '').slice(0, 120));
       }
     }));
 

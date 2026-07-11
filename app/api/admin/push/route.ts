@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { verifySession, SESSION_COOKIE } from '@/lib/admin-auth';
-import { addSubscription, removeSubscription, subscriptionCount } from '@/lib/push';
+import { addSubscription, removeSubscription, subscriptionCount, sendPushToStaffDetailed } from '@/lib/push';
 import type { StoredPushSub } from '@/lib/push';
 
 async function auth() {
@@ -36,6 +36,21 @@ export async function POST(req: Request) {
   return ok
     ? NextResponse.json({ ok: true, devices: await subscriptionCount(session.sub) })
     : NextResponse.json({ error: 'Save failed' }, { status: 500 });
+}
+
+/** PUT — send a test notification to the logged-in staff member's own
+ * devices and return the push service's per-device results (diagnostic). */
+export async function PUT() {
+  const session = await auth();
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const results = await sendPushToStaffDetailed(session.sub, {
+    title: 'Test notification',
+    body: `Push is working for ${session.name} 🎉`,
+    url: '/admin/settings',
+    tag: 'push-test',
+  });
+  return NextResponse.json({ results });
 }
 
 /** DELETE — remove this device's subscription. */

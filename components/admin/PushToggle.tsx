@@ -136,6 +136,52 @@ export default function PushToggle() {
           {error}
         </div>
       )}
+      {on && <TestSend />}
+    </div>
+  );
+}
+
+/** "Send test notification" — surfaces the push service's real response. */
+function TestSend() {
+  const [status, setStatus] = useState('');
+
+  async function run() {
+    setStatus('Sending…');
+    try {
+      const res = await fetch('/api/admin/push', { method: 'PUT' });
+      const { results } = await res.json() as { results: { ok: boolean; status?: number; error?: string }[] };
+      const okCount = results.filter(r => r.ok).length;
+      if (okCount === results.length) {
+        setStatus(`Sent to ${okCount} device${okCount !== 1 ? 's' : ''} — check your notifications.`);
+      } else {
+        const firstErr = results.find(r => !r.ok);
+        setStatus(`Failed (${firstErr?.status ?? '—'}): ${firstErr?.error ?? 'unknown error'}`);
+      }
+    } catch {
+      setStatus('Request failed — are you online?');
+    }
+  }
+
+  return (
+    <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+      <button
+        onClick={run}
+        className="lg-press"
+        style={{
+          fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 500,
+          padding: '8px 14px', borderRadius: 9999,
+          background: 'var(--admin-btn)', border: '1px solid var(--admin-btn-border)',
+          color: 'var(--admin-text)', cursor: 'pointer',
+          WebkitTapHighlightColor: 'transparent',
+        }}
+      >
+        Send test notification
+      </button>
+      {status && (
+        <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: status.startsWith('Failed') ? 'var(--admin-error)' : 'var(--admin-muted)' }}>
+          {status}
+        </span>
+      )}
     </div>
   );
 }
