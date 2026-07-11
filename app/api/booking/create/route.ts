@@ -6,8 +6,14 @@
 
 import { NextRequest } from 'next/server';
 import { dbCreateAppointment } from '@/lib/db';
+import { db } from '@/lib/supabase';
 import { validateSlot } from '@/lib/booking-validation';
 import { sendPushToStaff, fmtWhen } from '@/lib/push';
+import { getPaymentSettings, amountDueCents } from '@/lib/payment-settings';
+import {
+  squareConfigured, findOrCreateCustomer, chargeDeposit, storeCardOnFile, refundPayment,
+} from '@/lib/square';
+import type { PaymentRecord } from '@/lib/square';
 import { sendBookingConfirmation } from '@/lib/notifications';
 import { staffForCategory } from '@/lib/staff';
 import { getServicesStoreAsync, getAllServices } from '@/lib/services-store';
@@ -105,6 +111,12 @@ interface BookingPayload {
   date: string;
   time: { h: number; m: number };
   client: { firstName: string; lastName: string; email: string; phone: string; notes?: string };
+  /** Present when the category's payment policy requires it. */
+  payment?: {
+    token: string;              // Web Payments SDK card/Apple Pay token
+    verificationToken?: string; // buyer verification (SCA)
+    idempotencyKey: string;     // unique per booking attempt — retry-safe
+  };
   _hp?: string; // honeypot — must be empty
 }
 
@@ -195,20 +207,108 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: check.error }, { status: check.status, headers: CORS });
     }
 
-    const apt = await dbCreateAppointment({
-      date: dateStr, startTime, endTime, staff,
-      clientName,
-      clientEmail: client.email.trim(),
-      clientPhone: client.phone.trim(),
-      service: serviceName,
-      durationMinutes: totalDuration,
-      price: totalPrice,
-      status: 'confirmed',
-      notes: client.notes?.trim().slice(0, 1000) || undefined,
-      intakeResponses: intakeResponses && Object.keys(intakeResponses).length
-        ? { category, fields: intakeResponses }
-        : undefined,
-    });
+    // ── Payment (per-category policy: deposit/prepay and/or card on file) ─────
+    // Order matters: slot validated BEFORE charging; charge BEFORE creating the
+    // appointment; refund if anything after the charge fails.
+    let paymentRecord: PaymentRecord | null = null;
+    const policy = (await getPaymentSettings())[category];
+    const paymentNeeded = squareConfigured() && (policy.mode !== 'off' || policy.cardOnFile);
+
+    if (paymentNeeded) {
+      if (!body.payment?.token || !body.payment.idempotencyKey) {
+        return Response.json(
+          { error: 'This booking requires payment details. Please refresh the page and try again.' },
+          { status: 402, headers: CORS },
+        );
+      }
+      const dueCents = policy.mode !== 'off' ? amountDueCents(policy, totalPrice) : 0;
+
+      try {
+        const customerId = await findOrCreateCustomer(clientName, client.email.trim(), client.phone.trim());
+
+        if (dueCents > 0) {
+          paymentRecord = await chargeDeposit({
+            sourceId: body.payment.token,
+            verificationToken: body.payment.verificationToken,
+            amountCents: dueCents,
+            note: `${serviceName} — ${dateStr} ${startTime} (${clientName})`,
+            customerId,
+            idempotencyKey: body.payment.idempotencyKey,
+          });
+        }
+
+        if (policy.cardOnFile) {
+          try {
+            const stored = await storeCardOnFile({
+              // After a charge, save from the payment id (one tokenization does
+              // both); store-only flows use the raw token + verification.
+              sourceId: paymentRecord ? paymentRecord.paymentId : body.payment.token,
+              verificationToken: paymentRecord ? undefined : body.payment.verificationToken,
+              customerId,
+              idempotencyKey: `card-${body.payment.idempotencyKey}`,
+            });
+            paymentRecord = {
+              ...(paymentRecord ?? { paymentId: '', amountCents: 0, currency: 'CAD', status: 'CARD_ON_FILE' }),
+              customerId, cardId: stored.cardId,
+              cardBrand: paymentRecord?.cardBrand ?? stored.brand,
+              last4: paymentRecord?.last4 ?? stored.last4,
+            };
+          } catch (cardErr) {
+            // Card-on-file is part of the policy contract: unwind and reject.
+            console.error('[booking/create] card-on-file failed', cardErr);
+            if (paymentRecord?.paymentId) {
+              await refundPayment(paymentRecord.paymentId, paymentRecord.amountCents, 'Booking failed — card could not be saved');
+            }
+            return Response.json(
+              { error: 'We couldn’t save your card. Please check the details and try again.' },
+              { status: 402, headers: CORS },
+            );
+          }
+        }
+      } catch (payErr) {
+        console.error('[booking/create] payment failed', payErr);
+        return Response.json(
+          { error: 'Your payment didn’t go through. Please check your card details and try again.' },
+          { status: 402, headers: CORS },
+        );
+      }
+    }
+
+    let apt;
+    try {
+      apt = await dbCreateAppointment({
+        date: dateStr, startTime, endTime, staff,
+        clientName,
+        clientEmail: client.email.trim(),
+        clientPhone: client.phone.trim(),
+        service: serviceName,
+        durationMinutes: totalDuration,
+        price: totalPrice,
+        status: 'confirmed',
+        notes: client.notes?.trim().slice(0, 1000) || undefined,
+        intakeResponses: intakeResponses && Object.keys(intakeResponses).length
+          ? { category, fields: intakeResponses }
+          : undefined,
+      });
+    } catch (createErr) {
+      // Money was taken but the slot fell through (e.g. unique-index race):
+      // give it back before surfacing the error.
+      if (paymentRecord?.paymentId) {
+        await refundPayment(paymentRecord.paymentId, paymentRecord.amountCents, 'Booking failed — slot unavailable');
+      }
+      throw createErr;
+    }
+
+    // Attach the payment record to the appointment row. Best-effort: if the
+    // `payment` column hasn't been added in Supabase yet, the booking still
+    // stands and the money is visible in the Square dashboard.
+    if (paymentRecord) {
+      try {
+        await db.from('appointments').update({ payment: paymentRecord }).eq('id', apt.id);
+      } catch (err) {
+        console.error('[booking/create] could not persist payment record (missing column?)', err);
+      }
+    }
 
     await sendBookingConfirmation(apt).catch(() => {});
 

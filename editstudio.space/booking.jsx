@@ -292,6 +292,32 @@
     });
   })();
 
+  // ── Square Web Payments SDK (loaded only when a category requires payment) ──
+
+  var BK_SQUARE_SDK_PROMISE = null;
+  function bkLoadSquareSdk(env) {
+    if (window.Square) return Promise.resolve();
+    if (BK_SQUARE_SDK_PROMISE) return BK_SQUARE_SDK_PROMISE;
+    BK_SQUARE_SDK_PROMISE = new Promise(function(resolve, reject) {
+      var s = document.createElement('script');
+      s.src = env === 'production'
+        ? 'https://web.squarecdn.com/v1/square.js'
+        : 'https://sandbox.web.squarecdn.com/v1/square.js';
+      s.onload = resolve;
+      s.onerror = function() { BK_SQUARE_SDK_PROMISE = null; reject(new Error('Payment form failed to load.')); };
+      document.head.appendChild(s);
+    });
+    return BK_SQUARE_SDK_PROMISE;
+  }
+
+  function bkUuid() {
+    return (window.crypto && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : 'xxxx-4xxx-yxxx'.replace(/[xy]/g, function(c) {
+          var r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16);
+        }) + '-' + Date.now();
+  }
+
   // ── Saved contacts (localStorage) ─────────────────────────────────────────
 
   var BK_CONTACTS_KEY = 'es-contacts';
@@ -1119,9 +1145,103 @@
   // ── Step: Confirm ──────────────────────────────────────────────────────────
 
   function StepConfirm(props) {
+    var { useState, useEffect, useRef } = React;
     var all   = props.services.concat(props.addons);
     var total = bkTotalPrice(all);
     var dur   = bkTotalDuration(all);
+
+    // ── Payment (per-category policy; server decides what's required) ────────
+    var [payCfg, setPayCfg]       = useState(null);  // null = loading
+    var [payReady, setPayReady]   = useState(false);
+    var [applePayOk, setApplePayOk] = useState(false);
+    var [payError, setPayError]   = useState('');
+    var paymentsRef = useRef(null);
+    var cardRef     = useRef(null);
+    var applePayRef = useRef(null);
+
+    useEffect(function() {
+      var cancelled = false;
+      var endpoint = (window.__booking || {}).endpoint || '';
+      var base = endpoint.replace(/\/api\/booking\/create$/, '') || window.location.origin;
+      fetch(base + '/api/booking/payment-config?category=' + props.category + '&total=' + total)
+        .then(function(r) { return r.ok ? r.json() : { required: false }; })
+        .then(async function(cfg) {
+          if (cancelled) return;
+          setPayCfg(cfg);
+          if (!cfg.required || !cfg.applicationId || !cfg.locationId) return;
+          await bkLoadSquareSdk(cfg.env);
+          if (cancelled) return;
+          var payments = window.Square.payments(cfg.applicationId, cfg.locationId);
+          paymentsRef.current = payments;
+          var card = await payments.card();
+          await card.attach('#bk-card-container');
+          if (cancelled) { card.destroy(); return; }
+          cardRef.current = card;
+          setPayReady(true);
+          // Apple Pay — resolves only where supported (Safari, registered
+          // domain, production). Silently absent everywhere else.
+          try {
+            var due = ((cfg.amountDueCents || 0) / 100).toFixed(2);
+            var req = payments.paymentRequest({
+              countryCode: 'CA', currencyCode: 'CAD',
+              total: { amount: due === '0.00' ? '0.01' : due, label: 'Edit Studio' },
+            });
+            applePayRef.current = await payments.applePay(req);
+            if (!cancelled) setApplePayOk(true);
+          } catch (e) { /* not available on this device/domain */ }
+        })
+        .catch(function() { if (!cancelled) setPayCfg({ required: false }); });
+      return function() { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    async function tokenizeWith(method) {
+      var result = await method.tokenize();
+      if (result.status !== 'OK') {
+        var msg = result.errors && result.errors[0] && result.errors[0].message;
+        throw new Error(msg || 'Your card details look incomplete — please check them.');
+      }
+      var verificationToken;
+      try {
+        var intent = payCfg.mode !== 'off'
+          ? (payCfg.cardOnFile ? 'CHARGE_AND_STORE' : 'CHARGE')
+          : 'STORE';
+        var v = await paymentsRef.current.verifyBuyer(result.token, {
+          amount: ((payCfg.amountDueCents || 0) / 100).toFixed(2),
+          currencyCode: 'CAD',
+          intent: intent,
+          billingContact: {
+            givenName: props.client.firstName,
+            familyName: props.client.lastName,
+            email: props.client.email,
+          },
+        });
+        verificationToken = v && v.token;
+      } catch (e) { /* verification unavailable — server may still accept */ }
+      // Fresh idempotency key per attempt: Square tokens are single-use, so
+      // every retry re-tokenizes and needs its own key.
+      return { token: result.token, verificationToken: verificationToken, idempotencyKey: bkUuid() };
+    }
+
+    async function confirm(viaApplePay) {
+      if (!payCfg || !payCfg.required) { props.onConfirm(null); return; }
+      setPayError('');
+      try {
+        var method = viaApplePay ? applePayRef.current : cardRef.current;
+        if (!method) throw new Error('The payment form isn’t ready yet.');
+        var payment = await tokenizeWith(method);
+        props.onConfirm(payment);
+      } catch (e) {
+        setPayError(e.message || 'Payment failed — please try again.');
+      }
+    }
+
+    var needsPay   = payCfg && payCfg.required;
+    var dueDollars = needsPay ? ((payCfg.amountDueCents || 0) / 100) : 0;
+    var payLabel   = !needsPay ? null
+      : payCfg.mode === 'full'    ? 'Due now: ' + bkFmtPrice(dueDollars)
+      : payCfg.mode === 'deposit' ? 'Deposit due now: ' + bkFmtPrice(dueDollars)
+      : 'No charge today';
 
     var ROW = { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '12px 0', borderBottom: '1px solid var(--rule)' };
 
@@ -1165,16 +1285,65 @@
           })}
         </div>
 
+        {/* Payment — shown when this category's policy requires it */}
+        {needsPay && (
+          <div style={{ marginBottom: 22 }}>
+            <BkEyebrow left="Payment" right={payLabel} />
+            {payCfg.cardOnFile && (
+              <p style={{ fontFamily: 'var(--body)', fontSize: 12, color: 'var(--ink-soft)', lineHeight: 1.5, margin: '0 0 12px' }}>
+                Your card will be kept securely on file with Square
+                {payCfg.mode === 'off' ? ' — nothing is charged today. ' : '. '}
+                It may be charged per our cancellation policy for no-shows.
+              </p>
+            )}
+            <div style={{ border: '1px solid var(--rule)', padding: '14px 14px 2px', background: 'var(--paper)' }}>
+              <div id="bk-card-container" />
+              {!payReady && (
+                <p style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: '0.1em', color: 'var(--ink-faint)', textTransform: 'uppercase', padding: '4px 0 14px', margin: 0 }}>
+                  Loading secure payment form…
+                </p>
+              )}
+            </div>
+            {applePayOk && (
+              <button
+                type="button"
+                onClick={function() { confirm(true); }}
+                disabled={props.submitting}
+                aria-label="Book and pay with Apple Pay"
+                style={{
+                  display: 'block', width: '100%', marginTop: 10,
+                  padding: '15px 0', border: 'none', borderRadius: 4,
+                  background: '#000', color: '#fff', cursor: 'pointer',
+                  fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+                  fontSize: 16, fontWeight: 500, letterSpacing: '0.01em',
+                }}
+              >
+                Book with  Pay
+              </button>
+            )}
+            {payError && (
+              <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--accent)', letterSpacing: '0.08em', marginTop: 10, lineHeight: 1.5 }}>{payError}</p>
+            )}
+          </div>
+        )}
+
         {props.error && (
           <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--accent)', letterSpacing: '0.08em', marginBottom: 14, lineHeight: 1.5 }}>{props.error}</p>
         )}
 
-        <BkBtn onClick={props.onConfirm} disabled={props.submitting}>
-          {props.submitting ? 'Sending…' : 'Confirm booking'}
+        <BkBtn onClick={function() { confirm(false); }} disabled={props.submitting || (needsPay && !payReady) || payCfg === null}>
+          {props.submitting ? 'Sending…'
+            : payCfg === null ? 'One moment…'
+            : needsPay && payCfg.mode !== 'off' ? 'Pay ' + bkFmtPrice(dueDollars) + ' & book'
+            : 'Confirm booking'}
         </BkBtn>
 
         <p style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: '0.1em', color: 'var(--ink-faint)', textAlign: 'center', marginTop: 14, lineHeight: 1.65, textTransform: 'uppercase' }}>
-          No payment required today. We'll confirm by email.
+          {needsPay && payCfg.mode !== 'off'
+            ? 'Deposits are refunded when you cancel more than 3 hours ahead.'
+            : needsPay
+            ? 'No charge today — card kept on file per our policy.'
+            : "No payment required today. We'll confirm by email."}
         </p>
       </div>
     );
@@ -1324,7 +1493,7 @@
       return form && form.fields && form.fields.length > 0;
     }
 
-    async function handleConfirm() {
+    async function handleConfirm(payment) {
       setSubmitting(true);
       setError(null);
       try {
@@ -1333,7 +1502,7 @@
           var res = await fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ category: category, services: services, addons: addons, date: (date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0')), time: time, client: client, intakeResponses: intakeResponses, _hp: document.getElementById('bk-hp') ? document.getElementById('bk-hp').value : '' }),
+            body: JSON.stringify({ category: category, services: services, addons: addons, date: (date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0')), time: time, client: client, intakeResponses: intakeResponses, payment: payment || undefined, _hp: document.getElementById('bk-hp') ? document.getElementById('bk-hp').value : '' }),
           });
           if (!res.ok) {
             var errData = await res.json().catch(function() { return {}; });

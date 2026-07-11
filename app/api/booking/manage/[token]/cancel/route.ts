@@ -2,6 +2,8 @@ import { dbGetAppointmentByToken, dbUpdateAppointment } from '@/lib/db';
 import { sendCancellationNotification } from '@/lib/notifications';
 import { withinSelfServeCutoff } from '@/lib/booking-validation';
 import { sendPushToStaff, fmtWhen } from '@/lib/push';
+import { refundPayment } from '@/lib/square';
+import { db } from '@/lib/supabase';
 
 export async function POST(
   _req: Request,
@@ -24,6 +26,19 @@ export async function POST(
   }
 
   await dbUpdateAppointment(apt.id, { status: 'cancelled' });
+
+  // Deposit paid? Cancelling outside the cutoff refunds it automatically.
+  let refunded = false;
+  if (apt.payment?.paymentId && apt.payment.amountCents > 0 && !apt.payment.refunded) {
+    refunded = await refundPayment(apt.payment.paymentId, apt.payment.amountCents, 'Client cancelled online');
+    if (refunded) {
+      db.from('appointments')
+        .update({ payment: { ...apt.payment, refunded: true } })
+        .eq('id', apt.id)
+        .then(() => {}, () => {});
+    }
+  }
+
   sendCancellationNotification(apt, 'client').catch(() => {});
   sendPushToStaff(apt.staff, {
     title: `Cancelled — ${apt.clientName}`,
@@ -31,5 +46,5 @@ export async function POST(
     url: `/admin/appointments/${apt.id}`,
     tag: `apt-${apt.id}`,
   }).catch(() => {});
-  return Response.json({ ok: true });
+  return Response.json({ ok: true, refunded });
 }

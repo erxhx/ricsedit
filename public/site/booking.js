@@ -254,6 +254,28 @@
         });
       });
     })();
+    var BK_SQUARE_SDK_PROMISE = null;
+    function bkLoadSquareSdk(env) {
+      if (window.Square) return Promise.resolve();
+      if (BK_SQUARE_SDK_PROMISE) return BK_SQUARE_SDK_PROMISE;
+      BK_SQUARE_SDK_PROMISE = new Promise(function(resolve, reject) {
+        var s = document.createElement("script");
+        s.src = env === "production" ? "https://web.squarecdn.com/v1/square.js" : "https://sandbox.web.squarecdn.com/v1/square.js";
+        s.onload = resolve;
+        s.onerror = function() {
+          BK_SQUARE_SDK_PROMISE = null;
+          reject(new Error("Payment form failed to load."));
+        };
+        document.head.appendChild(s);
+      });
+      return BK_SQUARE_SDK_PROMISE;
+    }
+    function bkUuid() {
+      return window.crypto && crypto.randomUUID ? crypto.randomUUID() : "xxxx-4xxx-yxxx".replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0;
+        return (c === "x" ? r : r & 3 | 8).toString(16);
+      }) + "-" + Date.now();
+    }
     var BK_CONTACTS_KEY = "es-contacts";
     function bkLoadContacts() {
       try {
@@ -1014,15 +1036,133 @@
       );
     }
     function StepConfirm(props) {
+      var { useState, useEffect, useRef } = React;
       var all = props.services.concat(props.addons);
       var total = bkTotalPrice(all);
       var dur = bkTotalDuration(all);
+      var [payCfg, setPayCfg] = useState(null);
+      var [payReady, setPayReady] = useState(false);
+      var [applePayOk, setApplePayOk] = useState(false);
+      var [payError, setPayError] = useState("");
+      var paymentsRef = useRef(null);
+      var cardRef = useRef(null);
+      var applePayRef = useRef(null);
+      useEffect(function() {
+        var cancelled = false;
+        var endpoint = (window.__booking || {}).endpoint || "";
+        var base = endpoint.replace(/\/api\/booking\/create$/, "") || window.location.origin;
+        fetch(base + "/api/booking/payment-config?category=" + props.category + "&total=" + total).then(function(r) {
+          return r.ok ? r.json() : { required: false };
+        }).then(async function(cfg) {
+          if (cancelled) return;
+          setPayCfg(cfg);
+          if (!cfg.required || !cfg.applicationId || !cfg.locationId) return;
+          await bkLoadSquareSdk(cfg.env);
+          if (cancelled) return;
+          var payments = window.Square.payments(cfg.applicationId, cfg.locationId);
+          paymentsRef.current = payments;
+          var card = await payments.card();
+          await card.attach("#bk-card-container");
+          if (cancelled) {
+            card.destroy();
+            return;
+          }
+          cardRef.current = card;
+          setPayReady(true);
+          try {
+            var due = ((cfg.amountDueCents || 0) / 100).toFixed(2);
+            var req = payments.paymentRequest({
+              countryCode: "CA",
+              currencyCode: "CAD",
+              total: { amount: due === "0.00" ? "0.01" : due, label: "Edit Studio" }
+            });
+            applePayRef.current = await payments.applePay(req);
+            if (!cancelled) setApplePayOk(true);
+          } catch (e) {
+          }
+        }).catch(function() {
+          if (!cancelled) setPayCfg({ required: false });
+        });
+        return function() {
+          cancelled = true;
+        };
+      }, []);
+      async function tokenizeWith(method) {
+        var result = await method.tokenize();
+        if (result.status !== "OK") {
+          var msg = result.errors && result.errors[0] && result.errors[0].message;
+          throw new Error(msg || "Your card details look incomplete \u2014 please check them.");
+        }
+        var verificationToken;
+        try {
+          var intent = payCfg.mode !== "off" ? payCfg.cardOnFile ? "CHARGE_AND_STORE" : "CHARGE" : "STORE";
+          var v = await paymentsRef.current.verifyBuyer(result.token, {
+            amount: ((payCfg.amountDueCents || 0) / 100).toFixed(2),
+            currencyCode: "CAD",
+            intent,
+            billingContact: {
+              givenName: props.client.firstName,
+              familyName: props.client.lastName,
+              email: props.client.email
+            }
+          });
+          verificationToken = v && v.token;
+        } catch (e) {
+        }
+        return { token: result.token, verificationToken, idempotencyKey: bkUuid() };
+      }
+      async function confirm(viaApplePay) {
+        if (!payCfg || !payCfg.required) {
+          props.onConfirm(null);
+          return;
+        }
+        setPayError("");
+        try {
+          var method = viaApplePay ? applePayRef.current : cardRef.current;
+          if (!method) throw new Error("The payment form isn\u2019t ready yet.");
+          var payment = await tokenizeWith(method);
+          props.onConfirm(payment);
+        } catch (e) {
+          setPayError(e.message || "Payment failed \u2014 please try again.");
+        }
+      }
+      var needsPay = payCfg && payCfg.required;
+      var dueDollars = needsPay ? (payCfg.amountDueCents || 0) / 100 : 0;
+      var payLabel = !needsPay ? null : payCfg.mode === "full" ? "Due now: " + bkFmtPrice(dueDollars) : payCfg.mode === "deposit" ? "Deposit due now: " + bkFmtPrice(dueDollars) : "No charge today";
       var ROW = { display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "12px 0", borderBottom: "1px solid var(--rule)" };
       return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement(BkBack, { onClick: props.onBack }), /* @__PURE__ */ React.createElement(BkEyebrow, { left: "Review your booking" }), /* @__PURE__ */ React.createElement("h3", { style: { fontFamily: "var(--display)", fontWeight: 300, fontStyle: "italic", fontSize: "clamp(24px,4vw,32px)", margin: "0 0 22px", letterSpacing: "-0.01em", lineHeight: 1.1 } }, "Looks good?"), /* @__PURE__ */ React.createElement("div", { style: { border: "1px solid var(--rule)", padding: "0 20px", marginBottom: 20 } }, /* @__PURE__ */ React.createElement("div", { style: ROW }, /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-faint)" } }, "Date + time"), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--body)", fontSize: 14 } }, bkFmtDate(props.date), " \xB7 ", bkFmtTime(props.time.h, props.time.m))), all.map(function(s) {
         return /* @__PURE__ */ React.createElement("div", { key: s.id, style: ROW }, /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--display)", fontSize: 17, letterSpacing: "-0.005em" } }, s.name), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--mono)", fontSize: 12, letterSpacing: "0.04em" } }, bkFmtPrice(s.price)));
       }), /* @__PURE__ */ React.createElement("div", { style: Object.assign({}, ROW, { borderBottom: "none", paddingTop: 14 }) }, /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-faint)" } }, dur, " min total"), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--mono)", fontSize: 16 } }, bkFmtPrice(total)))), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px 16px", marginBottom: 24, padding: "16px 0", borderTop: "1px solid var(--rule)" } }, [["Name", props.client.firstName + " " + props.client.lastName, true], ["Email", props.client.email, false], ["Phone", props.client.phone, false]].map(function(row) {
         return /* @__PURE__ */ React.createElement("div", { key: row[0], style: { gridColumn: row[2] ? "span 2" : void 0 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-faint)", marginBottom: 4 } }, row[0]), /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "var(--body)", fontSize: 14, color: "var(--ink)" } }, row[1]));
-      })), props.error && /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "var(--mono)", fontSize: 11, color: "var(--accent)", letterSpacing: "0.08em", marginBottom: 14, lineHeight: 1.5 } }, props.error), /* @__PURE__ */ React.createElement(BkBtn, { onClick: props.onConfirm, disabled: props.submitting }, props.submitting ? "Sending\u2026" : "Confirm booking"), /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "0.1em", color: "var(--ink-faint)", textAlign: "center", marginTop: 14, lineHeight: 1.65, textTransform: "uppercase" } }, "No payment required today. We'll confirm by email."));
+      })), needsPay && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 22 } }, /* @__PURE__ */ React.createElement(BkEyebrow, { left: "Payment", right: payLabel }), payCfg.cardOnFile && /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "var(--body)", fontSize: 12, color: "var(--ink-soft)", lineHeight: 1.5, margin: "0 0 12px" } }, "Your card will be kept securely on file with Square", payCfg.mode === "off" ? " \u2014 nothing is charged today. " : ". ", "It may be charged per our cancellation policy for no-shows."), /* @__PURE__ */ React.createElement("div", { style: { border: "1px solid var(--rule)", padding: "14px 14px 2px", background: "var(--paper)" } }, /* @__PURE__ */ React.createElement("div", { id: "bk-card-container" }), !payReady && /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "0.1em", color: "var(--ink-faint)", textTransform: "uppercase", padding: "4px 0 14px", margin: 0 } }, "Loading secure payment form\u2026")), applePayOk && /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: function() {
+            confirm(true);
+          },
+          disabled: props.submitting,
+          "aria-label": "Book and pay with Apple Pay",
+          style: {
+            display: "block",
+            width: "100%",
+            marginTop: 10,
+            padding: "15px 0",
+            border: "none",
+            borderRadius: 4,
+            background: "#000",
+            color: "#fff",
+            cursor: "pointer",
+            fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif",
+            fontSize: 16,
+            fontWeight: 500,
+            letterSpacing: "0.01em"
+          }
+        },
+        "Book with  Pay"
+      ), payError && /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "var(--mono)", fontSize: 11, color: "var(--accent)", letterSpacing: "0.08em", marginTop: 10, lineHeight: 1.5 } }, payError)), props.error && /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "var(--mono)", fontSize: 11, color: "var(--accent)", letterSpacing: "0.08em", marginBottom: 14, lineHeight: 1.5 } }, props.error), /* @__PURE__ */ React.createElement(BkBtn, { onClick: function() {
+        confirm(false);
+      }, disabled: props.submitting || needsPay && !payReady || payCfg === null }, props.submitting ? "Sending\u2026" : payCfg === null ? "One moment\u2026" : needsPay && payCfg.mode !== "off" ? "Pay " + bkFmtPrice(dueDollars) + " & book" : "Confirm booking"), /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "0.1em", color: "var(--ink-faint)", textAlign: "center", marginTop: 14, lineHeight: 1.65, textTransform: "uppercase" } }, needsPay && payCfg.mode !== "off" ? "Deposits are refunded when you cancel more than 3 hours ahead." : needsPay ? "No charge today \u2014 card kept on file per our policy." : "No payment required today. We'll confirm by email."));
     }
     function StepDone(props) {
       var total = bkTotalPrice(props.services);
@@ -1118,7 +1258,7 @@
         var form = BK_INTAKE_FORMS[cat];
         return form && form.fields && form.fields.length > 0;
       }
-      async function handleConfirm() {
+      async function handleConfirm(payment) {
         setSubmitting(true);
         setError(null);
         try {
@@ -1127,7 +1267,7 @@
             var res = await fetch(endpoint, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ category, services, addons, date: date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0") + "-" + String(date.getDate()).padStart(2, "0"), time, client, intakeResponses, _hp: document.getElementById("bk-hp") ? document.getElementById("bk-hp").value : "" })
+              body: JSON.stringify({ category, services, addons, date: date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0") + "-" + String(date.getDate()).padStart(2, "0"), time, client, intakeResponses, payment: payment || void 0, _hp: document.getElementById("bk-hp") ? document.getElementById("bk-hp").value : "" })
             });
             if (!res.ok) {
               var errData = await res.json().catch(function() {

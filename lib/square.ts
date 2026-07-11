@@ -31,3 +31,122 @@ export function squarePublicConfig(): { applicationId: string | null; locationId
     env: process.env.SQUARE_ENV === 'production' ? 'production' : 'sandbox',
   };
 }
+
+// ── Payment operations ──────────────────────────────────────────────────────
+
+export interface PaymentRecord {
+  paymentId: string;
+  amountCents: number;
+  currency: string;
+  status: string;
+  cardBrand?: string;
+  last4?: string;
+  customerId?: string;
+  cardId?: string; // set when the card was saved on file
+}
+
+/** Find or create a Square Customer for a booking client (matched by email). */
+export async function findOrCreateCustomer(
+  name: string, email: string, phone?: string,
+): Promise<string> {
+  const client = squareClient();
+  // NOTE: the Square TS SDK (v43+) expects snake_case field names in request
+  // bodies, not the camelCase shown in much of the older docs.
+  const search = await client.customers.search({
+    query: { filter: { email_address: { exact: email } } },
+    limit: BigInt(1),
+  } as Parameters<typeof client.customers.search>[0]);
+  const existing = search.customers?.[0]?.id;
+  if (existing) return existing;
+
+  const [givenName, ...rest] = name.split(' ');
+  const created = await client.customers.create({
+    idempotencyKey: `cust-${email}-${Date.now()}`,
+    givenName,
+    familyName: rest.join(' ') || undefined,
+    emailAddress: email,
+    phoneNumber: phone || undefined,
+  });
+  const id = created.customer?.id;
+  if (!id) throw new Error('Failed to create Square customer');
+  return id;
+}
+
+/**
+ * Charge a deposit/prepayment with a Web Payments SDK token.
+ * `idempotencyKey` must be unique per booking attempt (we pass one from the
+ * client so retries of the same submit can't double-charge).
+ */
+export async function chargeDeposit(opts: {
+  sourceId: string;             // card token from the SDK
+  verificationToken?: string;   // buyer-verification (SCA) token
+  amountCents: number;
+  note: string;
+  customerId?: string;
+  idempotencyKey: string;
+}): Promise<PaymentRecord> {
+  const client = squareClient();
+  const res = await client.payments.create({
+    idempotencyKey: opts.idempotencyKey,
+    sourceId: opts.sourceId,
+    verificationToken: opts.verificationToken,
+    customerId: opts.customerId,
+    locationId: process.env.SQUARE_LOCATION_ID,
+    note: opts.note.slice(0, 500),
+    amountMoney: { amount: BigInt(opts.amountCents), currency: 'CAD' },
+  });
+  const p = res.payment;
+  if (!p?.id || p.status === 'FAILED' || p.status === 'CANCELED') {
+    throw new Error(`Payment ${p?.status ?? 'failed'}`);
+  }
+  return {
+    paymentId: p.id,
+    amountCents: opts.amountCents,
+    currency: 'CAD',
+    status: p.status ?? 'COMPLETED',
+    cardBrand: p.cardDetails?.card?.cardBrand ?? undefined,
+    last4: p.cardDetails?.card?.last4 ?? undefined,
+    customerId: opts.customerId,
+  };
+}
+
+/**
+ * Save a card on file against a customer. `sourceId` is either a fresh SDK
+ * token (store-only flows) or a completed payment id (store-after-charge —
+ * lets one tokenization both charge and save).
+ */
+export async function storeCardOnFile(opts: {
+  sourceId: string;
+  verificationToken?: string;
+  customerId: string;
+  idempotencyKey: string;
+}): Promise<{ cardId: string; brand?: string; last4?: string }> {
+  const client = squareClient();
+  const res = await client.cards.create({
+    idempotencyKey: opts.idempotencyKey,
+    sourceId: opts.sourceId,
+    verificationToken: opts.verificationToken,
+    card: { customerId: opts.customerId },
+  });
+  const card = res.card;
+  if (!card?.id) throw new Error('Failed to save card on file');
+  return { cardId: card.id, brand: card.cardBrand ?? undefined, last4: card.last4 ?? undefined };
+}
+
+/** Refund a payment in full (deposit refunds on timely cancellations). */
+export async function refundPayment(paymentId: string, amountCents: number, reason: string): Promise<boolean> {
+  try {
+    const client = squareClient();
+    const res = await client.refunds.refundPayment({
+      idempotencyKey: `refund-${paymentId}`,
+      paymentId,
+      amountMoney: { amount: BigInt(amountCents), currency: 'CAD' },
+      reason: reason.slice(0, 192),
+    });
+    const status = res.refund?.status;
+    return status === 'PENDING' || status === 'COMPLETED';
+  } catch (err) {
+    console.error('[square] refund failed', paymentId, err);
+    return false;
+  }
+}

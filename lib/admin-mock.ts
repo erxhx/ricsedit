@@ -25,6 +25,19 @@ export interface Appointment {
   reminderSent?: boolean; // true once the 24h reminder email/SMS has been dispatched
   intakeResponses?: { category: string; fields: Record<string, unknown> };
   manageToken: string;    // unique token for client self-serve cancel/reschedule
+  /** Square payment info — set when the booking charged a deposit/prepayment
+   * or stored a card on file. Optional column; absent until the SQL is run. */
+  payment?: {
+    paymentId: string;
+    amountCents: number;
+    currency: string;
+    status: string;
+    cardBrand?: string;
+    last4?: string;
+    customerId?: string;
+    cardId?: string;
+    refunded?: boolean;
+  };
 }
 
 export interface ClientRecord {

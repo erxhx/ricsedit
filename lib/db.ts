@@ -29,6 +29,7 @@ function toApt(row: any): Appointment {
     reminderSent:     row.reminder_sent  ?? false,
     intakeResponses:  row.intake_responses ?? undefined,
     manageToken:      row.manage_token,
+    payment:          row.payment ?? undefined,
   };
 }
 
