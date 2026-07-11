@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useAdminTheme } from './AdminThemeProvider';
 import PushToggle from './PushToggle';
+import PaymentSettingsPanel from './PaymentSettingsPanel';
 import { staffColor, STAFF as ROSTER } from '@/lib/staff';
 import type { StaffPermissions } from '@/lib/staff-permissions';
 
@@ -266,6 +267,28 @@ export default function SettingsPanel({
           </div>
           <div style={{ marginTop: 10, fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)', lineHeight: 1.5 }}>
             Controls whether each person sees studio-wide revenue (Reports, day &amp; week totals) or only their own.
+          </div>
+        </>
+      )}
+
+      {/* ── Payments (owner only) ──────────────────────────────────────── */}
+      {viewerRole === 'owner' && (
+        <>
+          <div style={{
+            fontFamily: 'var(--font-body)', fontSize: 10, letterSpacing: '0.12em',
+            textTransform: 'uppercase', color: 'var(--admin-muted)',
+            marginTop: 36, marginBottom: 12,
+          }}>
+            Payments
+          </div>
+          <div style={{
+            background: 'var(--admin-card)', border: '1px solid var(--admin-border)',
+            borderRadius: 12, overflow: 'hidden',
+          }}>
+            <PaymentSettingsPanel />
+          </div>
+          <div style={{ marginTop: 10, fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)', lineHeight: 1.5 }}>
+            Per-service payment rules for online booking: charge a deposit or full prepayment, and/or keep a card on file for no-shows. Off means the booking flow is unchanged.
           </div>
         </>
       )}
