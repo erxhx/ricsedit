@@ -115,6 +115,34 @@ export default function AppointmentDetail({
   const [showNoShowConfirm, setShowNoShowConfirm] = useState(false);
   const [noShowSms, setNoShowSms] = useState(false);
 
+  // ── No-show fee (card on file) ───────────────────────────────────────────
+  const [showChargeFee, setShowChargeFee] = useState(false);
+  const [chargeAmount, setChargeAmount]   = useState(String(Math.max(1, Math.round(initial.price / 2))));
+  const [chargeNotify, setChargeNotify]   = useState(true);
+  const [charging, setCharging]           = useState(false);
+  const [chargeError, setChargeError]     = useState('');
+
+  async function chargeNoShowFee() {
+    const cents = Math.round(parseFloat(chargeAmount) * 100);
+    if (!Number.isFinite(cents) || cents < 100) { setChargeError('Enter an amount of $1 or more.'); return; }
+    setCharging(true); setChargeError('');
+    try {
+      const res = await fetch(`/api/admin/appointments/${apt.id}/charge`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amountCents: cents, notify: chargeNotify }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Charge failed');
+      setApt({ ...apt, payment: { ...apt.payment!, noShowCharge: data.noShowCharge } });
+      setShowChargeFee(false);
+    } catch (e) {
+      setChargeError(e instanceof Error ? e.message : 'Charge failed');
+    } finally {
+      setCharging(false);
+    }
+  }
+
   async function patchApt(patch: Record<string, unknown>): Promise<Appointment | null> {
     setSaving(true);
     try {
@@ -259,6 +287,89 @@ export default function AppointmentDetail({
             </span>
           </Row>
         </Section>
+
+        {/* Payment — deposit / card on file / no-show fee */}
+        {apt.payment && (canSeeAllRevenue || apt.staff === viewerStaff) && (
+          <Section label="Payment">
+            {apt.payment.amountCents > 0 && (
+              <Row label={apt.payment.status === 'CARD_ON_FILE' ? 'Payment' : 'Deposit paid'}>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)' }}>
+                  ${(apt.payment.amountCents / 100).toFixed(2)}
+                  {apt.payment.refunded && (
+                    <span style={{ color: 'var(--admin-muted)', marginLeft: 6, fontSize: 12 }}>refunded</span>
+                  )}
+                </span>
+              </Row>
+            )}
+            {apt.payment.cardId && (
+              <Row label="Card on file" last={!apt.payment.noShowCharge && !showChargeFee}>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)' }}>
+                  {apt.payment.cardBrand ?? 'Card'} ••{apt.payment.last4 ?? '····'}
+                </span>
+              </Row>
+            )}
+            {apt.payment.noShowCharge && (
+              <Row label="No-show fee" last>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-danger-text)' }}>
+                  ${(apt.payment.noShowCharge.amountCents / 100).toFixed(2)} charged
+                </span>
+              </Row>
+            )}
+
+            {/* Charge no-show fee — only for no-shows with a stored card */}
+            {apt.status === 'no_show' && apt.payment.cardId && !apt.payment.noShowCharge && (
+              <div style={{ padding: '12px 0 14px' }}>
+                {!showChargeFee ? (
+                  <ActionButton onClick={() => { setChargeError(''); setShowChargeFee(true); }} variant="noshow">
+                    Charge no-show fee…
+                  </ActionButton>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-text3)' }}>
+                        Fee (charged to {apt.payment.cardBrand ?? 'card'} ••{apt.payment.last4 ?? '····'})
+                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-muted)' }}>$</span>
+                        <input
+                          type="number" inputMode="decimal" min={1} step={1}
+                          value={chargeAmount}
+                          onChange={(e) => setChargeAmount(e.target.value)}
+                          style={{
+                            width: 64, textAlign: 'right',
+                            fontFamily: 'var(--font-body)', fontSize: 15, color: 'var(--admin-text)',
+                            background: 'var(--admin-btn)', border: '1px solid var(--admin-btn-border)',
+                            borderRadius: 8, padding: '7px 8px', outline: 'none',
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setChargeNotify(n => !n)}
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: 0, background: 'none', border: 'none', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}
+                    >
+                      <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-text3)' }}>Email client a receipt</span>
+                      <span style={{ width: 44, height: 26, borderRadius: 13, background: chargeNotify ? '#34C759' : 'var(--admin-border)', display: 'flex', alignItems: 'center', padding: '0 3px', transition: 'background 0.2s', justifyContent: chargeNotify ? 'flex-end' : 'flex-start', flexShrink: 0 }}>
+                        <span style={{ width: 20, height: 20, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+                      </span>
+                    </button>
+                    {chargeError && (
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-error)' }}>{chargeError}</div>
+                    )}
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <ActionButton onClick={chargeNoShowFee} variant="danger" disabled={charging}>
+                        {charging ? 'Charging…' : `Charge $${chargeAmount || '0'}`}
+                      </ActionButton>
+                      <ActionButton onClick={() => setShowChargeFee(false)} variant="ghost" disabled={charging}>
+                        Cancel
+                      </ActionButton>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </Section>
+        )}
 
         {/* Call + Text quick actions */}
         {apt.clientPhone && (

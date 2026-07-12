@@ -303,10 +303,11 @@ export async function POST(req: NextRequest) {
     // `payment` column hasn't been added in Supabase yet, the booking still
     // stands and the money is visible in the Square dashboard.
     if (paymentRecord) {
-      try {
-        await db.from('appointments').update({ payment: paymentRecord }).eq('id', apt.id);
-      } catch (err) {
-        console.error('[booking/create] could not persist payment record (missing column?)', err);
+      // supabase-js reports failures via the returned error, not by throwing
+      const { error: payPersistErr } = await db.from('appointments')
+        .update({ payment: paymentRecord }).eq('id', apt.id);
+      if (payPersistErr) {
+        console.error('[booking/create] could not persist payment record (missing column?)', payPersistErr.message);
       }
     }
 

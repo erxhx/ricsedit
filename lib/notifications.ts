@@ -277,6 +277,29 @@ export async function sendNoShowNotification(
 }
 
 /**
+ * Sent when a no-show fee is charged to the card on file — card networks (and
+ * basic decency) require telling the client about a merchant-initiated charge.
+ */
+export async function sendNoShowFeeNotification(
+  apt: Appointment,
+  amountCents: number,
+  last4?: string,
+): Promise<void> {
+  const amount = `$${(amountCents / 100).toFixed(2)}`;
+  const cardText = last4 ? ` ending in ${last4}` : '';
+
+  const clientHtml = emailLayout(`
+    <h1 style="margin:0 0 6px;font-family:'Inter Tight',Helvetica,sans-serif;font-size:22px;font-weight:600;color:#141210;letter-spacing:-0.02em;">No-show fee charged</h1>
+    <p style="margin:0;font-family:'Inter Tight',Helvetica,sans-serif;font-size:14px;color:#4a4540;">Hi ${firstName(apt.clientName)}, as per our cancellation policy, a no-show fee of <strong>${amount}</strong> was charged to your card on file${cardText} for the missed appointment below.</p>
+    ${aptDetailsHtml(apt)}
+    ${muted('Think this was a mistake? Call or text us at 778 535 3348 and we’ll sort it out.')}
+    ${ctaBtn('Rebook Online', 'https://www.editstudio.space')}
+  `);
+
+  await sendEmail(apt.clientEmail, `No-show fee — ${apt.service}`, clientHtml);
+}
+
+/**
  * Sent when a booking is rescheduled.
  * → Client: updated details email + SMS with new date/time
  */

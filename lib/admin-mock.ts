@@ -37,6 +37,13 @@ export interface Appointment {
     customerId?: string;
     cardId?: string;
     refunded?: boolean;
+    /** Set when a no-show fee was charged to the card on file. */
+    noShowCharge?: {
+      paymentId: string;
+      amountCents: number;
+      status: string;
+      at: string; // ISO timestamp
+    };
   };
 }
 
