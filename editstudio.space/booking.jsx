@@ -1155,6 +1155,7 @@
     var [payReady, setPayReady]   = useState(false);
     var [applePayOk, setApplePayOk] = useState(false);
     var [payError, setPayError]   = useState('');
+    var [payInitError, setPayInitError] = useState(''); // form couldn't mount
     var paymentsRef = useRef(null);
     var cardRef     = useRef(null);
     var applePayRef = useRef(null);
@@ -1168,16 +1169,27 @@
         .then(async function(cfg) {
           if (cancelled) return;
           setPayCfg(cfg);
-          if (!cfg.required || !cfg.applicationId || !cfg.locationId) return;
-          await bkLoadSquareSdk(cfg.env);
-          if (cancelled) return;
-          var payments = window.Square.payments(cfg.applicationId, cfg.locationId);
-          paymentsRef.current = payments;
-          var card = await payments.card();
-          await card.attach('#bk-card-container');
-          if (cancelled) { card.destroy(); return; }
-          cardRef.current = card;
-          setPayReady(true);
+          if (!cfg.required) return;
+          // Payment demanded but the server config is incomplete — say so
+          // instead of spinning forever (the server would 402 the booking).
+          if (!cfg.applicationId || !cfg.locationId) {
+            setPayInitError('Online payment is temporarily unavailable. Please call or text us at 778 535 3348 to book.');
+            return;
+          }
+          try {
+            await bkLoadSquareSdk(cfg.env);
+            if (cancelled) return;
+            var payments = window.Square.payments(cfg.applicationId, cfg.locationId);
+            paymentsRef.current = payments;
+            var card = await payments.card();
+            await card.attach('#bk-card-container');
+            if (cancelled) { card.destroy(); return; }
+            cardRef.current = card;
+            setPayReady(true);
+          } catch (sdkErr) {
+            if (!cancelled) setPayInitError('The secure payment form failed to load. Please refresh the page, or call us at 778 535 3348.');
+            return;
+          }
           // Apple Pay — resolves only where supported (Safari, registered
           // domain, production). Silently absent everywhere else.
           try {
@@ -1298,9 +1310,14 @@
             )}
             <div style={{ border: '1px solid var(--rule)', padding: '14px 14px 2px', background: 'var(--paper)' }}>
               <div id="bk-card-container" />
-              {!payReady && (
+              {!payReady && !payInitError && (
                 <p style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: '0.1em', color: 'var(--ink-faint)', textTransform: 'uppercase', padding: '4px 0 14px', margin: 0 }}>
                   Loading secure payment form…
+                </p>
+              )}
+              {payInitError && (
+                <p style={{ fontFamily: 'var(--body)', fontSize: 13, color: 'var(--accent)', padding: '2px 0 14px', margin: 0, lineHeight: 1.5 }}>
+                  {payInitError}
                 </p>
               )}
             </div>

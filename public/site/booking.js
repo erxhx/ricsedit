@@ -1044,6 +1044,7 @@
       var [payReady, setPayReady] = useState(false);
       var [applePayOk, setApplePayOk] = useState(false);
       var [payError, setPayError] = useState("");
+      var [payInitError, setPayInitError] = useState("");
       var paymentsRef = useRef(null);
       var cardRef = useRef(null);
       var applePayRef = useRef(null);
@@ -1056,19 +1057,28 @@
         }).then(async function(cfg) {
           if (cancelled) return;
           setPayCfg(cfg);
-          if (!cfg.required || !cfg.applicationId || !cfg.locationId) return;
-          await bkLoadSquareSdk(cfg.env);
-          if (cancelled) return;
-          var payments = window.Square.payments(cfg.applicationId, cfg.locationId);
-          paymentsRef.current = payments;
-          var card = await payments.card();
-          await card.attach("#bk-card-container");
-          if (cancelled) {
-            card.destroy();
+          if (!cfg.required) return;
+          if (!cfg.applicationId || !cfg.locationId) {
+            setPayInitError("Online payment is temporarily unavailable. Please call or text us at 778 535 3348 to book.");
             return;
           }
-          cardRef.current = card;
-          setPayReady(true);
+          try {
+            await bkLoadSquareSdk(cfg.env);
+            if (cancelled) return;
+            var payments = window.Square.payments(cfg.applicationId, cfg.locationId);
+            paymentsRef.current = payments;
+            var card = await payments.card();
+            await card.attach("#bk-card-container");
+            if (cancelled) {
+              card.destroy();
+              return;
+            }
+            cardRef.current = card;
+            setPayReady(true);
+          } catch (sdkErr) {
+            if (!cancelled) setPayInitError("The secure payment form failed to load. Please refresh the page, or call us at 778 535 3348.");
+            return;
+          }
           try {
             var due = ((cfg.amountDueCents || 0) / 100).toFixed(2);
             var req = payments.paymentRequest({
@@ -1134,7 +1144,7 @@
         return /* @__PURE__ */ React.createElement("div", { key: s.id, style: ROW }, /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--display)", fontSize: 17, letterSpacing: "-0.005em" } }, s.name), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--mono)", fontSize: 12, letterSpacing: "0.04em" } }, bkFmtPrice(s.price)));
       }), /* @__PURE__ */ React.createElement("div", { style: Object.assign({}, ROW, { borderBottom: "none", paddingTop: 14 }) }, /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-faint)" } }, dur, " min total"), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--mono)", fontSize: 16 } }, bkFmtPrice(total)))), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px 16px", marginBottom: 24, padding: "16px 0", borderTop: "1px solid var(--rule)" } }, [["Name", props.client.firstName + " " + props.client.lastName, true], ["Email", props.client.email, false], ["Phone", props.client.phone, false]].map(function(row) {
         return /* @__PURE__ */ React.createElement("div", { key: row[0], style: { gridColumn: row[2] ? "span 2" : void 0 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-faint)", marginBottom: 4 } }, row[0]), /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "var(--body)", fontSize: 14, color: "var(--ink)" } }, row[1]));
-      })), needsPay && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 22 } }, /* @__PURE__ */ React.createElement(BkEyebrow, { left: "Payment", right: payLabel }), payCfg.cardOnFile && /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "var(--body)", fontSize: 12, color: "var(--ink-soft)", lineHeight: 1.5, margin: "0 0 12px" } }, "Your card will be kept securely on file with Square", payCfg.mode === "off" ? " \u2014 nothing is charged today. " : ". ", "It may be charged per our cancellation policy for no-shows."), /* @__PURE__ */ React.createElement("div", { style: { border: "1px solid var(--rule)", padding: "14px 14px 2px", background: "var(--paper)" } }, /* @__PURE__ */ React.createElement("div", { id: "bk-card-container" }), !payReady && /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "0.1em", color: "var(--ink-faint)", textTransform: "uppercase", padding: "4px 0 14px", margin: 0 } }, "Loading secure payment form\u2026")), applePayOk && /* @__PURE__ */ React.createElement(
+      })), needsPay && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 22 } }, /* @__PURE__ */ React.createElement(BkEyebrow, { left: "Payment", right: payLabel }), payCfg.cardOnFile && /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "var(--body)", fontSize: 12, color: "var(--ink-soft)", lineHeight: 1.5, margin: "0 0 12px" } }, "Your card will be kept securely on file with Square", payCfg.mode === "off" ? " \u2014 nothing is charged today. " : ". ", "It may be charged per our cancellation policy for no-shows."), /* @__PURE__ */ React.createElement("div", { style: { border: "1px solid var(--rule)", padding: "14px 14px 2px", background: "var(--paper)" } }, /* @__PURE__ */ React.createElement("div", { id: "bk-card-container" }), !payReady && !payInitError && /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "0.1em", color: "var(--ink-faint)", textTransform: "uppercase", padding: "4px 0 14px", margin: 0 } }, "Loading secure payment form\u2026"), payInitError && /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "var(--body)", fontSize: 13, color: "var(--accent)", padding: "2px 0 14px", margin: 0, lineHeight: 1.5 } }, payInitError)), applePayOk && /* @__PURE__ */ React.createElement(
         "button",
         {
           type: "button",
