@@ -292,9 +292,14 @@ export default function AppointmentDetail({
         {apt.payment && (canSeeAllRevenue || apt.staff === viewerStaff) && (
           <Section label="Payment">
             {apt.payment.amountCents > 0 && (
-              <Row label={apt.payment.status === 'CARD_ON_FILE' ? 'Payment' : 'Deposit paid'}>
+              <Row label={apt.payment.prepaid ? 'Paid in full' : 'Deposit paid'}>
                 <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)' }}>
                   ${(apt.payment.amountCents / 100).toFixed(2)}
+                  {apt.payment.tipCents ? (
+                    <span style={{ color: 'var(--admin-muted)', marginLeft: 6, fontSize: 12 }}>
+                      incl. ${(apt.payment.tipCents / 100).toFixed(2)} tip
+                    </span>
+                  ) : null}
                   {apt.payment.refunded && (
                     <span style={{ color: 'var(--admin-muted)', marginLeft: 6, fontSize: 12 }}>refunded</span>
                   )}
@@ -316,8 +321,15 @@ export default function AppointmentDetail({
               </Row>
             )}
 
-            {/* Charge no-show fee — only for no-shows with a stored card */}
-            {apt.status === 'no_show' && apt.payment.cardId && !apt.payment.noShowCharge && (
+            {/* Already prepaid: no card to charge — the payment stands as the no-show penalty */}
+            {apt.status === 'no_show' && apt.payment.prepaid && !apt.payment.refunded && (
+              <div style={{ padding: '12px 0 4px', fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-muted)', lineHeight: 1.5 }}>
+                Client prepaid in full — no card charge needed. The payment stands unless you refund it.
+              </div>
+            )}
+
+            {/* Charge no-show fee — only for no-shows with a stored card and no prepayment */}
+            {apt.status === 'no_show' && apt.payment.cardId && !apt.payment.noShowCharge && !apt.payment.prepaid && (
               <div style={{ padding: '12px 0 14px' }}>
                 {!showChargeFee ? (
                   <ActionButton onClick={() => { setChargeError(''); setShowChargeFee(true); }} variant="noshow">

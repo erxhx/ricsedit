@@ -42,6 +42,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (apt.payment.noShowCharge?.paymentId) {
     return Response.json({ error: 'A no-show fee was already charged for this appointment.' }, { status: 409 });
   }
+  if (apt.payment.prepaid && !apt.payment.refunded) {
+    return Response.json({ error: 'This client prepaid in full — the payment already stands as the no-show penalty.' }, { status: 409 });
+  }
 
   try {
     const charged = await chargeDeposit({

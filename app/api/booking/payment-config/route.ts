@@ -7,7 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getPaymentSettings, amountDueCents, CATEGORIES } from '@/lib/payment-settings';
+import { getPaymentSettings, amountDueCents, prepayAmountCents, CATEGORIES } from '@/lib/payment-settings';
 import { squareConfigured, squarePublicConfig } from '@/lib/square';
 import type { ServiceCategory } from '@/lib/services';
 
@@ -33,16 +33,22 @@ export async function GET(req: NextRequest) {
   const policy = settings[cat];
   const configured = squareConfigured();
 
-  // Payment UI is needed when Square is set up AND the policy asks for
-  // either money now (deposit/full) or a card on file.
+  // `required` — the funnel must render payment and block confirm: money is
+  // owed now (deposit/prepay) or a card must be stored.
+  // `allowPrepay` — optional full prepayment offered; booking still succeeds
+  // without it, so the funnel shows an opt-in "pay now" affordance.
   const wantsMoney = policy.mode !== 'off';
   const required = configured && (wantsMoney || policy.cardOnFile);
+  const allowPrepay = configured && policy.allowPrepay;
 
   return NextResponse.json({
     required,
+    allowPrepay,
     mode: policy.mode,
     cardOnFile: policy.cardOnFile,
     amountDueCents: configured && wantsMoney ? amountDueCents(policy, total) : 0,
+    // Amount for an optional prepay (full price). Also the base tips apply to.
+    prepayAmountCents: allowPrepay ? prepayAmountCents(total) : 0,
     ...squarePublicConfig(),
   }, { headers: { ...CORS, 'Cache-Control': 'no-store' } });
 }

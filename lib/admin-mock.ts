@@ -37,6 +37,8 @@ export interface Appointment {
     customerId?: string;
     cardId?: string;
     refunded?: boolean;
+    tipCents?: number;    // portion of amountCents that was a tip
+    prepaid?: boolean;    // true when the client paid the service in full at booking
     /** Set when a no-show fee was charged to the card on file. */
     noShowCharge?: {
       paymentId: string;

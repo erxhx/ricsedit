@@ -11,6 +11,11 @@
  * cardOnFile — store the card with Square at booking (consent collected in
  *              the funnel) so no-show fees can be charged later. Independent
  *              of mode: can be required with or without an upfront charge.
+ * allowPrepay — OPTIONAL full prepayment: the client may choose to pay the
+ *              full service price now (with tip), but booking succeeds without
+ *              it. Independent of mode/cardOnFile — e.g. a barber that requires
+ *              nothing but lets a parent prepay for their kid, or a lashes
+ *              service that requires a card and also offers prepay.
  */
 
 import { db } from './supabase';
@@ -19,6 +24,7 @@ import type { ServiceCategory } from './services';
 export interface CategoryPaymentPolicy {
   mode: 'off' | 'deposit' | 'prepay';
   cardOnFile: boolean;
+  allowPrepay: boolean; // offer optional full prepayment (+ tip) at booking
   depositType: 'flat' | 'percent';
   depositValue: number; // dollars when flat, 1–100 when percent
 }
@@ -30,6 +36,7 @@ const KEY = 'payment_settings';
 const OFF: CategoryPaymentPolicy = {
   mode: 'off',
   cardOnFile: false,
+  allowPrepay: false,
   depositType: 'flat',
   depositValue: 20,
 };
@@ -54,6 +61,7 @@ function sanitize(raw: unknown): PaymentSettings {
     if (!p) continue;
     if (p.mode === 'off' || p.mode === 'deposit' || p.mode === 'prepay') out[cat].mode = p.mode;
     if (typeof p.cardOnFile === 'boolean') out[cat].cardOnFile = p.cardOnFile;
+    if (typeof p.allowPrepay === 'boolean') out[cat].allowPrepay = p.allowPrepay;
     if (p.depositType === 'flat' || p.depositType === 'percent') out[cat].depositType = p.depositType;
     if (typeof p.depositValue === 'number' && isFinite(p.depositValue) && p.depositValue > 0) {
       out[cat].depositValue = Math.min(p.depositType === 'percent' ? 100 : 10_000, Math.round(p.depositValue * 100) / 100);
@@ -92,4 +100,19 @@ export function amountDueCents(policy: CategoryPaymentPolicy, totalPrice: number
     return Math.round(Math.min(amt, totalPrice) * 100);
   }
   return 0;
+}
+
+/** Full service price in cents — the amount for an optional prepayment. */
+export function prepayAmountCents(totalPrice: number): number {
+  return Math.round(totalPrice * 100);
+}
+
+/**
+ * Clamp a client-supplied tip to a sane range: non-negative integer cents,
+ * never more than the base charge (a tip over 100% is almost certainly a bug
+ * or abuse). The base is trusted server-side; only the tip comes from the client.
+ */
+export function clampTipCents(tip: unknown, baseCents: number): number {
+  if (typeof tip !== 'number' || !isFinite(tip) || tip <= 0) return 0;
+  return Math.min(Math.round(tip), baseCents);
 }

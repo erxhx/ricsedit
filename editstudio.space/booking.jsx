@@ -1156,56 +1156,114 @@
     var [applePayOk, setApplePayOk] = useState(false);
     var [payError, setPayError]   = useState('');
     var [payInitError, setPayInitError] = useState(''); // form couldn't mount
+    var [sdkReady, setSdkReady]   = useState(false);
+    var [payNow, setPayNow]       = useState(false);    // optional-prepay opt-in
+    var [tipChoice, setTipChoice] = useState('skip');   // '18'|'20'|'25'|'custom'|'skip'
+    var [customTip, setCustomTip] = useState('');
     var paymentsRef = useRef(null);
     var cardRef     = useRef(null);
     var applePayRef = useRef(null);
+    var cardMounted = useRef(false);
 
+    // Derived policy shape (safe before payCfg loads).
+    var cfg        = payCfg || {};
+    var mustStore  = !!cfg.cardOnFile;
+    var mustCharge = !!cfg.mode && cfg.mode !== 'off';
+    var canPrepay  = !!cfg.allowPrepay;
+    var payable    = !!(cfg.required || canPrepay);           // any payment UI at all
+    var optedPrepay = canPrepay && payNow;
+    var willCharge = !!(mustCharge || optedPrepay);           // a charge will happen
+    var baseCents  = mustCharge ? (cfg.amountDueCents || 0)
+                   : optedPrepay ? (cfg.prepayAmountCents || 0) : 0;
+    var isFullPrepay = !!(cfg.mode === 'prepay' || optedPrepay);
+    var showTip    = isFullPrepay && baseCents > 0;          // tips only on full prepay
+    var tipCents   = !showTip ? 0
+                   : tipChoice === '18' ? Math.round(baseCents * 0.18)
+                   : tipChoice === '20' ? Math.round(baseCents * 0.20)
+                   : tipChoice === '25' ? Math.round(baseCents * 0.25)
+                   : tipChoice === 'custom' ? Math.max(0, Math.round((parseFloat(customTip) || 0) * 100))
+                   : 0;
+    var finalCents = baseCents + tipCents;
+    var shouldMountCard = !!(cfg.required || optedPrepay);   // typed card form needed
+    var showApplePay = !!(applePayOk && !mustStore && willCharge);
+
+    // Effect A — fetch policy, then preload the SDK (no card attach yet).
     useEffect(function() {
       var cancelled = false;
       var endpoint = (window.__booking || {}).endpoint || '';
       var base = endpoint.replace(/\/api\/booking\/create$/, '') || window.location.origin;
       fetch(base + '/api/booking/payment-config?category=' + props.category + '&total=' + total)
         .then(function(r) { return r.ok ? r.json() : { required: false }; })
-        .then(async function(cfg) {
+        .then(async function(cfgResp) {
           if (cancelled) return;
-          setPayCfg(cfg);
-          if (!cfg.required) return;
-          // Payment demanded but the server config is incomplete — say so
+          setPayCfg(cfgResp);
+          if (!(cfgResp.required || cfgResp.allowPrepay)) return;
+          // Payment possible but the server config is incomplete — say so
           // instead of spinning forever (the server would 402 the booking).
-          if (!cfg.applicationId || !cfg.locationId) {
-            setPayInitError('Online payment is temporarily unavailable. Please call or text us at 778 535 3348 to book.');
+          if (!cfgResp.applicationId || !cfgResp.locationId) {
+            if (cfgResp.required) {
+              setPayInitError('Online payment is temporarily unavailable. Please call or text us at 778 535 3348 to book.');
+            }
             return;
           }
           try {
-            await bkLoadSquareSdk(cfg.env);
+            await bkLoadSquareSdk(cfgResp.env);
             if (cancelled) return;
-            var payments = window.Square.payments(cfg.applicationId, cfg.locationId);
-            paymentsRef.current = payments;
-            var card = await payments.card();
-            await card.attach('#bk-card-container');
-            if (cancelled) { card.destroy(); return; }
-            cardRef.current = card;
-            setPayReady(true);
+            paymentsRef.current = window.Square.payments(cfgResp.applicationId, cfgResp.locationId);
+            setSdkReady(true);
           } catch (sdkErr) {
-            if (!cancelled) setPayInitError('The secure payment form failed to load. Please refresh the page, or call us at 778 535 3348.');
-            return;
+            if (!cancelled && cfgResp.required) setPayInitError('The secure payment form failed to load. Please refresh the page, or call us at 778 535 3348.');
           }
-          // Apple Pay — resolves only where supported (Safari, registered
-          // domain, production). Silently absent everywhere else.
-          try {
-            var due = ((cfg.amountDueCents || 0) / 100).toFixed(2);
-            var req = payments.paymentRequest({
-              countryCode: 'CA', currencyCode: 'CAD',
-              total: { amount: due === '0.00' ? '0.01' : due, label: 'Edit Studio' },
-            });
-            applePayRef.current = await payments.applePay(req);
-            if (!cancelled) setApplePayOk(true);
-          } catch (e) { /* not available on this device/domain */ }
         })
         .catch(function() { if (!cancelled) setPayCfg({ required: false }); });
       return function() { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    // Effect B — attach the card element once, when it's actually needed
+    // (immediately for required flows; on opt-in for optional prepay).
+    useEffect(function() {
+      if (!sdkReady || !shouldMountCard || cardMounted.current) return;
+      var cancelled = false;
+      (async function() {
+        try {
+          var card = await paymentsRef.current.card();
+          await card.attach('#bk-card-container');
+          if (cancelled) { try { card.destroy(); } catch (e) {} return; }
+          cardRef.current = card;
+          cardMounted.current = true;
+          setPayReady(true);
+        } catch (e) {
+          if (!cancelled) setPayInitError('The secure payment form failed to load. Please refresh the page, or call us at 778 535 3348.');
+        }
+      })();
+      return function() { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [sdkReady, shouldMountCard]);
+
+    // Effect C — Apple Pay, recreated whenever the charged total changes (tip),
+    // so the wallet sheet always shows the exact amount. Hidden when a card
+    // must be stored (Square can't save a wallet token) or nothing is charged.
+    useEffect(function() {
+      if (!sdkReady || mustStore || !willCharge || !paymentsRef.current) { setApplePayOk(false); return; }
+      var cancelled = false;
+      (async function() {
+        try {
+          if (applePayRef.current && applePayRef.current.destroy) { try { applePayRef.current.destroy(); } catch (e) {} }
+          var amt = (finalCents / 100).toFixed(2);
+          var req = paymentsRef.current.paymentRequest({
+            countryCode: 'CA', currencyCode: 'CAD',
+            total: { amount: amt === '0.00' ? '0.01' : amt, label: 'Edit Studio' },
+          });
+          var ap = await paymentsRef.current.applePay(req);
+          if (cancelled) return;
+          applePayRef.current = ap;
+          setApplePayOk(true);
+        } catch (e) { if (!cancelled) setApplePayOk(false); }
+      })();
+      return function() { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [sdkReady, mustStore, willCharge, finalCents]);
 
     async function tokenizeWith(method) {
       var result = await method.tokenize();
@@ -1215,11 +1273,9 @@
       }
       var verificationToken;
       try {
-        var intent = payCfg.mode !== 'off'
-          ? (payCfg.cardOnFile ? 'CHARGE_AND_STORE' : 'CHARGE')
-          : 'STORE';
+        var intent = willCharge ? (mustStore ? 'CHARGE_AND_STORE' : 'CHARGE') : 'STORE';
         var v = await paymentsRef.current.verifyBuyer(result.token, {
-          amount: ((payCfg.amountDueCents || 0) / 100).toFixed(2),
+          amount: (finalCents / 100).toFixed(2),
           currencyCode: 'CAD',
           intent: intent,
           billingContact: {
@@ -1232,11 +1288,18 @@
       } catch (e) { /* verification unavailable — server may still accept */ }
       // Fresh idempotency key per attempt: Square tokens are single-use, so
       // every retry re-tokenizes and needs its own key.
-      return { token: result.token, verificationToken: verificationToken, idempotencyKey: bkUuid() };
+      return {
+        token: result.token,
+        verificationToken: verificationToken,
+        idempotencyKey: bkUuid(),
+        prepay: optedPrepay || undefined,
+        tipCents: tipCents || undefined,
+      };
     }
 
     async function confirm(viaApplePay) {
-      if (!payCfg || !payCfg.required) { props.onConfirm(null); return; }
+      // Nothing to collect (free booking, or optional prepay declined).
+      if (!payable || (!willCharge && !mustStore)) { props.onConfirm(null); return; }
       setPayError('');
       try {
         var method = viaApplePay ? applePayRef.current : cardRef.current;
@@ -1248,12 +1311,13 @@
       }
     }
 
-    var needsPay   = payCfg && payCfg.required;
-    var dueDollars = needsPay ? ((payCfg.amountDueCents || 0) / 100) : 0;
-    var payLabel   = !needsPay ? null
-      : payCfg.mode === 'full'    ? 'Due now: ' + bkFmtPrice(dueDollars)
-      : payCfg.mode === 'deposit' ? 'Deposit due now: ' + bkFmtPrice(dueDollars)
-      : 'No charge today';
+    var payLabel   = !payable ? null
+      : willCharge && mustCharge && cfg.mode === 'deposit' ? 'Deposit due now: ' + bkFmtPrice(finalCents / 100)
+      : willCharge ? 'Due now: ' + bkFmtPrice(finalCents / 100)
+      : mustStore ? 'No charge today'
+      : 'Optional';
+    // Card form is shown for required flows or once optional prepay is chosen.
+    var showCardForm = shouldMountCard;
 
     var ROW = { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '12px 0', borderBottom: '1px solid var(--rule)' };
 
@@ -1297,31 +1361,121 @@
           })}
         </div>
 
-        {/* Payment — shown when this category's policy requires it */}
-        {needsPay && (
+        {/* Payment — shown when the policy requires it or offers optional prepay */}
+        {payable && (
           <div style={{ marginBottom: 22 }}>
             <BkEyebrow left="Payment" right={payLabel} />
-            {payCfg.cardOnFile && (
+            {mustStore && (
               <p style={{ fontFamily: 'var(--body)', fontSize: 12, color: 'var(--ink-soft)', lineHeight: 1.5, margin: '0 0 12px' }}>
                 Your card will be kept securely on file with Square
-                {payCfg.mode === 'off' ? ' — nothing is charged today. ' : '. '}
+                {!willCharge ? ' — nothing is charged today. ' : '. '}
                 It may be charged per our cancellation policy for no-shows.
               </p>
             )}
-            <div style={{ border: '1px solid var(--rule)', padding: '14px 14px 2px', background: 'var(--paper)' }}>
-              <div id="bk-card-container" />
-              {!payReady && !payInitError && (
-                <p style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: '0.1em', color: 'var(--ink-faint)', textTransform: 'uppercase', padding: '4px 0 14px', margin: 0 }}>
-                  Loading secure payment form…
-                </p>
-              )}
-              {payInitError && (
-                <p style={{ fontFamily: 'var(--body)', fontSize: 13, color: 'var(--accent)', padding: '2px 0 14px', margin: 0, lineHeight: 1.5 }}>
-                  {payInitError}
-                </p>
-              )}
-            </div>
-            {applePayOk && (
+
+            {/* Optional prepay opt-in (barber: free to book; lashes: card already required) */}
+            {canPrepay && !mustCharge && (
+              <button
+                type="button"
+                onClick={function() { setPayNow(!payNow); }}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  width: '100%', textAlign: 'left', padding: '12px 14px', marginBottom: 14,
+                  background: payNow ? 'var(--paper)' : 'transparent',
+                  border: '1px solid var(--rule)', borderRadius: 4, cursor: 'pointer',
+                }}
+              >
+                <span>
+                  <span style={{ display: 'block', fontFamily: 'var(--body)', fontSize: 14, color: 'var(--ink)' }}>
+                    {mustStore ? 'Pay in full now' : 'Prefer to pay now?'}
+                  </span>
+                  <span style={{ display: 'block', fontFamily: 'var(--body)', fontSize: 12, color: 'var(--ink-soft)', marginTop: 2, lineHeight: 1.4 }}>
+                    {mustStore
+                      ? 'Otherwise only your card is saved — nothing charged today.'
+                      : 'Optional — e.g. booking for someone else, or you just prefer to.'}
+                  </span>
+                </span>
+                <span style={{ width: 40, height: 24, borderRadius: 12, flexShrink: 0, marginLeft: 12, background: payNow ? 'var(--ink)' : 'var(--rule)', display: 'flex', alignItems: 'center', padding: '0 3px', justifyContent: payNow ? 'flex-end' : 'flex-start', transition: 'background 0.2s' }}>
+                  <span style={{ width: 18, height: 18, borderRadius: '50%', background: 'var(--paper)' }} />
+                </span>
+              </button>
+            )}
+
+            {/* Tip — only when a full prepayment is being taken */}
+            {showTip && (
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--ink-faint)', marginBottom: 8 }}>Add a tip?</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {[['18', '18%'], ['20', '20%'], ['25', '25%'], ['custom', 'Custom'], ['skip', 'No tip']].map(function(opt) {
+                    var active = tipChoice === opt[0];
+                    return (
+                      <button
+                        key={opt[0]}
+                        type="button"
+                        onClick={function() { setTipChoice(opt[0]); }}
+                        style={{
+                          flex: opt[0] === 'custom' || opt[0] === 'skip' ? '1 1 auto' : '1 1 0',
+                          minWidth: 56, padding: '10px 8px',
+                          fontFamily: 'var(--mono)', fontSize: 12, letterSpacing: '0.04em',
+                          color: active ? 'var(--paper)' : 'var(--ink)',
+                          background: active ? 'var(--ink)' : 'transparent',
+                          border: '1px solid ' + (active ? 'var(--ink)' : 'var(--rule)'),
+                          borderRadius: 4, cursor: 'pointer', transition: 'background 0.15s',
+                        }}
+                      >
+                        {opt[1]}
+                        {(opt[0] === '18' || opt[0] === '20' || opt[0] === '25') && (
+                          <span style={{ display: 'block', fontSize: 10, opacity: 0.7, marginTop: 2 }}>
+                            {bkFmtPrice(Math.round(baseCents * (parseInt(opt[0], 10) / 100)) / 100)}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                {tipChoice === 'custom' && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8 }}>
+                    <span style={{ fontFamily: 'var(--body)', fontSize: 15, color: 'var(--ink-soft)' }}>$</span>
+                    <input
+                      type="number" inputMode="decimal" min={0} step={1}
+                      value={customTip}
+                      onChange={function(e) { setCustomTip(e.target.value); }}
+                      placeholder="Tip amount"
+                      style={{
+                        flex: 1, padding: '10px 12px', borderRadius: 4,
+                        border: '1px solid var(--rule)', background: 'var(--paper)',
+                        fontFamily: 'var(--body)', fontSize: 15, color: 'var(--ink)', outline: 'none',
+                      }}
+                    />
+                  </div>
+                )}
+                {tipCents > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10, fontFamily: 'var(--mono)', fontSize: 12, letterSpacing: '0.04em', color: 'var(--ink)' }}>
+                    <span>Service {bkFmtPrice(baseCents / 100)} + tip {bkFmtPrice(tipCents / 100)}</span>
+                    <span>{bkFmtPrice(finalCents / 100)}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Card form — required flows, or once optional prepay is chosen */}
+            {showCardForm && (
+              <div style={{ border: '1px solid var(--rule)', padding: '14px 14px 2px', background: 'var(--paper)' }}>
+                <div id="bk-card-container" />
+                {!payReady && !payInitError && (
+                  <p style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: '0.1em', color: 'var(--ink-faint)', textTransform: 'uppercase', padding: '4px 0 14px', margin: 0 }}>
+                    Loading secure payment form…
+                  </p>
+                )}
+                {payInitError && (
+                  <p style={{ fontFamily: 'var(--body)', fontSize: 13, color: 'var(--accent)', padding: '2px 0 14px', margin: 0, lineHeight: 1.5 }}>
+                    {payInitError}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {showApplePay && (
               <button
                 type="button"
                 onClick={function() { confirm(true); }}
@@ -1348,17 +1502,19 @@
           <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--accent)', letterSpacing: '0.08em', marginBottom: 14, lineHeight: 1.5 }}>{props.error}</p>
         )}
 
-        <BkBtn onClick={function() { confirm(false); }} disabled={props.submitting || (needsPay && !payReady) || payCfg === null}>
+        <BkBtn onClick={function() { confirm(false); }} disabled={props.submitting || (showCardForm && !payReady) || payCfg === null}>
           {props.submitting ? 'Sending…'
             : payCfg === null ? 'One moment…'
-            : needsPay && payCfg.mode !== 'off' ? 'Pay ' + bkFmtPrice(dueDollars) + ' & book'
+            : willCharge ? 'Pay ' + bkFmtPrice(finalCents / 100) + ' & book'
             : 'Confirm booking'}
         </BkBtn>
 
         <p style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: '0.1em', color: 'var(--ink-faint)', textAlign: 'center', marginTop: 14, lineHeight: 1.65, textTransform: 'uppercase' }}>
-          {needsPay && payCfg.mode !== 'off'
+          {willCharge && isFullPrepay
+            ? 'Paid in full — refunded if you cancel more than 3 hours ahead.'
+            : willCharge
             ? 'Deposits are refunded when you cancel more than 3 hours ahead.'
-            : needsPay
+            : mustStore
             ? 'No charge today — card kept on file per our policy.'
             : "No payment required today. We'll confirm by email."}
         </p>

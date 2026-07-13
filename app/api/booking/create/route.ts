@@ -9,7 +9,7 @@ import { dbCreateAppointment } from '@/lib/db';
 import { db } from '@/lib/supabase';
 import { validateSlot } from '@/lib/booking-validation';
 import { sendPushToStaff, fmtWhen } from '@/lib/push';
-import { getPaymentSettings, amountDueCents } from '@/lib/payment-settings';
+import { getPaymentSettings, amountDueCents, prepayAmountCents, clampTipCents } from '@/lib/payment-settings';
 import {
   squareConfigured, findOrCreateCustomer, chargeDeposit, storeCardOnFile, refundPayment,
 } from '@/lib/square';
@@ -111,11 +111,14 @@ interface BookingPayload {
   date: string;
   time: { h: number; m: number };
   client: { firstName: string; lastName: string; email: string; phone: string; notes?: string };
-  /** Present when the category's payment policy requires it. */
+  /** Present when the category's payment policy requires it, or when the
+   * client opts into an optional prepayment. */
   payment?: {
     token: string;              // Web Payments SDK card/Apple Pay token
     verificationToken?: string; // buyer verification (SCA)
     idempotencyKey: string;     // unique per booking attempt — retry-safe
+    prepay?: boolean;           // client opted into optional full prepayment
+    tipCents?: number;          // tip on top of the charge (prepay only)
   };
   _hp?: string; // honeypot — must be empty
 }
@@ -212,32 +215,51 @@ export async function POST(req: NextRequest) {
     // appointment; refund if anything after the charge fails.
     let paymentRecord: PaymentRecord | null = null;
     const policy = (await getPaymentSettings())[category];
-    const paymentNeeded = squareConfigured() && (policy.mode !== 'off' || policy.cardOnFile);
+    const configured = squareConfigured();
+    const mustStore  = policy.cardOnFile;                 // card required on file
+    const mustCharge = policy.mode !== 'off';             // deposit/prepay required
+    // Optional full prepay the client chose to take (never trust as required).
+    const wantsPrepay = configured && policy.allowPrepay && body.payment?.prepay === true;
+    // A token is only required when we must charge, must store, or the client
+    // opted to prepay. Barber "pay later" sends no token and books for free.
+    const requiresToken = configured && (mustCharge || mustStore || wantsPrepay);
 
-    if (paymentNeeded) {
-      if (!body.payment?.token || !body.payment.idempotencyKey) {
-        return Response.json(
-          { error: 'This booking requires payment details. Please refresh the page and try again.' },
-          { status: 402, headers: CORS },
-        );
-      }
-      const dueCents = policy.mode !== 'off' ? amountDueCents(policy, totalPrice) : 0;
+    if (requiresToken && (!body.payment?.token || !body.payment.idempotencyKey)) {
+      return Response.json(
+        { error: 'This booking requires payment details. Please refresh the page and try again.' },
+        { status: 402, headers: CORS },
+      );
+    }
+
+    if (configured && body.payment?.token && body.payment.idempotencyKey) {
+      // Base charge: a required deposit/prepay, else the full price if the
+      // client opted to prepay, else nothing (store-card-only or free).
+      const baseCents = mustCharge ? amountDueCents(policy, totalPrice)
+                      : wantsPrepay ? prepayAmountCents(totalPrice)
+                      : 0;
+      // Tips apply only to a FULL prepayment (required 'prepay' or opted-in),
+      // never to a partial deposit.
+      const isFullPrepay = policy.mode === 'prepay' || wantsPrepay;
+      const tipCents = isFullPrepay && baseCents > 0
+        ? clampTipCents(body.payment.tipCents, baseCents) : 0;
 
       try {
         const customerId = await findOrCreateCustomer(clientName, client.email.trim(), client.phone.trim());
 
-        if (dueCents > 0) {
+        if (baseCents > 0) {
           paymentRecord = await chargeDeposit({
             sourceId: body.payment.token,
             verificationToken: body.payment.verificationToken,
-            amountCents: dueCents,
+            amountCents: baseCents,
+            tipCents,
             note: `${serviceName} — ${dateStr} ${startTime} (${clientName})`,
             customerId,
             idempotencyKey: body.payment.idempotencyKey,
           });
+          paymentRecord.prepaid = isFullPrepay;
         }
 
-        if (policy.cardOnFile) {
+        if (mustStore) {
           try {
             const stored = await storeCardOnFile({
               // After a charge, save from the payment id (one tokenization does

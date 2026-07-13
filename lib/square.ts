@@ -36,13 +36,15 @@ export function squarePublicConfig(): { applicationId: string | null; locationId
 
 export interface PaymentRecord {
   paymentId: string;
-  amountCents: number;
+  amountCents: number;   // total charged (service base + tip)
   currency: string;
   status: string;
   cardBrand?: string;
   last4?: string;
   customerId?: string;
-  cardId?: string; // set when the card was saved on file
+  cardId?: string;       // set when the card was saved on file
+  tipCents?: number;     // portion of amountCents that was a tip
+  prepaid?: boolean;     // true when this was a full prepayment of the service
 }
 
 /** Find or create a Square Customer for a booking client (matched by email). */
@@ -80,12 +82,14 @@ export async function findOrCreateCustomer(
 export async function chargeDeposit(opts: {
   sourceId: string;             // card token from the SDK
   verificationToken?: string;   // buyer-verification (SCA) token
-  amountCents: number;
+  amountCents: number;          // service base (NOT including tip)
+  tipCents?: number;            // optional tip; charged in addition to amountCents
   note: string;
   customerId?: string;
   idempotencyKey: string;
 }): Promise<PaymentRecord> {
   const client = squareClient();
+  const tip = opts.tipCents && opts.tipCents > 0 ? opts.tipCents : 0;
   const res = await client.payments.create({
     idempotencyKey: opts.idempotencyKey,
     sourceId: opts.sourceId,
@@ -93,7 +97,10 @@ export async function chargeDeposit(opts: {
     customerId: opts.customerId,
     locationId: process.env.SQUARE_LOCATION_ID,
     note: opts.note.slice(0, 500),
+    // Square charges amountMoney + tipMoney; keep them separate so tips are
+    // categorized as tips in Square reporting.
     amountMoney: { amount: BigInt(opts.amountCents), currency: 'CAD' },
+    ...(tip > 0 ? { tipMoney: { amount: BigInt(tip), currency: 'CAD' } } : {}),
   });
   const p = res.payment;
   if (!p?.id || p.status === 'FAILED' || p.status === 'CANCELED') {
@@ -101,12 +108,13 @@ export async function chargeDeposit(opts: {
   }
   return {
     paymentId: p.id,
-    amountCents: opts.amountCents,
+    amountCents: opts.amountCents + tip,  // total charged, for refund correctness
     currency: 'CAD',
     status: p.status ?? 'COMPLETED',
     cardBrand: p.cardDetails?.card?.cardBrand ?? undefined,
     last4: p.cardDetails?.card?.last4 ?? undefined,
     customerId: opts.customerId,
+    tipCents: tip > 0 ? tip : undefined,
   };
 }
 

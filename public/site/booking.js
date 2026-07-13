@@ -1045,50 +1045,51 @@
       var [applePayOk, setApplePayOk] = useState(false);
       var [payError, setPayError] = useState("");
       var [payInitError, setPayInitError] = useState("");
+      var [sdkReady, setSdkReady] = useState(false);
+      var [payNow, setPayNow] = useState(false);
+      var [tipChoice, setTipChoice] = useState("skip");
+      var [customTip, setCustomTip] = useState("");
       var paymentsRef = useRef(null);
       var cardRef = useRef(null);
       var applePayRef = useRef(null);
+      var cardMounted = useRef(false);
+      var cfg = payCfg || {};
+      var mustStore = !!cfg.cardOnFile;
+      var mustCharge = !!cfg.mode && cfg.mode !== "off";
+      var canPrepay = !!cfg.allowPrepay;
+      var payable = !!(cfg.required || canPrepay);
+      var optedPrepay = canPrepay && payNow;
+      var willCharge = !!(mustCharge || optedPrepay);
+      var baseCents = mustCharge ? cfg.amountDueCents || 0 : optedPrepay ? cfg.prepayAmountCents || 0 : 0;
+      var isFullPrepay = !!(cfg.mode === "prepay" || optedPrepay);
+      var showTip = isFullPrepay && baseCents > 0;
+      var tipCents = !showTip ? 0 : tipChoice === "18" ? Math.round(baseCents * 0.18) : tipChoice === "20" ? Math.round(baseCents * 0.2) : tipChoice === "25" ? Math.round(baseCents * 0.25) : tipChoice === "custom" ? Math.max(0, Math.round((parseFloat(customTip) || 0) * 100)) : 0;
+      var finalCents = baseCents + tipCents;
+      var shouldMountCard = !!(cfg.required || optedPrepay);
+      var showApplePay = !!(applePayOk && !mustStore && willCharge);
       useEffect(function() {
         var cancelled = false;
         var endpoint = (window.__booking || {}).endpoint || "";
         var base = endpoint.replace(/\/api\/booking\/create$/, "") || window.location.origin;
         fetch(base + "/api/booking/payment-config?category=" + props.category + "&total=" + total).then(function(r) {
           return r.ok ? r.json() : { required: false };
-        }).then(async function(cfg) {
+        }).then(async function(cfgResp) {
           if (cancelled) return;
-          setPayCfg(cfg);
-          if (!cfg.required) return;
-          if (!cfg.applicationId || !cfg.locationId) {
-            setPayInitError("Online payment is temporarily unavailable. Please call or text us at 778 535 3348 to book.");
-            return;
-          }
-          try {
-            await bkLoadSquareSdk(cfg.env);
-            if (cancelled) return;
-            var payments = window.Square.payments(cfg.applicationId, cfg.locationId);
-            paymentsRef.current = payments;
-            var card = await payments.card();
-            await card.attach("#bk-card-container");
-            if (cancelled) {
-              card.destroy();
-              return;
+          setPayCfg(cfgResp);
+          if (!(cfgResp.required || cfgResp.allowPrepay)) return;
+          if (!cfgResp.applicationId || !cfgResp.locationId) {
+            if (cfgResp.required) {
+              setPayInitError("Online payment is temporarily unavailable. Please call or text us at 778 535 3348 to book.");
             }
-            cardRef.current = card;
-            setPayReady(true);
-          } catch (sdkErr) {
-            if (!cancelled) setPayInitError("The secure payment form failed to load. Please refresh the page, or call us at 778 535 3348.");
             return;
           }
           try {
-            var due = ((cfg.amountDueCents || 0) / 100).toFixed(2);
-            var req = payments.paymentRequest({
-              countryCode: "CA",
-              currencyCode: "CAD",
-              total: { amount: due === "0.00" ? "0.01" : due, label: "Edit Studio" }
-            });
-            applePayRef.current = await payments.applePay(req);
-            if (!cancelled) setApplePayOk(true);
-          } catch (e) {
+            await bkLoadSquareSdk(cfgResp.env);
+            if (cancelled) return;
+            paymentsRef.current = window.Square.payments(cfgResp.applicationId, cfgResp.locationId);
+            setSdkReady(true);
+          } catch (sdkErr) {
+            if (!cancelled && cfgResp.required) setPayInitError("The secure payment form failed to load. Please refresh the page, or call us at 778 535 3348.");
           }
         }).catch(function() {
           if (!cancelled) setPayCfg({ required: false });
@@ -1097,6 +1098,63 @@
           cancelled = true;
         };
       }, []);
+      useEffect(function() {
+        if (!sdkReady || !shouldMountCard || cardMounted.current) return;
+        var cancelled = false;
+        (async function() {
+          try {
+            var card = await paymentsRef.current.card();
+            await card.attach("#bk-card-container");
+            if (cancelled) {
+              try {
+                card.destroy();
+              } catch (e) {
+              }
+              return;
+            }
+            cardRef.current = card;
+            cardMounted.current = true;
+            setPayReady(true);
+          } catch (e) {
+            if (!cancelled) setPayInitError("The secure payment form failed to load. Please refresh the page, or call us at 778 535 3348.");
+          }
+        })();
+        return function() {
+          cancelled = true;
+        };
+      }, [sdkReady, shouldMountCard]);
+      useEffect(function() {
+        if (!sdkReady || mustStore || !willCharge || !paymentsRef.current) {
+          setApplePayOk(false);
+          return;
+        }
+        var cancelled = false;
+        (async function() {
+          try {
+            if (applePayRef.current && applePayRef.current.destroy) {
+              try {
+                applePayRef.current.destroy();
+              } catch (e) {
+              }
+            }
+            var amt = (finalCents / 100).toFixed(2);
+            var req = paymentsRef.current.paymentRequest({
+              countryCode: "CA",
+              currencyCode: "CAD",
+              total: { amount: amt === "0.00" ? "0.01" : amt, label: "Edit Studio" }
+            });
+            var ap = await paymentsRef.current.applePay(req);
+            if (cancelled) return;
+            applePayRef.current = ap;
+            setApplePayOk(true);
+          } catch (e) {
+            if (!cancelled) setApplePayOk(false);
+          }
+        })();
+        return function() {
+          cancelled = true;
+        };
+      }, [sdkReady, mustStore, willCharge, finalCents]);
       async function tokenizeWith(method) {
         var result = await method.tokenize();
         if (result.status !== "OK") {
@@ -1105,9 +1163,9 @@
         }
         var verificationToken;
         try {
-          var intent = payCfg.mode !== "off" ? payCfg.cardOnFile ? "CHARGE_AND_STORE" : "CHARGE" : "STORE";
+          var intent = willCharge ? mustStore ? "CHARGE_AND_STORE" : "CHARGE" : "STORE";
           var v = await paymentsRef.current.verifyBuyer(result.token, {
-            amount: ((payCfg.amountDueCents || 0) / 100).toFixed(2),
+            amount: (finalCents / 100).toFixed(2),
             currencyCode: "CAD",
             intent,
             billingContact: {
@@ -1119,10 +1177,16 @@
           verificationToken = v && v.token;
         } catch (e) {
         }
-        return { token: result.token, verificationToken, idempotencyKey: bkUuid() };
+        return {
+          token: result.token,
+          verificationToken,
+          idempotencyKey: bkUuid(),
+          prepay: optedPrepay || void 0,
+          tipCents: tipCents || void 0
+        };
       }
       async function confirm(viaApplePay) {
-        if (!payCfg || !payCfg.required) {
+        if (!payable || !willCharge && !mustStore) {
           props.onConfirm(null);
           return;
         }
@@ -1136,15 +1200,89 @@
           setPayError(e.message || "Payment failed \u2014 please try again.");
         }
       }
-      var needsPay = payCfg && payCfg.required;
-      var dueDollars = needsPay ? (payCfg.amountDueCents || 0) / 100 : 0;
-      var payLabel = !needsPay ? null : payCfg.mode === "full" ? "Due now: " + bkFmtPrice(dueDollars) : payCfg.mode === "deposit" ? "Deposit due now: " + bkFmtPrice(dueDollars) : "No charge today";
+      var payLabel = !payable ? null : willCharge && mustCharge && cfg.mode === "deposit" ? "Deposit due now: " + bkFmtPrice(finalCents / 100) : willCharge ? "Due now: " + bkFmtPrice(finalCents / 100) : mustStore ? "No charge today" : "Optional";
+      var showCardForm = shouldMountCard;
       var ROW = { display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "12px 0", borderBottom: "1px solid var(--rule)" };
       return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement(BkBack, { onClick: props.onBack }), /* @__PURE__ */ React.createElement(BkEyebrow, { left: "Review your booking" }), /* @__PURE__ */ React.createElement("h3", { style: { fontFamily: "var(--display)", fontWeight: 300, fontStyle: "italic", fontSize: "clamp(24px,4vw,32px)", margin: "0 0 22px", letterSpacing: "-0.01em", lineHeight: 1.1 } }, "Looks good?"), /* @__PURE__ */ React.createElement("div", { style: { border: "1px solid var(--rule)", padding: "0 20px", marginBottom: 20 } }, /* @__PURE__ */ React.createElement("div", { style: ROW }, /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-faint)" } }, "Date + time"), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--body)", fontSize: 14 } }, bkFmtDate(props.date), " \xB7 ", bkFmtTime(props.time.h, props.time.m))), all.map(function(s) {
         return /* @__PURE__ */ React.createElement("div", { key: s.id, style: ROW }, /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--display)", fontSize: 17, letterSpacing: "-0.005em" } }, s.name), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--mono)", fontSize: 12, letterSpacing: "0.04em" } }, bkFmtPrice(s.price)));
       }), /* @__PURE__ */ React.createElement("div", { style: Object.assign({}, ROW, { borderBottom: "none", paddingTop: 14 }) }, /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-faint)" } }, dur, " min total"), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--mono)", fontSize: 16 } }, bkFmtPrice(total)))), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px 16px", marginBottom: 24, padding: "16px 0", borderTop: "1px solid var(--rule)" } }, [["Name", props.client.firstName + " " + props.client.lastName, true], ["Email", props.client.email, false], ["Phone", props.client.phone, false]].map(function(row) {
         return /* @__PURE__ */ React.createElement("div", { key: row[0], style: { gridColumn: row[2] ? "span 2" : void 0 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-faint)", marginBottom: 4 } }, row[0]), /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "var(--body)", fontSize: 14, color: "var(--ink)" } }, row[1]));
-      })), needsPay && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 22 } }, /* @__PURE__ */ React.createElement(BkEyebrow, { left: "Payment", right: payLabel }), payCfg.cardOnFile && /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "var(--body)", fontSize: 12, color: "var(--ink-soft)", lineHeight: 1.5, margin: "0 0 12px" } }, "Your card will be kept securely on file with Square", payCfg.mode === "off" ? " \u2014 nothing is charged today. " : ". ", "It may be charged per our cancellation policy for no-shows."), /* @__PURE__ */ React.createElement("div", { style: { border: "1px solid var(--rule)", padding: "14px 14px 2px", background: "var(--paper)" } }, /* @__PURE__ */ React.createElement("div", { id: "bk-card-container" }), !payReady && !payInitError && /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "0.1em", color: "var(--ink-faint)", textTransform: "uppercase", padding: "4px 0 14px", margin: 0 } }, "Loading secure payment form\u2026"), payInitError && /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "var(--body)", fontSize: 13, color: "var(--accent)", padding: "2px 0 14px", margin: 0, lineHeight: 1.5 } }, payInitError)), applePayOk && /* @__PURE__ */ React.createElement(
+      })), payable && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 22 } }, /* @__PURE__ */ React.createElement(BkEyebrow, { left: "Payment", right: payLabel }), mustStore && /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "var(--body)", fontSize: 12, color: "var(--ink-soft)", lineHeight: 1.5, margin: "0 0 12px" } }, "Your card will be kept securely on file with Square", !willCharge ? " \u2014 nothing is charged today. " : ". ", "It may be charged per our cancellation policy for no-shows."), canPrepay && !mustCharge && /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: function() {
+            setPayNow(!payNow);
+          },
+          style: {
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            width: "100%",
+            textAlign: "left",
+            padding: "12px 14px",
+            marginBottom: 14,
+            background: payNow ? "var(--paper)" : "transparent",
+            border: "1px solid var(--rule)",
+            borderRadius: 4,
+            cursor: "pointer"
+          }
+        },
+        /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("span", { style: { display: "block", fontFamily: "var(--body)", fontSize: 14, color: "var(--ink)" } }, mustStore ? "Pay in full now" : "Prefer to pay now?"), /* @__PURE__ */ React.createElement("span", { style: { display: "block", fontFamily: "var(--body)", fontSize: 12, color: "var(--ink-soft)", marginTop: 2, lineHeight: 1.4 } }, mustStore ? "Otherwise only your card is saved \u2014 nothing charged today." : "Optional \u2014 e.g. booking for someone else, or you just prefer to.")),
+        /* @__PURE__ */ React.createElement("span", { style: { width: 40, height: 24, borderRadius: 12, flexShrink: 0, marginLeft: 12, background: payNow ? "var(--ink)" : "var(--rule)", display: "flex", alignItems: "center", padding: "0 3px", justifyContent: payNow ? "flex-end" : "flex-start", transition: "background 0.2s" } }, /* @__PURE__ */ React.createElement("span", { style: { width: 18, height: 18, borderRadius: "50%", background: "var(--paper)" } }))
+      ), showTip && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-faint)", marginBottom: 8 } }, "Add a tip?"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6 } }, [["18", "18%"], ["20", "20%"], ["25", "25%"], ["custom", "Custom"], ["skip", "No tip"]].map(function(opt) {
+        var active = tipChoice === opt[0];
+        return /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            key: opt[0],
+            type: "button",
+            onClick: function() {
+              setTipChoice(opt[0]);
+            },
+            style: {
+              flex: opt[0] === "custom" || opt[0] === "skip" ? "1 1 auto" : "1 1 0",
+              minWidth: 56,
+              padding: "10px 8px",
+              fontFamily: "var(--mono)",
+              fontSize: 12,
+              letterSpacing: "0.04em",
+              color: active ? "var(--paper)" : "var(--ink)",
+              background: active ? "var(--ink)" : "transparent",
+              border: "1px solid " + (active ? "var(--ink)" : "var(--rule)"),
+              borderRadius: 4,
+              cursor: "pointer",
+              transition: "background 0.15s"
+            }
+          },
+          opt[1],
+          (opt[0] === "18" || opt[0] === "20" || opt[0] === "25") && /* @__PURE__ */ React.createElement("span", { style: { display: "block", fontSize: 10, opacity: 0.7, marginTop: 2 } }, bkFmtPrice(Math.round(baseCents * (parseInt(opt[0], 10) / 100)) / 100))
+        );
+      })), tipChoice === "custom" && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, marginTop: 8 } }, /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--body)", fontSize: 15, color: "var(--ink-soft)" } }, "$"), /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          type: "number",
+          inputMode: "decimal",
+          min: 0,
+          step: 1,
+          value: customTip,
+          onChange: function(e) {
+            setCustomTip(e.target.value);
+          },
+          placeholder: "Tip amount",
+          style: {
+            flex: 1,
+            padding: "10px 12px",
+            borderRadius: 4,
+            border: "1px solid var(--rule)",
+            background: "var(--paper)",
+            fontFamily: "var(--body)",
+            fontSize: 15,
+            color: "var(--ink)",
+            outline: "none"
+          }
+        }
+      )), tipCents > 0 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginTop: 10, fontFamily: "var(--mono)", fontSize: 12, letterSpacing: "0.04em", color: "var(--ink)" } }, /* @__PURE__ */ React.createElement("span", null, "Service ", bkFmtPrice(baseCents / 100), " + tip ", bkFmtPrice(tipCents / 100)), /* @__PURE__ */ React.createElement("span", null, bkFmtPrice(finalCents / 100)))), showCardForm && /* @__PURE__ */ React.createElement("div", { style: { border: "1px solid var(--rule)", padding: "14px 14px 2px", background: "var(--paper)" } }, /* @__PURE__ */ React.createElement("div", { id: "bk-card-container" }), !payReady && !payInitError && /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "0.1em", color: "var(--ink-faint)", textTransform: "uppercase", padding: "4px 0 14px", margin: 0 } }, "Loading secure payment form\u2026"), payInitError && /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "var(--body)", fontSize: 13, color: "var(--accent)", padding: "2px 0 14px", margin: 0, lineHeight: 1.5 } }, payInitError)), showApplePay && /* @__PURE__ */ React.createElement(
         "button",
         {
           type: "button",
@@ -1172,7 +1310,7 @@
         "Book with  Pay"
       ), payError && /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "var(--mono)", fontSize: 11, color: "var(--accent)", letterSpacing: "0.08em", marginTop: 10, lineHeight: 1.5 } }, payError)), props.error && /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "var(--mono)", fontSize: 11, color: "var(--accent)", letterSpacing: "0.08em", marginBottom: 14, lineHeight: 1.5 } }, props.error), /* @__PURE__ */ React.createElement(BkBtn, { onClick: function() {
         confirm(false);
-      }, disabled: props.submitting || needsPay && !payReady || payCfg === null }, props.submitting ? "Sending\u2026" : payCfg === null ? "One moment\u2026" : needsPay && payCfg.mode !== "off" ? "Pay " + bkFmtPrice(dueDollars) + " & book" : "Confirm booking"), /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "0.1em", color: "var(--ink-faint)", textAlign: "center", marginTop: 14, lineHeight: 1.65, textTransform: "uppercase" } }, needsPay && payCfg.mode !== "off" ? "Deposits are refunded when you cancel more than 3 hours ahead." : needsPay ? "No charge today \u2014 card kept on file per our policy." : "No payment required today. We'll confirm by email."));
+      }, disabled: props.submitting || showCardForm && !payReady || payCfg === null }, props.submitting ? "Sending\u2026" : payCfg === null ? "One moment\u2026" : willCharge ? "Pay " + bkFmtPrice(finalCents / 100) + " & book" : "Confirm booking"), /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "0.1em", color: "var(--ink-faint)", textAlign: "center", marginTop: 14, lineHeight: 1.65, textTransform: "uppercase" } }, willCharge && isFullPrepay ? "Paid in full \u2014 refunded if you cancel more than 3 hours ahead." : willCharge ? "Deposits are refunded when you cancel more than 3 hours ahead." : mustStore ? "No charge today \u2014 card kept on file per our policy." : "No payment required today. We'll confirm by email."));
     }
     function StepDone(props) {
       var total = bkTotalPrice(props.services);

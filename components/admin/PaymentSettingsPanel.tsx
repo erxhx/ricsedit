@@ -70,7 +70,7 @@ export default function PaymentSettingsPanel() {
     );
   }
 
-  const anyEnabled = Object.values(settings).some((p) => p.mode !== 'off' || p.cardOnFile);
+  const anyEnabled = Object.values(settings).some((p) => p.mode !== 'off' || p.cardOnFile || p.allowPrepay);
 
   return (
     <div>
@@ -172,6 +172,22 @@ export default function PaymentSettingsPanel() {
                 Require card on file
               </span>
               <span style={{ width: 40, height: 24, borderRadius: 12, background: p.cardOnFile ? '#34C759' : 'var(--admin-border)', display: 'flex', alignItems: 'center', padding: '0 3px', transition: 'background 0.2s', justifyContent: p.cardOnFile ? 'flex-end' : 'flex-start', flexShrink: 0 }}>
+                <span style={{ width: 18, height: 18, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+              </span>
+            </button>
+
+            {/* optional prepay toggle */}
+            <button
+              onClick={() => update(id, { allowPrepay: !p.allowPrepay })}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: 0, marginTop: 12, background: 'none', border: 'none', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}
+            >
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-text2)', textAlign: 'left' }}>
+                Offer optional prepay
+                <span style={{ display: 'block', fontSize: 11, color: 'var(--admin-muted)', marginTop: 1 }}>
+                  Client may pay in full now, with tip. Not required to book.
+                </span>
+              </span>
+              <span style={{ width: 40, height: 24, borderRadius: 12, background: p.allowPrepay ? '#34C759' : 'var(--admin-border)', display: 'flex', alignItems: 'center', padding: '0 3px', transition: 'background 0.2s', justifyContent: p.allowPrepay ? 'flex-end' : 'flex-start', flexShrink: 0 }}>
                 <span style={{ width: 18, height: 18, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
               </span>
             </button>
