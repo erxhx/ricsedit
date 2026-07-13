@@ -332,11 +332,19 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
 .hero h1 {
   font-family: var(--display);
   font-weight: 300;
-  font-size: clamp(54px, 14vw, 168px);
+  /* Width-scaled, but also bounded by viewport HEIGHT so short/wide
+     laptop screens don't push the (bottom-anchored) headline up under
+     the nav pills. The vh term approximates the space left after the
+     nav and the sub/CTA block below the headline. */
+  font-size: clamp(54px, min(14vw, 55vh - 265px), 168px);
   line-height: 0.88;
   letter-spacing: -0.035em;
   margin: 0;
   text-wrap: balance;
+}
+/* Barber stacks THREE lines — needs a much stricter height bound. */
+.hero[data-service="barber"] h1 {
+  font-size: clamp(44px, min(14vw, 37vh - 200px), 168px);
 }
 .hero h1 .it { font-style: italic; font-weight: 300; }
 .hero .sub {
