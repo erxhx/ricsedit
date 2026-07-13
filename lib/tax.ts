@@ -11,6 +11,9 @@
  *
  * Rounding follows receipt convention: each tax is rounded once, on its
  * total base, not per line item.
+ *
+ * Tip percentages apply to the taxed total (subtotal + tax), matching the
+ * in-person POS — e.g. $40 + $2 GST → 18% tip = $7.56 → $49.56 collected.
  */
 
 import type { Service } from './services';

@@ -238,16 +238,17 @@ export async function POST(req: NextRequest) {
       const baseCents = mustCharge ? amountDueCents(policy, totalPrice)
                       : wantsPrepay ? prepayAmountCents(totalPrice)
                       : 0;
-      // Tips apply only to a FULL prepayment (required 'prepay' or opted-in),
-      // never to a partial deposit. Tip is on the pre-tax base.
       const isFullPrepay = policy.mode === 'prepay' || wantsPrepay;
-      const tipCents = isFullPrepay && baseCents > 0
-        ? clampTipCents(body.payment.tipCents, baseCents) : 0;
       // Tax only on a full prepayment (GST on services, GST+PST on products);
       // deposits are partial holds — the POS taxes the full bill at settlement.
       const tax = isFullPrepay && baseCents > 0
         ? taxBreakdownCents(resolved)
         : { gstCents: 0, pstCents: 0, taxCents: 0 };
+      // Tips apply only to a FULL prepayment (required 'prepay' or opted-in),
+      // never to a partial deposit. Tip percentages are on the taxed total
+      // (matching the in-person POS), so the clamp base includes tax.
+      const tipCents = isFullPrepay && baseCents > 0
+        ? clampTipCents(body.payment.tipCents, baseCents + tax.taxCents) : 0;
 
       try {
         const customerId = await findOrCreateCustomer(clientName, client.email.trim(), client.phone.trim());

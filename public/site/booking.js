@@ -1065,8 +1065,9 @@
       var gstCents = isFullPrepay && willCharge ? cfg.prepayGstCents || 0 : 0;
       var pstCents = isFullPrepay && willCharge ? cfg.prepayPstCents || 0 : 0;
       var showTip = isFullPrepay && baseCents > 0;
-      var tipCents = !showTip ? 0 : tipChoice === "18" ? Math.round(baseCents * 0.18) : tipChoice === "20" ? Math.round(baseCents * 0.2) : tipChoice === "25" ? Math.round(baseCents * 0.25) : tipChoice === "custom" ? Math.max(0, Math.round((parseFloat(customTip) || 0) * 100)) : 0;
-      var finalCents = baseCents + gstCents + pstCents + tipCents;
+      var tipBaseCents = baseCents + gstCents + pstCents;
+      var tipCents = !showTip ? 0 : tipChoice === "18" ? Math.round(tipBaseCents * 0.18) : tipChoice === "20" ? Math.round(tipBaseCents * 0.2) : tipChoice === "25" ? Math.round(tipBaseCents * 0.25) : tipChoice === "custom" ? Math.max(0, Math.round((parseFloat(customTip) || 0) * 100)) : 0;
+      var finalCents = tipBaseCents + tipCents;
       var shouldMountCard = !!(cfg.required || optedPrepay);
       var showApplePay = !!(applePayOk && !mustStore && willCharge);
       useEffect(function() {
@@ -1277,7 +1278,7 @@
             }
           },
           opt[1],
-          (opt[0] === "18" || opt[0] === "20" || opt[0] === "25") && /* @__PURE__ */ React.createElement("span", { style: { display: "block", fontSize: 10, opacity: 0.7, marginTop: 2 } }, bkFmtPrice(Math.round(baseCents * (parseInt(opt[0], 10) / 100)) / 100))
+          (opt[0] === "18" || opt[0] === "20" || opt[0] === "25") && /* @__PURE__ */ React.createElement("span", { style: { display: "block", fontSize: 10, opacity: 0.7, marginTop: 2 } }, bkFmtPrice(Math.round(tipBaseCents * (parseInt(opt[0], 10) / 100)) / 100))
         );
       })), tipChoice === "custom" && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, marginTop: 8 } }, /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--body)", fontSize: 15, color: "var(--ink-soft)" } }, "$"), /* @__PURE__ */ React.createElement(
         "input",

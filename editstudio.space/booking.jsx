@@ -1182,13 +1182,16 @@
     var gstCents   = isFullPrepay && willCharge ? (cfg.prepayGstCents || 0) : 0;
     var pstCents   = isFullPrepay && willCharge ? (cfg.prepayPstCents || 0) : 0;
     var showTip    = isFullPrepay && baseCents > 0;          // tips only on full prepay
+    // Tip percentages apply to the taxed total (subtotal + GST + PST),
+    // matching the in-person POS: $40 + $2 GST → 18% = $7.56.
+    var tipBaseCents = baseCents + gstCents + pstCents;
     var tipCents   = !showTip ? 0
-                   : tipChoice === '18' ? Math.round(baseCents * 0.18)
-                   : tipChoice === '20' ? Math.round(baseCents * 0.20)
-                   : tipChoice === '25' ? Math.round(baseCents * 0.25)
+                   : tipChoice === '18' ? Math.round(tipBaseCents * 0.18)
+                   : tipChoice === '20' ? Math.round(tipBaseCents * 0.20)
+                   : tipChoice === '25' ? Math.round(tipBaseCents * 0.25)
                    : tipChoice === 'custom' ? Math.max(0, Math.round((parseFloat(customTip) || 0) * 100))
                    : 0;
-    var finalCents = baseCents + gstCents + pstCents + tipCents;
+    var finalCents = tipBaseCents + tipCents;
     var shouldMountCard = !!(cfg.required || optedPrepay);   // typed card form needed
     var showApplePay = !!(applePayOk && !mustStore && willCharge);
 
@@ -1450,7 +1453,7 @@
                         {opt[1]}
                         {(opt[0] === '18' || opt[0] === '20' || opt[0] === '25') && (
                           <span style={{ display: 'block', fontSize: 10, opacity: 0.7, marginTop: 2 }}>
-                            {bkFmtPrice(Math.round(baseCents * (parseInt(opt[0], 10) / 100)) / 100)}
+                            {bkFmtPrice(Math.round(tipBaseCents * (parseInt(opt[0], 10) / 100)) / 100)}
                           </span>
                         )}
                       </button>
