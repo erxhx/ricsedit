@@ -1520,19 +1520,11 @@
             {showApplePay && (
               <button
                 type="button"
+                className="bk-apple-pay-btn"
                 onClick={function() { confirm(true); }}
                 disabled={props.submitting}
                 aria-label="Book and pay with Apple Pay"
-                style={{
-                  display: 'block', width: '100%', marginTop: 10,
-                  padding: '15px 0', border: 'none', borderRadius: 4,
-                  background: '#000', color: '#fff', cursor: 'pointer',
-                  fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
-                  fontSize: 16, fontWeight: 500, letterSpacing: '0.01em',
-                }}
-              >
-                Book with  Pay
-              </button>
+              />
             )}
             {payError && (
               <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--accent)', letterSpacing: '0.08em', marginTop: 10, lineHeight: 1.5 }}>{payError}</p>

@@ -1315,28 +1315,13 @@
         "button",
         {
           type: "button",
+          className: "bk-apple-pay-btn",
           onClick: function() {
             confirm(true);
           },
           disabled: props.submitting,
-          "aria-label": "Book and pay with Apple Pay",
-          style: {
-            display: "block",
-            width: "100%",
-            marginTop: 10,
-            padding: "15px 0",
-            border: "none",
-            borderRadius: 4,
-            background: "#000",
-            color: "#fff",
-            cursor: "pointer",
-            fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif",
-            fontSize: 16,
-            fontWeight: 500,
-            letterSpacing: "0.01em"
-          }
-        },
-        "Book with  Pay"
+          "aria-label": "Book and pay with Apple Pay"
+        }
       ), payError && /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "var(--mono)", fontSize: 11, color: "var(--accent)", letterSpacing: "0.08em", marginTop: 10, lineHeight: 1.5 } }, payError)), props.error && /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "var(--mono)", fontSize: 11, color: "var(--accent)", letterSpacing: "0.08em", marginBottom: 14, lineHeight: 1.5 } }, props.error), /* @__PURE__ */ React.createElement(BkBtn, { onClick: function() {
         confirm(false);
       }, disabled: props.submitting || showCardForm && !payReady || payCfg === null }, props.submitting ? "Sending\u2026" : payCfg === null ? "One moment\u2026" : willCharge ? "Pay " + bkFmtPrice(finalCents / 100) + " & book" : "Confirm booking"), /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "0.1em", color: "var(--ink-faint)", textAlign: "center", marginTop: 14, lineHeight: 1.65, textTransform: "uppercase" } }, willCharge && isFullPrepay ? "Paid in full \u2014 refunded if you cancel more than 3 hours ahead." : willCharge ? "Deposits are refunded when you cancel more than 3 hours ahead." : mustStore ? "No charge today \u2014 card kept on file per our policy." : "No payment required today. We'll confirm by email."));
