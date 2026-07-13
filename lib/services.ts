@@ -9,6 +9,9 @@ export interface Service {
   description: string;
   requiresWaiver: boolean;
   isAddon?: boolean;
+  /** Physical goods (e.g. disposable undies) — taxed GST + PST, unlike
+   * services which are GST-only. See lib/tax.ts. */
+  isProduct?: boolean;
 }
 
 export interface ServiceGroup {
@@ -114,8 +117,8 @@ export const TAN_SERVICES: Service[] = [
 ];
 
 export const TAN_ADDONS: Service[] = [
-  { id: 'addon-bra',       name: 'Disposable Bra',    category: 'tan', durationMinutes: 0,  price: 5,  description: 'Bandeau style.',                                                          requiresWaiver: false, isAddon: true },
-  { id: 'addon-undies',    name: 'Disposable Undies', category: 'tan', durationMinutes: 0,  price: 5,  description: '',                                                                        requiresWaiver: false, isAddon: true },
+  { id: 'addon-bra',       name: 'Disposable Bra',    category: 'tan', durationMinutes: 0,  price: 5,  description: 'Bandeau style.',                                                          requiresWaiver: false, isAddon: true, isProduct: true },
+  { id: 'addon-undies',    name: 'Disposable Undies', category: 'tan', durationMinutes: 0,  price: 5,  description: '',                                                                        requiresWaiver: false, isAddon: true, isProduct: true },
   { id: 'addon-prep-lock', name: 'Prep + Lock',       category: 'tan', durationMinutes: 20, price: 20, description: 'Two-step longevity treatment — pH-balance prep + post-tan barrier lock.', requiresWaiver: false, isAddon: true },
 ];
 

@@ -1060,18 +1060,23 @@
       var payable = !!(cfg.required || canPrepay);
       var optedPrepay = canPrepay && payNow;
       var willCharge = !!(mustCharge || optedPrepay);
-      var baseCents = mustCharge ? cfg.amountDueCents || 0 : optedPrepay ? cfg.prepayAmountCents || 0 : 0;
       var isFullPrepay = !!(cfg.mode === "prepay" || optedPrepay);
+      var baseCents = isFullPrepay && willCharge ? cfg.prepayBaseCents || 0 : mustCharge ? cfg.amountDueCents || 0 : 0;
+      var gstCents = isFullPrepay && willCharge ? cfg.prepayGstCents || 0 : 0;
+      var pstCents = isFullPrepay && willCharge ? cfg.prepayPstCents || 0 : 0;
       var showTip = isFullPrepay && baseCents > 0;
       var tipCents = !showTip ? 0 : tipChoice === "18" ? Math.round(baseCents * 0.18) : tipChoice === "20" ? Math.round(baseCents * 0.2) : tipChoice === "25" ? Math.round(baseCents * 0.25) : tipChoice === "custom" ? Math.max(0, Math.round((parseFloat(customTip) || 0) * 100)) : 0;
-      var finalCents = baseCents + tipCents;
+      var finalCents = baseCents + gstCents + pstCents + tipCents;
       var shouldMountCard = !!(cfg.required || optedPrepay);
       var showApplePay = !!(applePayOk && !mustStore && willCharge);
       useEffect(function() {
         var cancelled = false;
         var endpoint = (window.__booking || {}).endpoint || "";
         var base = endpoint.replace(/\/api\/booking\/create$/, "") || window.location.origin;
-        fetch(base + "/api/booking/payment-config?category=" + props.category + "&total=" + total).then(function(r) {
+        var itemIds = all.map(function(s) {
+          return s.id;
+        }).filter(Boolean).join(",");
+        fetch(base + "/api/booking/payment-config?category=" + props.category + "&total=" + total + "&items=" + encodeURIComponent(itemIds)).then(function(r) {
           return r.ok ? r.json() : { required: false };
         }).then(async function(cfgResp) {
           if (cancelled) return;
@@ -1103,7 +1108,23 @@
         var cancelled = false;
         (async function() {
           try {
-            var card = await paymentsRef.current.card();
+            var card = await paymentsRef.current.card({
+              style: {
+                input: {
+                  backgroundColor: "#f7f3eb",
+                  color: "#141210",
+                  fontSize: "15px",
+                  fontFamily: "helvetica, arial, sans-serif"
+                },
+                "input.is-focus": { color: "#141210" },
+                "input::placeholder": { color: "#8a857e" },
+                ".input-container": { borderColor: "#d8d2c6", borderRadius: "2px" },
+                ".input-container.is-focus": { borderColor: "#141210" },
+                ".input-container.is-error": { borderColor: "#c0392b" },
+                ".message-text": { color: "#4a4540" },
+                ".message-text.is-error": { color: "#c0392b" }
+              }
+            });
             await card.attach("#bk-card-container");
             if (cancelled) {
               try {
@@ -1282,7 +1303,14 @@
             outline: "none"
           }
         }
-      )), tipCents > 0 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginTop: 10, fontFamily: "var(--mono)", fontSize: 12, letterSpacing: "0.04em", color: "var(--ink)" } }, /* @__PURE__ */ React.createElement("span", null, "Service ", bkFmtPrice(baseCents / 100), " + tip ", bkFmtPrice(tipCents / 100)), /* @__PURE__ */ React.createElement("span", null, bkFmtPrice(finalCents / 100)))), showCardForm && /* @__PURE__ */ React.createElement("div", { style: { border: "1px solid var(--rule)", padding: "14px 14px 2px", background: "var(--paper)" } }, /* @__PURE__ */ React.createElement("div", { id: "bk-card-container" }), !payReady && !payInitError && /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "0.1em", color: "var(--ink-faint)", textTransform: "uppercase", padding: "4px 0 14px", margin: 0 } }, "Loading secure payment form\u2026"), payInitError && /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "var(--body)", fontSize: 13, color: "var(--accent)", padding: "2px 0 14px", margin: 0, lineHeight: 1.5 } }, payInitError)), showApplePay && /* @__PURE__ */ React.createElement(
+      ))), willCharge && isFullPrepay && baseCents > 0 && /* @__PURE__ */ React.createElement("div", { style: { border: "1px solid var(--rule)", padding: "10px 14px", marginBottom: 14, fontFamily: "var(--mono)", fontSize: 12, letterSpacing: "0.04em", color: "var(--ink)" } }, [
+        ["Subtotal", baseCents],
+        ["GST (5%)", gstCents],
+        pstCents > 0 ? ["PST (7%)", pstCents] : null,
+        tipCents > 0 ? ["Tip", tipCents] : null
+      ].filter(Boolean).map(function(row) {
+        return /* @__PURE__ */ React.createElement("div", { key: row[0], style: { display: "flex", justifyContent: "space-between", padding: "3px 0", color: "var(--ink-soft)" } }, /* @__PURE__ */ React.createElement("span", null, row[0]), /* @__PURE__ */ React.createElement("span", null, bkFmtPrice(row[1] / 100)));
+      }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", padding: "6px 0 2px", marginTop: 4, borderTop: "1px solid var(--rule)", fontSize: 13 } }, /* @__PURE__ */ React.createElement("span", null, "Due now"), /* @__PURE__ */ React.createElement("span", null, bkFmtPrice(finalCents / 100)))), showCardForm && /* @__PURE__ */ React.createElement("div", { style: { border: "1px solid var(--rule)", padding: "14px 14px 2px", background: "var(--paper)" } }, /* @__PURE__ */ React.createElement("div", { id: "bk-card-container" }), !payReady && !payInitError && /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "0.1em", color: "var(--ink-faint)", textTransform: "uppercase", padding: "4px 0 14px", margin: 0 } }, "Loading secure payment form\u2026"), payInitError && /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "var(--body)", fontSize: 13, color: "var(--accent)", padding: "2px 0 14px", margin: 0, lineHeight: 1.5 } }, payInitError)), showApplePay && /* @__PURE__ */ React.createElement(
         "button",
         {
           type: "button",

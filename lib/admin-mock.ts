@@ -39,6 +39,8 @@ export interface Appointment {
     refunded?: boolean;
     tipCents?: number;    // portion of amountCents that was a tip
     prepaid?: boolean;    // true when the client paid the service in full at booking
+    gstCents?: number;    // GST included in amountCents
+    pstCents?: number;    // PST (products) included in amountCents
     /** Set when a no-show fee was charged to the card on file. */
     noShowCharge?: {
       paymentId: string;

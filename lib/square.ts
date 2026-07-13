@@ -45,6 +45,8 @@ export interface PaymentRecord {
   cardId?: string;       // set when the card was saved on file
   tipCents?: number;     // portion of amountCents that was a tip
   prepaid?: boolean;     // true when this was a full prepayment of the service
+  gstCents?: number;     // 5% GST included in amountCents (full prepay only)
+  pstCents?: number;     // 7% PST on products, included in amountCents
 }
 
 /** Find or create a Square Customer for a booking client (matched by email). */
@@ -82,7 +84,7 @@ export async function findOrCreateCustomer(
 export async function chargeDeposit(opts: {
   sourceId: string;             // card token from the SDK
   verificationToken?: string;   // buyer-verification (SCA) token
-  amountCents: number;          // service base (NOT including tip)
+  amountCents: number;          // amount to charge excluding tip (base + any tax)
   tipCents?: number;            // optional tip; charged in addition to amountCents
   note: string;
   customerId?: string;

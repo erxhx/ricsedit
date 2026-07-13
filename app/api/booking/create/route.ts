@@ -10,6 +10,7 @@ import { db } from '@/lib/supabase';
 import { validateSlot } from '@/lib/booking-validation';
 import { sendPushToStaff, fmtWhen } from '@/lib/push';
 import { getPaymentSettings, amountDueCents, prepayAmountCents, clampTipCents } from '@/lib/payment-settings';
+import { taxBreakdownCents } from '@/lib/tax';
 import {
   squareConfigured, findOrCreateCustomer, chargeDeposit, storeCardOnFile, refundPayment,
 } from '@/lib/square';
@@ -186,8 +187,8 @@ export async function POST(req: NextRequest) {
     const resolve = (item: BookingService) => {
       const svc = catalogue.get(item.id);
       return svc
-        ? { name: svc.name, price: svc.price, duration: svc.durationMinutes }
-        : { name: String(item.name ?? '').slice(0, 100), price: Number(item.price) || 0, duration: Number(item.duration) || 0 };
+        ? { id: svc.id, name: svc.name, price: svc.price, duration: svc.durationMinutes, isProduct: svc.isProduct }
+        : { id: item.id, name: String(item.name ?? '').slice(0, 100), price: Number(item.price) || 0, duration: Number(item.duration) || 0, isProduct: false };
     };
     const resolved = [...services, ...(addons ?? [])].map(resolve);
 
@@ -232,16 +233,21 @@ export async function POST(req: NextRequest) {
     }
 
     if (configured && body.payment?.token && body.payment.idempotencyKey) {
-      // Base charge: a required deposit/prepay, else the full price if the
-      // client opted to prepay, else nothing (store-card-only or free).
+      // Base charge (pre-tax): a required deposit/prepay, else the full price
+      // if the client opted to prepay, else nothing (store-card-only or free).
       const baseCents = mustCharge ? amountDueCents(policy, totalPrice)
                       : wantsPrepay ? prepayAmountCents(totalPrice)
                       : 0;
       // Tips apply only to a FULL prepayment (required 'prepay' or opted-in),
-      // never to a partial deposit.
+      // never to a partial deposit. Tip is on the pre-tax base.
       const isFullPrepay = policy.mode === 'prepay' || wantsPrepay;
       const tipCents = isFullPrepay && baseCents > 0
         ? clampTipCents(body.payment.tipCents, baseCents) : 0;
+      // Tax only on a full prepayment (GST on services, GST+PST on products);
+      // deposits are partial holds — the POS taxes the full bill at settlement.
+      const tax = isFullPrepay && baseCents > 0
+        ? taxBreakdownCents(resolved)
+        : { gstCents: 0, pstCents: 0, taxCents: 0 };
 
       try {
         const customerId = await findOrCreateCustomer(clientName, client.email.trim(), client.phone.trim());
@@ -250,13 +256,17 @@ export async function POST(req: NextRequest) {
           paymentRecord = await chargeDeposit({
             sourceId: body.payment.token,
             verificationToken: body.payment.verificationToken,
-            amountCents: baseCents,
+            amountCents: baseCents + tax.taxCents,
             tipCents,
             note: `${serviceName} — ${dateStr} ${startTime} (${clientName})`,
             customerId,
             idempotencyKey: body.payment.idempotencyKey,
           });
           paymentRecord.prepaid = isFullPrepay;
+          if (tax.taxCents > 0) {
+            paymentRecord.gstCents = tax.gstCents;
+            paymentRecord.pstCents = tax.pstCents || undefined;
+          }
         }
 
         if (mustStore) {

@@ -295,9 +295,11 @@ export default function AppointmentDetail({
               <Row label={apt.payment.prepaid ? 'Paid in full' : 'Deposit paid'}>
                 <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)' }}>
                   ${(apt.payment.amountCents / 100).toFixed(2)}
-                  {apt.payment.tipCents ? (
+                  {(apt.payment.tipCents || apt.payment.gstCents) ? (
                     <span style={{ color: 'var(--admin-muted)', marginLeft: 6, fontSize: 12 }}>
-                      incl. ${(apt.payment.tipCents / 100).toFixed(2)} tip
+                      incl.{apt.payment.gstCents ? ` $${(((apt.payment.gstCents ?? 0) + (apt.payment.pstCents ?? 0)) / 100).toFixed(2)} tax` : ''}
+                      {apt.payment.gstCents && apt.payment.tipCents ? ' +' : ''}
+                      {apt.payment.tipCents ? ` $${(apt.payment.tipCents / 100).toFixed(2)} tip` : ''}
                     </span>
                   ) : null}
                   {apt.payment.refunded && (

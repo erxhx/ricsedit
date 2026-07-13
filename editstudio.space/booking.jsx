@@ -1173,9 +1173,14 @@
     var payable    = !!(cfg.required || canPrepay);           // any payment UI at all
     var optedPrepay = canPrepay && payNow;
     var willCharge = !!(mustCharge || optedPrepay);           // a charge will happen
-    var baseCents  = mustCharge ? (cfg.amountDueCents || 0)
-                   : optedPrepay ? (cfg.prepayAmountCents || 0) : 0;
     var isFullPrepay = !!(cfg.mode === 'prepay' || optedPrepay);
+    // Money (all cents, from the server — authoritative prices + tax):
+    //   full prepay → pre-tax base (tips on this) + GST/PST → taxed total
+    //   deposit     → amountDueCents, untaxed (tax settles at the studio)
+    var baseCents  = isFullPrepay && willCharge ? (cfg.prepayBaseCents || 0)
+                   : mustCharge ? (cfg.amountDueCents || 0) : 0;
+    var gstCents   = isFullPrepay && willCharge ? (cfg.prepayGstCents || 0) : 0;
+    var pstCents   = isFullPrepay && willCharge ? (cfg.prepayPstCents || 0) : 0;
     var showTip    = isFullPrepay && baseCents > 0;          // tips only on full prepay
     var tipCents   = !showTip ? 0
                    : tipChoice === '18' ? Math.round(baseCents * 0.18)
@@ -1183,7 +1188,7 @@
                    : tipChoice === '25' ? Math.round(baseCents * 0.25)
                    : tipChoice === 'custom' ? Math.max(0, Math.round((parseFloat(customTip) || 0) * 100))
                    : 0;
-    var finalCents = baseCents + tipCents;
+    var finalCents = baseCents + gstCents + pstCents + tipCents;
     var shouldMountCard = !!(cfg.required || optedPrepay);   // typed card form needed
     var showApplePay = !!(applePayOk && !mustStore && willCharge);
 
@@ -1192,7 +1197,8 @@
       var cancelled = false;
       var endpoint = (window.__booking || {}).endpoint || '';
       var base = endpoint.replace(/\/api\/booking\/create$/, '') || window.location.origin;
-      fetch(base + '/api/booking/payment-config?category=' + props.category + '&total=' + total)
+      var itemIds = all.map(function(s) { return s.id; }).filter(Boolean).join(',');
+      fetch(base + '/api/booking/payment-config?category=' + props.category + '&total=' + total + '&items=' + encodeURIComponent(itemIds))
         .then(function(r) { return r.ok ? r.json() : { required: false }; })
         .then(async function(cfgResp) {
           if (cancelled) return;
@@ -1227,7 +1233,25 @@
       var cancelled = false;
       (async function() {
         try {
-          var card = await paymentsRef.current.card();
+          // Style the card fields to match the site (the iframe can't read
+          // our CSS vars, so literals from styles.css: ink #141210, paper #f7f3eb).
+          var card = await paymentsRef.current.card({
+            style: {
+              input: {
+                backgroundColor: '#f7f3eb',
+                color: '#141210',
+                fontSize: '15px',
+                fontFamily: 'helvetica, arial, sans-serif',
+              },
+              'input.is-focus': { color: '#141210' },
+              'input::placeholder': { color: '#8a857e' },
+              '.input-container': { borderColor: '#d8d2c6', borderRadius: '2px' },
+              '.input-container.is-focus': { borderColor: '#141210' },
+              '.input-container.is-error': { borderColor: '#c0392b' },
+              '.message-text': { color: '#4a4540' },
+              '.message-text.is-error': { color: '#c0392b' },
+            },
+          });
           await card.attach('#bk-card-container');
           if (cancelled) { try { card.destroy(); } catch (e) {} return; }
           cardRef.current = card;
@@ -1449,12 +1473,27 @@
                     />
                   </div>
                 )}
-                {tipCents > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10, fontFamily: 'var(--mono)', fontSize: 12, letterSpacing: '0.04em', color: 'var(--ink)' }}>
-                    <span>Service {bkFmtPrice(baseCents / 100)} + tip {bkFmtPrice(tipCents / 100)}</span>
-                    <span>{bkFmtPrice(finalCents / 100)}</span>
-                  </div>
-                )}
+              </div>
+            )}
+
+            {/* Charge breakdown — full prepay: subtotal + GST (+PST) (+tip) */}
+            {willCharge && isFullPrepay && baseCents > 0 && (
+              <div style={{ border: '1px solid var(--rule)', padding: '10px 14px', marginBottom: 14, fontFamily: 'var(--mono)', fontSize: 12, letterSpacing: '0.04em', color: 'var(--ink)' }}>
+                {[
+                  ['Subtotal', baseCents],
+                  ['GST (5%)', gstCents],
+                  pstCents > 0 ? ['PST (7%)', pstCents] : null,
+                  tipCents > 0 ? ['Tip', tipCents] : null,
+                ].filter(Boolean).map(function(row) {
+                  return (
+                    <div key={row[0]} style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0', color: 'var(--ink-soft)' }}>
+                      <span>{row[0]}</span><span>{bkFmtPrice(row[1] / 100)}</span>
+                    </div>
+                  );
+                })}
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0 2px', marginTop: 4, borderTop: '1px solid var(--rule)', fontSize: 13 }}>
+                  <span>Due now</span><span>{bkFmtPrice(finalCents / 100)}</span>
+                </div>
               </div>
             )}
 
