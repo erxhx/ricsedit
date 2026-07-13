@@ -18,7 +18,7 @@
   };
   const HERO_FOR = {
     home: {
-      h1: /* @__PURE__ */ React.createElement(React.Fragment, null, "You Found ", /* @__PURE__ */ React.createElement("em", { className: "it" }, "Us"), "."),
+      h1: /* @__PURE__ */ React.createElement(React.Fragment, null, "You", /* @__PURE__ */ React.createElement("br", null), "Found ", /* @__PURE__ */ React.createElement("em", { className: "it" }, "Us"), "."),
       sub: "",
       cta: "Tap a service \xB7 pull down for details"
     },
@@ -489,7 +489,7 @@
         "animSpeed": 1,
         "density": "regular",
         "serviceOrder": "home,barber,tan,wax,lashes",
-        "homeHeadline": "You Found Us.",
+        "homeHeadline": "You / Found Us.",
         "barberHeadline": "Refined. / Intentional. / Crisp.",
         "tanHeadline": "Golden hour, on demand.",
         "waxHeadline": "Smooth, sorted.",

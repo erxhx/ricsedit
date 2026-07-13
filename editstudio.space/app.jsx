@@ -22,7 +22,7 @@ const ANIM_FOR = {
 
 const HERO_FOR = {
   home: {
-    h1: <>You Found <em className="it">Us</em>.</>,
+    h1: <>You<br />Found <em className="it">Us</em>.</>,
     sub: '',
     cta: 'Tap a service · pull down for details'
   },
@@ -618,7 +618,7 @@ function App() {
     "animSpeed": 1,
     "density": "regular",
     "serviceOrder": "home,barber,tan,wax,lashes",
-    "homeHeadline": "You Found Us.",
+    "homeHeadline": "You / Found Us.",
     "barberHeadline": "Refined. / Intentional. / Crisp.",
     "tanHeadline": "Golden hour, on demand.",
     "waxHeadline": "Smooth, sorted.",
