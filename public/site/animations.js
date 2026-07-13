@@ -242,7 +242,7 @@
     );
   }
   function HomeAura() {
-    return /* @__PURE__ */ React.createElement("div", { className: "anim-canvas home-aura", "aria-hidden": true }, /* @__PURE__ */ React.createElement("span", { className: "aura-blob aura-a" }), /* @__PURE__ */ React.createElement("span", { className: "aura-blob aura-b" }), /* @__PURE__ */ React.createElement("span", { className: "aura-blob aura-c" }));
+    return /* @__PURE__ */ React.createElement("div", { className: "anim-canvas home-aura", "aria-hidden": true }, /* @__PURE__ */ React.createElement("span", { className: "aura-blob aura-a" }), /* @__PURE__ */ React.createElement("span", { className: "aura-blob aura-b" }), /* @__PURE__ */ React.createElement("span", { className: "aura-blob aura-c" }), /* @__PURE__ */ React.createElement("span", { className: "aura-blob aura-d" }));
   }
   Object.assign(window, { HomeAnim, HomeAura, BarberAnim, TanAnim, WaxAnim });
 })();

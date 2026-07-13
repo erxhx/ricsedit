@@ -292,6 +292,7 @@ function HomeAura() {
       <span className="aura-blob aura-a" />
       <span className="aura-blob aura-b" />
       <span className="aura-blob aura-c" />
+      <span className="aura-blob aura-d" />
     </div>
   );
 }
