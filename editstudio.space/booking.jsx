@@ -1500,6 +1500,26 @@
               </div>
             )}
 
+            {/* Apple Pay — express checkout, presented above the card form */}
+            {showApplePay && (
+              <button
+                type="button"
+                className="bk-apple-pay-btn"
+                onClick={function() { confirm(true); }}
+                disabled={props.submitting}
+                aria-label="Book and pay with Apple Pay"
+              />
+            )}
+
+            {/* "or" divider — only when both Apple Pay and the card form show */}
+            {showApplePay && showCardForm && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, margin: '16px 2px' }}>
+                <span style={{ flex: 1, height: 1, background: 'var(--rule)' }} />
+                <span style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: '0.14em', color: 'var(--ink-faint)', textTransform: 'uppercase' }}>or</span>
+                <span style={{ flex: 1, height: 1, background: 'var(--rule)' }} />
+              </div>
+            )}
+
             {/* Card form — required flows, or once optional prepay is chosen */}
             {showCardForm && (
               <div style={{ border: '1px solid var(--rule)', padding: '14px 14px 2px', background: 'var(--paper)' }}>
@@ -1514,17 +1534,17 @@
                     {payInitError}
                   </p>
                 )}
+                {/* Powered by Square — trust mark on the secure form */}
+                {payReady && (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '2px 0 12px', opacity: 0.6 }}>
+                    <svg width="12" height="12" viewBox="0 0 32 32" aria-hidden="true">
+                      <rect x="2" y="2" width="28" height="28" rx="6.5" fill="var(--ink)" />
+                      <rect x="11.5" y="11.5" width="9" height="9" rx="2.5" fill="var(--paper)" />
+                    </svg>
+                    <span style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: '0.1em', color: 'var(--ink-soft)', textTransform: 'uppercase' }}>Powered by Square</span>
+                  </div>
+                )}
               </div>
-            )}
-
-            {showApplePay && (
-              <button
-                type="button"
-                className="bk-apple-pay-btn"
-                onClick={function() { confirm(true); }}
-                disabled={props.submitting}
-                aria-label="Book and pay with Apple Pay"
-              />
             )}
             {payError && (
               <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--accent)', letterSpacing: '0.08em', marginTop: 10, lineHeight: 1.5 }}>{payError}</p>
