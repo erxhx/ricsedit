@@ -283,5 +283,18 @@ function WaxAnim({ progress = 0, speed = 1 }) {
   );
 }
 
+// ── Home aura — milky drifting colour fields (Rhode-soft, CSS-driven) ──────
+// Replaces the logo-ghost canvas on the home hero. All motion lives in CSS
+// keyframes (styles.css) so it's GPU-cheap and respects reduced-motion.
+function HomeAura() {
+  return (
+    <div className="anim-canvas home-aura" aria-hidden>
+      <span className="aura-blob aura-a" />
+      <span className="aura-blob aura-b" />
+      <span className="aura-blob aura-c" />
+    </div>
+  );
+}
+
 // Export to window for the main app
-Object.assign(window, { HomeAnim, BarberAnim, TanAnim, WaxAnim });
+Object.assign(window, { HomeAnim, HomeAura, BarberAnim, TanAnim, WaxAnim });

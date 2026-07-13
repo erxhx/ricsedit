@@ -9,7 +9,7 @@
     visit: { id: "visit", label: "Visit", num: "05", accent: "oklch(0.32 0.04 30)", hint: "Hours \xB7 FAQ \xB7 the shelf" }
   };
   const ANIM_FOR = {
-    home: "HomeAnim",
+    home: "HomeAura",
     barber: "BarberAnim",
     tan: "TanAnim",
     wax: "WaxAnim",
@@ -310,9 +310,45 @@
       /* @__PURE__ */ React.createElement("span", { className: "next-avail-arr", "aria-hidden": "true" }, "\u2192")
     );
   }
+  const HOME_CARDS = [
+    { svc: "barber", label: "Barbering", num: "01", img: "assets/mid-taper-textured-fringe.webp", alt: "Mid taper haircut with textured fringe \u2014 barbering at Edit Studio" },
+    { svc: "tan", label: "Sunless", num: "02", img: "assets/sunless-tan-closeup-bikini.webp", alt: "Custom sunless spray tan \u2014 golden, streak-free glow" },
+    { svc: "wax", label: "Waxing", num: "03", img: "assets/wax-brow-shaping-studio.webp", alt: "Brow shaping and waxing at Edit Studio" },
+    { svc: "lashes", label: "Lashes", num: "04", img: "assets/livi-furtado-headshot.webp", alt: "Lash artistry at Edit Studio" }
+  ];
+  function HomeCollage() {
+    const ref = useRef(null);
+    useEffect(() => {
+      const el = ref.current;
+      if (!el) return;
+      const stop = (e) => e.stopPropagation();
+      el.addEventListener("touchstart", stop, { passive: true });
+      el.addEventListener("touchmove", stop, { passive: true });
+      el.addEventListener("mousedown", stop);
+      return () => {
+        el.removeEventListener("touchstart", stop);
+        el.removeEventListener("touchmove", stop);
+        el.removeEventListener("mousedown", stop);
+      };
+    }, []);
+    return /* @__PURE__ */ React.createElement("div", { className: "aura-collage", "aria-label": "Our services", ref }, HOME_CARDS.map(
+      (c) => /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          key: c.svc,
+          type: "button",
+          className: `aura-card aura-card-${c.svc}`,
+          onClick: () => window.dispatchEvent(new CustomEvent("edit-studio:goto-service", { detail: { service: c.svc } })),
+          "aria-label": `${c.label} \u2014 view services`
+        },
+        /* @__PURE__ */ React.createElement("img", { src: c.img, alt: c.alt, loading: "eager", decoding: "async" }),
+        /* @__PURE__ */ React.createElement("span", { className: "aura-card-label" }, /* @__PURE__ */ React.createElement("span", { className: "aura-card-num" }, c.num), c.label, /* @__PURE__ */ React.createElement("span", { className: "aura-card-arr", "aria-hidden": "true" }, "\u2192"))
+      )
+    ));
+  }
   function Hero({ data, animComp, progress, speed, service }) {
     const Anim = window[animComp] || (() => null);
-    return /* @__PURE__ */ React.createElement("div", { className: "panel" }, /* @__PURE__ */ React.createElement(Anim, { progress, speed }), /* @__PURE__ */ React.createElement("div", { className: "hero", "data-service": service, style: { padding: "0px 56px 110px 80px" } }, /* @__PURE__ */ React.createElement("h1", { style: { fontFamily: "sans-serif", margin: "0px" } }, data.h1), data.sub && /* @__PURE__ */ React.createElement("p", { className: "sub", style: { margin: "22px 0px 14px 5px" } }, data.sub), /* @__PURE__ */ React.createElement("div", { className: "swipe-hint", style: { margin: "28px 0px 0px 10px" } }, /* @__PURE__ */ React.createElement("span", { className: "glyph" }), /* @__PURE__ */ React.createElement("span", null, data.cta)), /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("div", { className: "panel" }, /* @__PURE__ */ React.createElement(Anim, { progress, speed }), /* @__PURE__ */ React.createElement("div", { className: "hero", "data-service": service, style: { padding: "0px 56px 110px 80px" } }, service === "home" && /* @__PURE__ */ React.createElement("p", { className: "hero-eyebrow" }, "Barber \xB7 Sunless \xB7 Wax \xB7 Lash \u2014 Oak Bay, Victoria"), /* @__PURE__ */ React.createElement("h1", { style: { fontFamily: "sans-serif", margin: "0px" } }, data.h1), service === "home" && /* @__PURE__ */ React.createElement(HomeCollage, null), data.sub && /* @__PURE__ */ React.createElement("p", { className: "sub", style: { margin: "22px 0px 14px 5px" } }, data.sub), /* @__PURE__ */ React.createElement("div", { className: "swipe-hint", style: { margin: "28px 0px 0px 10px" } }, /* @__PURE__ */ React.createElement("span", { className: "glyph" }), /* @__PURE__ */ React.createElement("span", null, data.cta)), /* @__PURE__ */ React.createElement(
       "a",
       {
         className: "book",
@@ -610,6 +646,15 @@
       };
       window.addEventListener("popstate", onPop);
       return () => window.removeEventListener("popstate", onPop);
+    }, [services]);
+    useEffect(() => {
+      const onGoto = (e) => {
+        var _a;
+        const i = services.indexOf((_a = e == null ? void 0 : e.detail) == null ? void 0 : _a.service);
+        if (i >= 0) setIdx(i);
+      };
+      window.addEventListener("edit-studio:goto-service", onGoto);
+      return () => window.removeEventListener("edit-studio:goto-service", onGoto);
     }, [services]);
     const headlines = {};
     ["home", "barber", "tan", "wax", "lashes"].forEach((k) => {

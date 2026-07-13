@@ -12,7 +12,7 @@ const SERVICES_DEF = {
 };
 
 const ANIM_FOR = {
-  home: 'HomeAnim',
+  home: 'HomeAura',
   barber: 'BarberAnim',
   tan: 'TanAnim',
   wax: 'WaxAnim',
@@ -377,13 +377,66 @@ function NextAvailableBarber() {
   );
 }
 
+// ── Home collage — the services as a fanned stack of photo cards ──────────
+// Images are placeholders from the existing galleries; swap freely.
+const HOME_CARDS = [
+  { svc: 'barber', label: 'Barbering', num: '01', img: 'assets/mid-taper-textured-fringe.webp', alt: 'Mid taper haircut with textured fringe — barbering at Edit Studio' },
+  { svc: 'tan',    label: 'Sunless',   num: '02', img: 'assets/sunless-tan-closeup-bikini.webp', alt: 'Custom sunless spray tan — golden, streak-free glow' },
+  { svc: 'wax',    label: 'Waxing',    num: '03', img: 'assets/wax-brow-shaping-studio.webp',    alt: 'Brow shaping and waxing at Edit Studio' },
+  { svc: 'lashes', label: 'Lashes',    num: '04', img: 'assets/livi-furtado-headshot.webp',      alt: 'Lash artistry at Edit Studio' }];
+
+
+function HomeCollage() {
+  // The app's panel-swipe handler listens on an ancestor via native events.
+  // Stop touch/mouse bubbling here so scrolling the card strip (mobile) or
+  // pressing a card never doubles as a panel swipe. Native listeners are
+  // required — React's synthetic handlers fire too late to beat them.
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const stop = (e) => e.stopPropagation();
+    el.addEventListener('touchstart', stop, { passive: true });
+    el.addEventListener('touchmove', stop, { passive: true });
+    el.addEventListener('mousedown', stop);
+    return () => {
+      el.removeEventListener('touchstart', stop);
+      el.removeEventListener('touchmove', stop);
+      el.removeEventListener('mousedown', stop);
+    };
+  }, []);
+  return (
+    <div className="aura-collage" aria-label="Our services" ref={ref}>
+      {HOME_CARDS.map((c) =>
+      <button
+        key={c.svc}
+        type="button"
+        className={`aura-card aura-card-${c.svc}`}
+        onClick={() => window.dispatchEvent(new CustomEvent('edit-studio:goto-service', { detail: { service: c.svc } }))}
+        aria-label={`${c.label} — view services`}>
+          <img src={c.img} alt={c.alt} loading="eager" decoding="async" />
+          <span className="aura-card-label">
+            <span className="aura-card-num">{c.num}</span>
+            {c.label}
+            <span className="aura-card-arr" aria-hidden="true">→</span>
+          </span>
+        </button>
+      )}
+    </div>);
+
+}
+
 function Hero({ data, animComp, progress, speed, service }) {
   const Anim = window[animComp] || (() => null);
   return (
     <div className="panel">
       <Anim progress={progress} speed={speed} />
       <div className="hero" data-service={service} style={{ padding: "0px 56px 110px 80px" }}>
+        {service === 'home' &&
+        <p className="hero-eyebrow">Barber · Sunless · Wax · Lash — Oak Bay, Victoria</p>
+        }
         <h1 style={{ fontFamily: "sans-serif", margin: "0px" }}>{data.h1}</h1>
+        {service === 'home' && <HomeCollage />}
         {data.sub && <p className="sub" style={{ margin: "22px 0px 14px 5px" }}>{data.sub}</p>}
         <div className="swipe-hint" style={{ margin: "28px 0px 0px 10px" }}>
           <span className="glyph"></span>
@@ -753,6 +806,16 @@ function App() {
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
+  }, [services]);
+
+  // Home collage cards → jump to that service's panel
+  useEffect(() => {
+    const onGoto = (e) => {
+      const i = services.indexOf(e?.detail?.service);
+      if (i >= 0) setIdx(i);
+    };
+    window.addEventListener('edit-studio:goto-service', onGoto);
+    return () => window.removeEventListener('edit-studio:goto-service', onGoto);
   }, [services]);
 
   // headlines from tweaks (fallback to defaults if blank)
