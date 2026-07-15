@@ -945,28 +945,46 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
 }
 .aura-card {
   position: absolute; width: 47%; aspect-ratio: 3 / 4;
-  padding: 10px 10px 32px;
-  background: #fffdf8;
-  border: 1px solid rgba(20, 18, 16, 0.08);
+  padding: 0; overflow: hidden;
+  background: transparent;
+  border: 1px solid rgba(20, 18, 16, 0.06);
   border-radius: 16px;
-  box-shadow: 0 24px 60px -18px rgba(20,18,16,0.28), 0 6px 18px rgba(20,18,16,0.08);
+  box-shadow: 0 24px 60px -18px rgba(20,18,16,0.32), 0 6px 18px rgba(20,18,16,0.1);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition: transform 0.45s cubic-bezier(0.22,1,0.36,1), box-shadow 0.45s ease;
 }
+/* Glass sheen — a soft diagonal gloss across the tile, brightest at the
+   top-left corner. Sits above the photo but below the label. */
+.aura-card::after {
+  content: ''; position: absolute; inset: 0; border-radius: 16px;
+  pointer-events: none; z-index: 2;
+  background: linear-gradient(135deg,
+    rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 24%,
+    rgba(255,255,255,0) 76%, rgba(255,255,255,0.1) 100%);
+}
 .aura-card img {
   width: 100%; height: 100%; object-fit: cover;
-  border-radius: 9px; display: block;
+  border-radius: 16px; display: block;
 }
+/* Liquid-glass label chip — floats over the photo so the backdrop blur
+   has real content to frost. Smoked tint keeps light text legible over
+   any image. */
 .aura-card-label {
-  position: absolute; left: 13px; bottom: 9px;
+  position: absolute; left: 16px; bottom: 16px; z-index: 3;
   display: flex; gap: 7px; align-items: baseline;
+  padding: 5px 11px; border-radius: 999px;
   font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em;
-  text-transform: uppercase; color: var(--ink-soft); white-space: nowrap;
+  text-transform: uppercase; color: rgba(255,255,255,0.96); white-space: nowrap;
+  background: rgba(28,24,20,0.34);
+  -webkit-backdrop-filter: blur(10px) saturate(1.5);
+  backdrop-filter: blur(10px) saturate(1.5);
+  border: 1px solid rgba(255,255,255,0.28);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), 0 4px 14px rgba(20,18,16,0.22);
 }
-.aura-card-num { opacity: 0.45; }
-.aura-card-arr { opacity: 0; transform: translateX(-4px); transition: opacity 0.3s, transform 0.3s; }
-.aura-card:hover .aura-card-arr { opacity: 1; transform: none; }
+.aura-card-num { opacity: 0.7; }
+.aura-card-arr { opacity: 0; width: 0; margin-left: -7px; transform: translateX(-4px); transition: opacity 0.3s, transform 0.3s, width 0.3s, margin 0.3s; }
+.aura-card:hover .aura-card-arr { opacity: 1; width: auto; margin-left: 0; transform: none; }
 /* Top row sits IN FRONT of the bottom row so all four labels (which live
    at each card's bottom edge, where the lower cards overlap) stay legible. */
 .aura-card-barber { left: 1%;  top: 2%;    transform: rotate(-6deg);  z-index: 4; }
@@ -1003,7 +1021,7 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
   .aura-card-barber, .aura-card-tan, .aura-card-wax, .aura-card-lashes { transform: none; }
   .aura-card:nth-child(odd)  { transform: rotate(-1.5deg); }
   .aura-card:nth-child(even) { transform: rotate(1.5deg); }
-  .aura-card-label { left: 9px; bottom: 6px; font-size: 8px; letter-spacing: 0.1em; }
+  .aura-card-label { left: 11px; bottom: 11px; padding: 4px 9px; font-size: 8px; letter-spacing: 0.1em; }
   .aura-card-arr { display: none; }
 }
 /* Very short phones: drop the strip so the CTA stays comfortably placed */
