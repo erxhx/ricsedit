@@ -967,10 +967,12 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
 .aura-card-num { opacity: 0.45; }
 .aura-card-arr { opacity: 0; transform: translateX(-4px); transition: opacity 0.3s, transform 0.3s; }
 .aura-card:hover .aura-card-arr { opacity: 1; transform: none; }
-.aura-card-barber { left: 1%;  top: 2%;    transform: rotate(-6deg);  z-index: 2; }
-.aura-card-tan    { right: 2%; top: 0;     transform: rotate(4.5deg); z-index: 1; }
-.aura-card-wax    { left: 6%;  bottom: 0;  transform: rotate(3deg);   z-index: 4; }
-.aura-card-lashes { right: 5%; bottom: 3%; transform: rotate(-3.5deg); z-index: 3; }
+/* Top row sits IN FRONT of the bottom row so all four labels (which live
+   at each card's bottom edge, where the lower cards overlap) stay legible. */
+.aura-card-barber { left: 1%;  top: 2%;    transform: rotate(-6deg);  z-index: 4; }
+.aura-card-tan    { right: 2%; top: 0;     transform: rotate(4.5deg); z-index: 3; }
+.aura-card-wax    { left: 6%;  bottom: 0;  transform: rotate(3deg);   z-index: 2; }
+.aura-card-lashes { right: 5%; bottom: 3%; transform: rotate(-3.5deg); z-index: 1; }
 .aura-card:hover,
 .aura-card:focus-visible {
   transform: rotate(0deg) translateY(-10px) scale(1.03);
