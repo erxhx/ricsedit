@@ -901,27 +901,27 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
 .aura-a {
   width: 95vmax; height: 95vmax; left: -30vmax; top: -35vmax;
   background: radial-gradient(circle at 50% 50%, rgba(243,158,182,0.75) 0%, rgba(243,158,182,0) 62%);
-  animation: aura-drift-a 46s ease-in-out infinite alternate;
+  animation: aura-drift-a 30s ease-in-out infinite alternate;
 }
 .aura-b {
   width: 85vmax; height: 85vmax; right: -32vmax; top: -12vmax;
   background: radial-gradient(circle at 50% 50%, rgba(235,182,96,0.7) 0%, rgba(235,182,96,0) 60%);
-  animation: aura-drift-b 58s ease-in-out infinite alternate;
+  animation: aura-drift-b 38s ease-in-out infinite alternate;
 }
 .aura-c {
   width: 75vmax; height: 75vmax; left: 4vmax; bottom: -34vmax;
   background: radial-gradient(circle at 50% 50%, rgba(187,155,222,0.7) 0%, rgba(187,155,222,0) 60%);
-  animation: aura-drift-c 52s ease-in-out infinite alternate;
+  animation: aura-drift-c 34s ease-in-out infinite alternate;
 }
 .aura-d {
   width: 70vmax; height: 70vmax; right: -18vmax; bottom: -30vmax;
   background: radial-gradient(circle at 50% 50%, rgba(157,201,160,0.65) 0%, rgba(157,201,160,0) 60%);
-  animation: aura-drift-d 64s ease-in-out infinite alternate;
+  animation: aura-drift-d 42s ease-in-out infinite alternate;
 }
-@keyframes aura-drift-a { from { transform: translate(0,0) scale(1); }    to { transform: translate(6vmax,4vmax) scale(1.08); } }
-@keyframes aura-drift-b { from { transform: translate(0,0) scale(1.05); } to { transform: translate(-5vmax,6vmax) scale(0.96); } }
-@keyframes aura-drift-c { from { transform: translate(0,0) scale(0.98); } to { transform: translate(4vmax,-5vmax) scale(1.06); } }
-@keyframes aura-drift-d { from { transform: translate(0,0) scale(1.02); } to { transform: translate(-4vmax,-6vmax) scale(1.1); } }
+@keyframes aura-drift-a { from { transform: translate(0,0) scale(1); }    to { transform: translate(18vmax,12vmax) scale(1.18); } }
+@keyframes aura-drift-b { from { transform: translate(0,0) scale(1.08); } to { transform: translate(-16vmax,16vmax) scale(0.9); } }
+@keyframes aura-drift-c { from { transform: translate(0,0) scale(0.95); } to { transform: translate(14vmax,-14vmax) scale(1.15); } }
+@keyframes aura-drift-d { from { transform: translate(0,0) scale(1.05); } to { transform: translate(-14vmax,-16vmax) scale(1.2); } }
 @media (prefers-reduced-motion: reduce) { .aura-blob { animation: none; } }
 
 .hero-eyebrow {
