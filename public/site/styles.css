@@ -945,11 +945,15 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
 }
 .aura-card {
   position: absolute; width: 47%; aspect-ratio: 3 / 4;
-  padding: 0; overflow: hidden;
-  background: transparent;
-  border: 1px solid rgba(20, 18, 16, 0.06);
+  padding: 10px 10px 32px; overflow: hidden;
+  /* Transparent fill + the sheen overlay reads as a frosted-glass frame
+     (matches the mobile strip); a hint of paper keeps it consistent over
+     the more varied desktop aura behind it. */
+  background: rgba(255, 253, 248, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: 16px;
-  box-shadow: 0 24px 60px -18px rgba(20,18,16,0.32), 0 6px 18px rgba(20,18,16,0.1);
+  box-shadow: 0 24px 60px -18px rgba(20,18,16,0.32), 0 6px 18px rgba(20,18,16,0.1),
+              inset 0 1px 0 rgba(255,255,255,0.5);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition: transform 0.45s cubic-bezier(0.22,1,0.36,1), box-shadow 0.45s ease;
@@ -965,7 +969,7 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
 }
 .aura-card img {
   width: 100%; height: 100%; object-fit: cover;
-  border-radius: 16px; display: block;
+  border-radius: 9px; display: block;
 }
 /* Liquid-glass label chip — floats over the photo so the backdrop blur
    has real content to frost. Smoked tint keeps light text legible over
