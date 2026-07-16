@@ -145,8 +145,8 @@ export const WAX_GROUPS: ServiceGroup[] = [
   {
     name: 'Brows + Face',
     services: [
-      { id: 'brow-wax',   name: 'Brow Wax & Shape', category: 'wax', durationMinutes: 20, price: 25, description: 'Map, wax, tweeze, finish.',                                    requiresWaiver: true },
-      { id: 'brow-tint',  name: 'Brow Tint',         category: 'wax', durationMinutes: 15, price: 15, description: 'Define and deepen.',                                           requiresWaiver: true },
+      { id: 'brow-wax',      name: 'Brow Wax & Shape',   category: 'wax', durationMinutes: 20, price: 25, description: 'Map, wax, tweeze, finish.',                                requiresWaiver: true },
+      { id: 'brow-wax-tint', name: 'Brow Wax and Tint',  category: 'wax', durationMinutes: 30, price: 35, description: 'Shape and define in one visit.',                            requiresWaiver: true },
       { id: 'lash-tint',  name: 'Lash Tint',         category: 'wax', durationMinutes: 20, price: 25, description: 'No mascara required.',                                         requiresWaiver: true },
       { id: 'upper-lip',  name: 'Upper Lip',          category: 'wax', durationMinutes: 10, price: 10, description: '',                                                             requiresWaiver: true },
       { id: 'chin',       name: 'Chin',               category: 'wax', durationMinutes: 10, price: 15, description: '',                                                             requiresWaiver: true },
@@ -160,6 +160,7 @@ export const WAX_GROUPS: ServiceGroup[] = [
       { id: 'half-arm',   name: 'Half Arm',   category: 'wax', durationMinutes: 20, price: 25,  description: 'Upper or lower.',                 requiresWaiver: true },
       { id: 'full-arm',   name: 'Full Arm',   category: 'wax', durationMinutes: 30, price: 45,  description: '',                                requiresWaiver: true },
       { id: 'stomach',    name: 'Stomach',    category: 'wax', durationMinutes: 20, price: 25,  description: '',                                requiresWaiver: true },
+      { id: 'tummy-trail', name: 'Tummy Trail', category: 'wax', durationMinutes: 10, price: 5, description: 'Quick add-on.',                   requiresWaiver: true },
       { id: 'chest',      name: 'Chest',      category: 'wax', durationMinutes: 25, price: 35,  description: '',                                requiresWaiver: true },
       { id: 'half-back',  name: 'Half Back',  category: 'wax', durationMinutes: 20, price: 30,  description: 'Upper or lower.',                 requiresWaiver: true },
       { id: 'full-back',  name: 'Full Back',  category: 'wax', durationMinutes: 35, price: 50,  description: '',                                requiresWaiver: true },

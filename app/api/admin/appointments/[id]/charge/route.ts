@@ -10,7 +10,7 @@ import { cookies } from 'next/headers';
 import { verifySession, SESSION_COOKIE } from '@/lib/admin-auth';
 import { dbGetAppointmentById } from '@/lib/db';
 import { db } from '@/lib/supabase';
-import { squareConfigured, chargeDeposit } from '@/lib/square';
+import { squareConfigured, chargeDeposit, createItemizedOrder } from '@/lib/square';
 import { sendNoShowFeeNotification } from '@/lib/notifications';
 
 const MIN_CENTS = 100;      // $1
@@ -47,12 +47,28 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
 
   try {
+    // Itemized order (best-effort) so the fee is labeled in Square reports.
+    let orderId: string | undefined;
+    try {
+      const order = await createItemizedOrder({
+        lines: [{ name: `No-show fee — ${apt.service}`.slice(0, 120), amountCents }],
+        applyTaxes: false,
+        customerId: apt.payment.customerId,
+        note: apt.date,
+        idempotencyKey: `noshow-order-${apt.id}`,
+      });
+      orderId = order.orderId;
+    } catch (orderErr) {
+      console.error('[charge] order creation failed, charging without order', orderErr);
+    }
+
     const charged = await chargeDeposit({
       sourceId: apt.payment.cardId,   // card on file — merchant-initiated
       customerId: apt.payment.customerId,
       amountCents,
       note: `No-show fee — ${apt.service} ${apt.date} (${apt.clientName})`,
       idempotencyKey: `noshow-${apt.id}`,
+      orderId,
     });
 
     const noShowCharge = {

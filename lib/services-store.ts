@@ -114,6 +114,37 @@ function applyDurationMigration(store: ServicesData): boolean {
 }
 
 /**
+ * July 2026 menu reconciliation against the Square catalog (source of truth):
+ * the wax menu's $15 Brow Tint never matched a real service — the studio
+ * sells "Brow wax and tint" at $35. Tummy Trail ($5) joins the Body group.
+ * The lash menu's $75 Brow Tint is a different service and stays.
+ */
+function applyMenuMigrationJul2026(store: ServicesData): boolean {
+  let changed = false;
+  for (const group of store.waxGroups) {
+    const tintIdx = group.services.findIndex((s) => s.id === 'brow-tint');
+    if (tintIdx !== -1) {
+      group.services.splice(tintIdx, 1, {
+        id: 'brow-wax-tint', name: 'Brow Wax and Tint', category: 'wax',
+        durationMinutes: 30, price: 35, description: 'Shape and define in one visit.',
+        requiresWaiver: true,
+      });
+      changed = true;
+    }
+    if (group.name === 'Body' && !group.services.some((s) => s.id === 'tummy-trail')) {
+      const stomachIdx = group.services.findIndex((s) => s.id === 'stomach');
+      group.services.splice(stomachIdx === -1 ? group.services.length : stomachIdx + 1, 0, {
+        id: 'tummy-trail', name: 'Tummy Trail', category: 'wax',
+        durationMinutes: 10, price: 5, description: 'Quick add-on.',
+        requiresWaiver: true,
+      });
+      changed = true;
+    }
+  }
+  return changed;
+}
+
+/**
  * Async read — checks Supabase first so persisted edits survive server restarts.
  * Falls back to static defaults if the settings table doesn't exist yet.
  */
@@ -130,7 +161,8 @@ export async function getServicesStoreAsync(): Promise<ServicesData> {
       const m1 = applyWaiverMigration(global.__servicesStore);
       const m2 = applyDurationMigration(global.__servicesStore);
       const m3 = applyCategoryMigration(global.__servicesStore);
-      if (m1 || m2 || m3) saveServicesStore().catch(() => {});
+      const m4 = applyMenuMigrationJul2026(global.__servicesStore);
+      if (m1 || m2 || m3 || m4) saveServicesStore().catch(() => {});
       return global.__servicesStore;
     }
   } catch {

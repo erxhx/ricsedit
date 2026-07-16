@@ -10,9 +10,9 @@ import { db } from '@/lib/supabase';
 import { validateSlot } from '@/lib/booking-validation';
 import { sendPushToStaff, fmtWhen } from '@/lib/push';
 import { getPaymentSettings, amountDueCents, prepayAmountCents, clampTipCents } from '@/lib/payment-settings';
-import { taxBreakdownCents } from '@/lib/tax';
+import { taxBreakdownCents, isProductItem } from '@/lib/tax';
 import {
-  squareConfigured, findOrCreateCustomer, chargeDeposit, storeCardOnFile, refundPayment,
+  squareConfigured, findOrCreateCustomer, chargeDeposit, storeCardOnFile, refundPayment, createItemizedOrder,
 } from '@/lib/square';
 import type { PaymentRecord } from '@/lib/square';
 import { sendBookingConfirmation } from '@/lib/notifications';
@@ -254,14 +254,45 @@ export async function POST(req: NextRequest) {
         const customerId = await findOrCreateCustomer(clientName, client.email.trim(), client.phone.trim());
 
         if (baseCents > 0) {
+          // Itemized order so the charge reconciles line-by-line in Square
+          // reporting. Full prepay lists every service with taxes; a partial
+          // deposit is one untaxed line (tax settles at the POS).
+          let orderId: string | undefined;
+          let chargeCents = baseCents + tax.taxCents;
+          try {
+            const order = await createItemizedOrder({
+              lines: isFullPrepay
+                ? resolved.filter((r) => r.price > 0).map((r) => ({
+                    // isProductItem (not the raw flag): DB catalogue rows
+                    // predate isProduct, so id-based fallback must apply.
+                    name: r.name, amountCents: Math.round(r.price * 100), isProduct: isProductItem(r),
+                  }))
+                : [{ name: `Booking deposit — ${serviceName}`.slice(0, 120), amountCents: baseCents }],
+              applyTaxes: isFullPrepay,
+              customerId,
+              note: `${dateStr} ${startTime}`,
+              idempotencyKey: `order-${body.payment.idempotencyKey}`,
+            });
+            orderId = order.orderId;
+            if (order.totalCents !== chargeCents) {
+              // Square's tax rounding wins — the payment must equal the order.
+              console.warn(`[booking/create] order total ${order.totalCents} != local calc ${chargeCents}`);
+              chargeCents = order.totalCents;
+            }
+          } catch (orderErr) {
+            // The order is bookkeeping sugar — never fail a booking over it.
+            console.error('[booking/create] order creation failed, charging without order', orderErr);
+          }
+
           paymentRecord = await chargeDeposit({
             sourceId: body.payment.token,
             verificationToken: body.payment.verificationToken,
-            amountCents: baseCents + tax.taxCents,
+            amountCents: chargeCents,
             tipCents,
             note: `${serviceName} — ${dateStr} ${startTime} (${clientName})`,
             customerId,
             idempotencyKey: body.payment.idempotencyKey,
+            orderId,
           });
           paymentRecord.prepaid = isFullPrepay;
           if (tax.taxCents > 0) {

@@ -81,6 +81,57 @@ export async function findOrCreateCustomer(
  * `idempotencyKey` must be unique per booking attempt (we pass one from the
  * client so retries of the same submit can't double-charge).
  */
+/** A line on an itemized Square order (pre-tax price). */
+export interface OrderLine {
+  name: string;
+  amountCents: number;
+  isProduct?: boolean;  // PST (7%) applies in addition to GST
+}
+
+/**
+ * Create an itemized Order so online charges show up line-itemed in Square
+ * reporting (services, taxes, tips broken out) instead of as lump payments.
+ * With `applyTaxes`, GST 5% covers the whole order and PST 7% is scoped to
+ * product lines. Returns Square's computed total — the payment must charge
+ * exactly this amount.
+ */
+export async function createItemizedOrder(opts: {
+  lines: OrderLine[];
+  applyTaxes: boolean;
+  customerId?: string;
+  note?: string;
+  idempotencyKey: string;
+}): Promise<{ orderId: string; totalCents: number }> {
+  const client = squareClient();
+  const anyProducts = opts.applyTaxes && opts.lines.some((l) => l.isProduct);
+  const res = await client.orders.create({
+    idempotencyKey: opts.idempotencyKey,
+    order: {
+      locationId: process.env.SQUARE_LOCATION_ID!,
+      customerId: opts.customerId,
+      referenceId: opts.note?.slice(0, 40),
+      lineItems: opts.lines.map((l, i) => ({
+        uid: `li-${i}`,
+        name: l.name.slice(0, 500),
+        quantity: '1',
+        basePriceMoney: { amount: BigInt(l.amountCents), currency: 'CAD' as const },
+        ...(anyProducts && l.isProduct ? { appliedTaxes: [{ uid: `at-${i}`, taxUid: 'pst' }] } : {}),
+      })),
+      ...(opts.applyTaxes ? {
+        taxes: [
+          { uid: 'gst', name: 'GST', type: 'ADDITIVE' as const, percentage: '5', scope: 'ORDER' as const },
+          ...(anyProducts
+            ? [{ uid: 'pst', name: 'PST', type: 'ADDITIVE' as const, percentage: '7', scope: 'LINE_ITEM' as const }]
+            : []),
+        ],
+      } : {}),
+    },
+  });
+  const order = res.order;
+  if (!order?.id || order.totalMoney?.amount == null) throw new Error('Order creation failed');
+  return { orderId: order.id, totalCents: Number(order.totalMoney.amount) };
+}
+
 export async function chargeDeposit(opts: {
   sourceId: string;             // card token from the SDK
   verificationToken?: string;   // buyer-verification (SCA) token
@@ -89,6 +140,7 @@ export async function chargeDeposit(opts: {
   note: string;
   customerId?: string;
   idempotencyKey: string;
+  orderId?: string;             // ties the payment to an itemized order
 }): Promise<PaymentRecord> {
   const client = squareClient();
   const tip = opts.tipCents && opts.tipCents > 0 ? opts.tipCents : 0;
@@ -98,6 +150,7 @@ export async function chargeDeposit(opts: {
     verificationToken: opts.verificationToken,
     customerId: opts.customerId,
     locationId: process.env.SQUARE_LOCATION_ID,
+    orderId: opts.orderId,
     note: opts.note.slice(0, 500),
     // Square charges amountMoney + tipMoney; keep them separate so tips are
     // categorized as tips in Square reporting.
