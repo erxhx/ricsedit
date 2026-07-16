@@ -141,6 +141,21 @@ function applyMenuMigrationJul2026(store: ServicesData): boolean {
       changed = true;
     }
   }
+
+  // Combine the two disposable garments into one $5 add-on (one Square item
+  // covers both at the POS). Keeps the addon-undies id.
+  const braIdx = store.tanAddons.findIndex((s) => s.id === 'addon-bra');
+  if (braIdx !== -1) {
+    store.tanAddons.splice(braIdx, 1);
+    changed = true;
+  }
+  const undies = store.tanAddons.find((s) => s.id === 'addon-undies');
+  if (undies && undies.name !== 'Disposable Undies + Bra') {
+    undies.name = 'Disposable Undies + Bra';
+    undies.description = 'Undies, bandeau bra, or both.';
+    changed = true;
+  }
+
   return changed;
 }
 

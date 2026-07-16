@@ -41,6 +41,7 @@ const SYNONYMS: Record<string, string> = {
   'rapid full body':                'rapid tan',
   'face tan':                       'face glow',
   'disposable undies':              'dispo undie',
+  'disposable undies plus bra':     'dispo undie',   // combined menu item, one Square item
   'freshen up haircut':             'freshen up',
   'freshen up haircut plus beard':  'freshen up plus beard',
   'full back':                      'back',           // Square: "Back wax" (norm strips 'wax')
@@ -48,10 +49,10 @@ const SYNONYMS: Record<string, string> = {
   'prep plus lock':                 'prep lock',      // Square: "prep and lock"
 };
 
-/** Site service ids excluded from sync. lash-brow-tint: Square still lists
- * $40 but the studio price is $75 — Eric is updating the Square item; remove
- * this once the dashboard shows $75 so the match takes over. */
-const SYNC_EXCLUDE = new Set(['lash-brow-tint']);
+/** Site service ids excluded from sync (none currently). The lash Brow Tint
+ * was parked here until Eric confirmed the Square price ($40) is correct —
+ * the sync now owns it like everything else. */
+const SYNC_EXCLUDE = new Set<string>([]);
 
 /** Light normalization: case/punctuation only. "Brow wax and tint" and
  * "Brow tint" stay DISTINCT here — needed because stripping filler words

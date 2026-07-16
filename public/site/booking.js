@@ -15,8 +15,7 @@
       { id: "face", name: "Face Tan", desc: "Face and neck. Skincare-grade glow.", price: 15, duration: 20 }
     ];
     var BK_TAN_ADDONS = [
-      { id: "bra", name: "Disposable Bra", desc: "Bandeau style.", price: 5, duration: 0 },
-      { id: "undies", name: "Disposable Undies", desc: "", price: 5, duration: 0 },
+      { id: "undies", name: "Disposable Undies + Bra", desc: "Undies, bandeau bra, or both.", price: 5, duration: 0 },
       { id: "prep-lock", name: "Prep + Lock", desc: "Two-step longevity treatment \u2014 pH-balance prep + post-tan barrier lock. Extends your glow.", price: 20, duration: 20 }
     ];
     var BK_WAX_GROUPS = [
