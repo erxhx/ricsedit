@@ -185,8 +185,11 @@ function emailLayout(bodyHtml: string): string {
     <tr><td align="center" style="padding:28px 16px 44px;">
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;">
         <tr>
-          <td style="background:#141210;border-radius:14px;padding:22px 26px;text-align:center;">
-            <img src="https://www.editstudio.space/assets/logo-white.png" alt="Edit Studio" width="86" style="display:inline-block;height:auto;" />
+          <td>
+            <!-- Header baked into a single image (band + logo): Gmail's dark
+                 mode inverts CSS backgrounds but never image pixels, so this
+                 is the only construction that looks identical in every mode. -->
+            <img src="https://www.editstudio.space/assets/email-header.png" alt="Edit Studio" width="480" style="display:block;width:100%;max-width:480px;height:auto;" />
           </td>
         </tr>
         <tr>
