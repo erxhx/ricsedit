@@ -76,6 +76,65 @@ function toE164(phone: string): string | null {
 
 // ── Email primitives ──────────────────────────────────────────────────────────
 
+// ── Email design system ───────────────────────────────────────────────────────
+// Editorial ink-on-paper, matching the site: mono uppercase eyebrows with the
+// lime dot, serif italic headlines ("Looks good?" voice), hairline-ruled
+// detail rows, solid-ink CTA. Dark-mode strategy: the header band is ALREADY
+// ink (#141210) with a paper logo, so Gmail's forced dark transform leaves it
+// alone (dark stays dark) — the logo can never vanish again. The rest is a
+// flat paper surface that inverts gracefully.
+
+const FONT_BODY = `'Inter Tight',Helvetica,Arial,sans-serif`;
+const FONT_MONO = `'SF Mono','Courier New',monospace`;
+const FONT_DISPLAY = `Georgia,'Times New Roman',serif`;
+
+/** Mono uppercase kicker with the lime dot — one per email, above the h1. */
+/** Compose a full email for the admin preview endpoint (and tests). */
+export function buildPreviewEmail(kind: 'confirmation' | 'owner' | 'noshow-fee', apt: Appointment): string {
+  if (kind === 'owner') {
+    return emailLayout(`
+      ${eyebrow('New booking')}
+      ${h1(`${firstName(apt.clientName)} just booked.`)}
+      ${para(apt.clientName + (apt.payment?.prepaid ? ' — paid in full online.' : ''))}
+      ${aptDetailsHtml(apt)}
+      <p style="margin:8px 0 0;font-family:${FONT_BODY};font-size:12px;color:#7a7268;">Email: <a href="mailto:${apt.clientEmail}" style="color:#7a7268;">${apt.clientEmail}</a></p>
+      <p style="margin:4px 0 0;font-family:${FONT_BODY};font-size:12px;color:#7a7268;">Phone: <a href="tel:${apt.clientPhone}" style="color:#7a7268;">${apt.clientPhone}</a></p>
+    `);
+  }
+  if (kind === 'noshow-fee') {
+    return emailLayout(`
+      ${eyebrow('Payment notice')}
+      ${h1('No-show fee charged.')}
+      ${para(`Hi ${firstName(apt.clientName)}, as per our cancellation policy, a no-show fee of <strong>$40.00</strong> was charged to your card on file ending in 5858 for the missed appointment below.`)}
+      ${aptDetailsHtml(apt)}
+      ${muted('Think this was a mistake? Call or text us at 778 535 3348 and we’ll sort it out.')}
+      ${ctaBtn('Rebook Online', 'https://www.editstudio.space')}
+    `);
+  }
+  return emailLayout(`
+    ${eyebrow('Booking confirmed')}
+    ${h1(`You're booked in.`)}
+    ${para(`Hi ${firstName(apt.clientName)}, your appointment is confirmed. We'll see you soon.`)}
+    ${aptDetailsHtml(apt)}
+    ${ctaBtn('Manage appointment', 'https://www.editstudio.space')}
+    ${muted('Need to cancel or reschedule? Use the link above up to 3 hours before your appointment.')}
+  `);
+}
+
+function eyebrow(text: string): string {
+  return `<p style="margin:0 0 14px;font-family:${FONT_MONO};font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#7a7268;">
+    <span style="color:#93b31c;">&#9679;</span>&nbsp;&nbsp;${text}</p>`;
+}
+
+/** Serif italic headline — the site's "Looks good?" voice. */
+function h1(text: string): string {
+  return `<h1 class="es-ink" style="margin:0 0 10px;font-family:${FONT_DISPLAY};font-style:italic;font-weight:400;font-size:30px;line-height:1.1;color:#141210;letter-spacing:-0.01em;">${text}</h1>`;
+}
+
+function para(text: string): string {
+  return `<p class="es-soft" style="margin:0;font-family:${FONT_BODY};font-size:14px;line-height:1.6;color:#4a4540;">${text}</p>`;
+}
+
 function aptDetailsHtml(apt: Appointment): string {
   const rows: [string, string][] = [
     ['Service', apt.service],
@@ -84,14 +143,19 @@ function aptDetailsHtml(apt: Appointment): string {
     ['With',    staffName(apt.staff)],
     ['Total',   `$${apt.price}`],
   ];
-  const rowHtml = rows.map(([label, value], i) => `
-    <tr style="background:${i % 2 === 0 ? '#f7f3eb' : '#efeae0'};">
-      <td style="padding:${i === 0 ? '16px' : '12px'} 20px ${i === rows.length - 1 ? '16px' : '12px'};font-family:'Inter Tight',Helvetica,sans-serif;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#7a7268;">${label}</td>
-      <td style="padding:${i === 0 ? '16px' : '12px'} 20px ${i === rows.length - 1 ? '16px' : '12px'};font-family:'Inter Tight',Helvetica,sans-serif;font-size:14px;color:#141210;text-align:right;">${value}</td>
-    </tr>`).join('');
+  const last = rows.length - 1;
+  const rowHtml = rows.map(([label, value], i) => {
+    const bordCls = i === 0 || i === last ? 'es-bord-ink' : 'es-rule';
+    const bordCol = i === 0 || i === last ? '#141210' : '#dbd5c8';
+    return `
+    <tr>
+      <td class="es-soft ${bordCls}" style="padding:13px 2px;border-top:1px solid ${bordCol};font-family:${FONT_MONO};font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#7a7268;white-space:nowrap;">${label}</td>
+      <td class="es-ink ${bordCls}" style="padding:13px 2px;border-top:1px solid ${bordCol};font-family:${FONT_BODY};font-size:${i === last ? 16 : 14}px;${i === last ? 'font-weight:600;' : ''}color:#141210;text-align:right;">${value}</td>
+    </tr>`;
+  }).join('');
 
   return `
-    <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #dbd5c8;border-radius:8px;overflow:hidden;margin:24px 0;">
+    <table width="100%" cellpadding="0" cellspacing="0" class="es-bord-ink" style="margin:26px 0 24px;border-bottom:1px solid #141210;">
       ${rowHtml}
     </table>`;
 }
@@ -102,31 +166,43 @@ function emailLayout(bodyHtml: string): string {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
   <title>Edit Studio</title>
+  <style>
+    :root { color-scheme: light dark; supported-color-schemes: light dark; }
+    @media (prefers-color-scheme: dark) {
+      .es-paper    { background:#1c1a17 !important; }
+      .es-ink      { color:#f0ece3 !important; }
+      .es-soft     { color:#b5aea3 !important; }
+      .es-rule     { border-color:#3d3831 !important; }
+      .es-bord-ink { border-color:#f0ece3 !important; }
+    }
+  </style>
 </head>
-<body style="margin:0;padding:0;background:#efeae0;font-family:'Inter Tight',Helvetica,Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#efeae0;padding:40px 16px;">
-    <tr><td align="center">
+<body class="es-paper" style="margin:0;padding:0;background:#f7f3eb;font-family:${FONT_BODY};">
+  <table width="100%" cellpadding="0" cellspacing="0" class="es-paper" style="background:#f7f3eb;">
+    <tr><td align="center" style="padding:28px 16px 44px;">
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;">
         <tr>
-          <td style="padding-bottom:24px;text-align:center;">
-            <img src="https://www.editstudio.space/assets/logo-black.png" alt="Edit Studio" width="100" style="display:inline-block;height:auto;" />
+          <td style="background:#141210;border-radius:14px;padding:22px 26px;text-align:center;">
+            <img src="https://www.editstudio.space/assets/logo-white.png" alt="Edit Studio" width="86" style="display:inline-block;height:auto;" />
           </td>
         </tr>
         <tr>
-          <td style="background:#f7f3eb;border:1px solid #dbd5c8;border-radius:12px;padding:32px 28px;">
+          <td class="es-card" style="padding:34px 26px 8px;">
             ${bodyHtml}
           </td>
         </tr>
         <tr>
-          <td style="padding-top:24px;text-align:center;">
-            <p style="font-family:'Inter Tight',Helvetica,sans-serif;font-size:11px;color:#7a7268;margin:0 0 4px;">
-              Edit Studio · 1846 Oak Bay Avenue, Victoria BC
+          <td class="es-rule" style="padding:22px 26px 0;border-top:1px solid #dbd5c8;">
+            <p class="es-soft" style="font-family:${FONT_MONO};font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:#7a7268;margin:0 0 5px;text-align:center;">
+              Edit Studio &nbsp;&middot;&nbsp; 1846 Oak Bay Avenue, Victoria BC
             </p>
-            <p style="font-family:'Inter Tight',Helvetica,sans-serif;font-size:11px;color:#7a7268;margin:0;">
-              <a href="tel:+17785353348" style="color:#7a7268;text-decoration:none;">778 535 3348</a>
-              &nbsp;·&nbsp;
-              <a href="https://www.editstudio.space" style="color:#7a7268;text-decoration:none;">editstudio.space</a>
+            <p class="es-soft" style="font-family:${FONT_MONO};font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:#7a7268;margin:0;text-align:center;">
+              <a href="tel:+17785353348" class="es-soft" style="color:#7a7268;text-decoration:none;">778 535 3348</a>
+              &nbsp;&middot;&nbsp;
+              <a href="https://www.editstudio.space" class="es-soft" style="color:#7a7268;text-decoration:none;">editstudio.space</a>
             </p>
           </td>
         </tr>
@@ -138,14 +214,19 @@ function emailLayout(bodyHtml: string): string {
 }
 
 function ctaBtn(text: string, href: string): string {
-  return `<a href="${href}" style="display:block;text-align:center;background:#141210;color:#efeae0;font-family:'Inter Tight',Helvetica,sans-serif;font-size:13px;font-weight:500;letter-spacing:0.04em;text-decoration:none;padding:14px 24px;border-radius:8px;margin-top:8px;">${text}</a>`;
+  return `<a href="${href}" style="display:block;text-align:center;background:#141210;color:#f7f3eb;font-family:${FONT_MONO};font-size:12px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;text-decoration:none;padding:16px 24px;border-radius:999px;margin-top:10px;">${text}</a>`;
 }
 
 function muted(text: string): string {
-  return `<p style="margin:18px 0 0;font-family:'Inter Tight',Helvetica,sans-serif;font-size:12px;color:#7a7268;text-align:center;">${text}</p>`;
+  return `<p class="es-soft" style="margin:18px 0 0;font-family:${FONT_BODY};font-size:12px;line-height:1.6;color:#7a7268;text-align:center;">${text}</p>`;
 }
 
 // ── Low-level send helpers ────────────────────────────────────────────────────
+
+/** Exported for the admin email-preview endpoint. */
+export async function sendRawEmail(to: string, subject: string, html: string): Promise<void> {
+  return sendEmail(to, subject, html);
+}
 
 async function sendEmail(to: string, subject: string, html: string): Promise<void> {
   if (!resendClient || !to?.includes('@')) return;
@@ -178,20 +259,22 @@ export async function sendBookingConfirmation(apt: Appointment): Promise<void> {
   const url = manageUrl(apt.manageToken);
 
   const clientHtml = emailLayout(`
-    <h1 style="margin:0 0 6px;font-family:'Inter Tight',Helvetica,sans-serif;font-size:22px;font-weight:600;color:#141210;letter-spacing:-0.02em;">You're booked in.</h1>
-    <p style="margin:0 0 0;font-family:'Inter Tight',Helvetica,sans-serif;font-size:14px;color:#4a4540;">Hi ${firstName(apt.clientName)}, your appointment is confirmed.</p>
+    ${eyebrow('Booking confirmed')}
+    ${h1(`You're booked in.`)}
+    ${para(`Hi ${firstName(apt.clientName)}, your appointment is confirmed. We'll see you soon.`)}
     ${aptDetailsHtml(apt)}
-    ${ctaBtn('Manage your appointment →', url)}
+    ${ctaBtn('Manage appointment', url)}
     ${muted('Need to cancel or reschedule? Use the link above up to 3 hours before your appointment.')}
   `);
 
   const ownerHtml = emailLayout(`
-    <h1 style="margin:0 0 6px;font-family:'Inter Tight',Helvetica,sans-serif;font-size:22px;font-weight:600;color:#141210;letter-spacing:-0.02em;">New booking</h1>
-    <p style="margin:0;font-family:'Inter Tight',Helvetica,sans-serif;font-size:14px;color:#4a4540;">${apt.clientName} just booked.</p>
+    ${eyebrow('New booking')}
+    ${h1(`${firstName(apt.clientName)} just booked.`)}
+    ${para(apt.clientName + (apt.payment?.prepaid ? ' — paid in full online.' : apt.payment?.amountCents ? ' — deposit paid online.' : ''))}
     ${aptDetailsHtml(apt)}
-    ${apt.clientEmail ? `<p style="margin:8px 0 0;font-family:'Inter Tight',Helvetica,sans-serif;font-size:12px;color:#7a7268;">Email: <a href="mailto:${apt.clientEmail}" style="color:#9a9085;">${apt.clientEmail}</a></p>` : ''}
-    ${apt.clientPhone ? `<p style="margin:4px 0 0;font-family:'Inter Tight',Helvetica,sans-serif;font-size:12px;color:#7a7268;">Phone: <a href="tel:${apt.clientPhone}" style="color:#9a9085;">${apt.clientPhone}</a></p>` : ''}
-    ${apt.notes       ? `<p style="margin:4px 0 0;font-family:'Inter Tight',Helvetica,sans-serif;font-size:12px;color:#7a7268;">Notes: ${apt.notes}</p>` : ''}
+    ${apt.clientEmail ? `<p style="margin:8px 0 0;font-family:${FONT_BODY};font-size:12px;color:#7a7268;">Email: <a href="mailto:${apt.clientEmail}" style="color:#7a7268;">${apt.clientEmail}</a></p>` : ''}
+    ${apt.clientPhone ? `<p style="margin:4px 0 0;font-family:${FONT_BODY};font-size:12px;color:#7a7268;">Phone: <a href="tel:${apt.clientPhone}" style="color:#7a7268;">${apt.clientPhone}</a></p>` : ''}
+    ${apt.notes       ? `<p style="margin:4px 0 0;font-family:${FONT_BODY};font-size:12px;color:#7a7268;">Notes: ${apt.notes}</p>` : ''}
   `);
 
   const clientSms =
@@ -221,14 +304,13 @@ export async function sendCancellationNotification(
   const isAdmin = cancelledBy === 'admin';
 
   const clientHtml = emailLayout(`
-    <h1 style="margin:0 0 6px;font-family:'Inter Tight',Helvetica,sans-serif;font-size:22px;font-weight:600;color:#141210;letter-spacing:-0.02em;">Appointment cancelled</h1>
-    <p style="margin:0;font-family:'Inter Tight',Helvetica,sans-serif;font-size:14px;color:#4a4540;">
-      ${isAdmin
+    ${eyebrow('Cancellation')}
+    ${h1('Appointment cancelled.')}
+    ${para(isAdmin
         ? `Hi ${firstName(apt.clientName)}, we've had to cancel your upcoming appointment. We're sorry for any inconvenience.`
-        : `Hi ${firstName(apt.clientName)}, your appointment has been cancelled.`}
-    </p>
+        : `Hi ${firstName(apt.clientName)}, your appointment has been cancelled.`)}
     ${aptDetailsHtml(apt)}
-    ${isAdmin && note ? `<p style="margin:0 0 16px;font-family:'Inter Tight',Helvetica,sans-serif;font-size:14px;color:#4a4540;border-left:3px solid #dbd5c8;padding-left:12px;">${note}</p>` : ''}
+    ${isAdmin && note ? `<p style="margin:0 0 16px;font-family:${FONT_BODY};font-size:14px;line-height:1.6;color:#4a4540;border-left:3px solid #dbd5c8;padding-left:12px;">${note}</p>` : ''}
     ${isAdmin
       ? `${muted('Please call or text us at <a href="tel:+17785353348" style="color:#7a7268;">778 535 3348</a> to rebook.')}
          ${ctaBtn('Book Online', 'https://www.editstudio.space')}`
@@ -255,8 +337,9 @@ export async function sendNoShowNotification(
   { sms = false }: { sms?: boolean } = {},
 ): Promise<void> {
   const clientHtml = emailLayout(`
-    <h1 style="margin:0 0 6px;font-family:'Inter Tight',Helvetica,sans-serif;font-size:22px;font-weight:600;color:#141210;letter-spacing:-0.02em;">We missed you.</h1>
-    <p style="margin:0;font-family:'Inter Tight',Helvetica,sans-serif;font-size:14px;color:#4a4540;">Hi ${firstName(apt.clientName)}, we noticed you missed your appointment today — hope everything is okay!</p>
+    ${eyebrow('Missed appointment')}
+    ${h1('We missed you.')}
+    ${para(`Hi ${firstName(apt.clientName)}, we noticed you missed your appointment today — hope everything is okay!`)}
     ${aptDetailsHtml(apt)}
     ${ctaBtn('Rebook Online', 'https://www.editstudio.space')}
     ${muted('Questions? Call or text us at 778 535 3348.')}
@@ -289,8 +372,9 @@ export async function sendNoShowFeeNotification(
   const cardText = last4 ? ` ending in ${last4}` : '';
 
   const clientHtml = emailLayout(`
-    <h1 style="margin:0 0 6px;font-family:'Inter Tight',Helvetica,sans-serif;font-size:22px;font-weight:600;color:#141210;letter-spacing:-0.02em;">No-show fee charged</h1>
-    <p style="margin:0;font-family:'Inter Tight',Helvetica,sans-serif;font-size:14px;color:#4a4540;">Hi ${firstName(apt.clientName)}, as per our cancellation policy, a no-show fee of <strong>${amount}</strong> was charged to your card on file${cardText} for the missed appointment below.</p>
+    ${eyebrow('Payment notice')}
+    ${h1('No-show fee charged.')}
+    ${para(`Hi ${firstName(apt.clientName)}, as per our cancellation policy, a no-show fee of <strong>${amount}</strong> was charged to your card on file${cardText} for the missed appointment below.`)}
     ${aptDetailsHtml(apt)}
     ${muted('Think this was a mistake? Call or text us at 778 535 3348 and we’ll sort it out.')}
     ${ctaBtn('Rebook Online', 'https://www.editstudio.space')}
@@ -307,10 +391,11 @@ export async function sendRescheduleNotification(apt: Appointment): Promise<void
   const url = manageUrl(apt.manageToken);
 
   const clientHtml = emailLayout(`
-    <h1 style="margin:0 0 6px;font-family:'Inter Tight',Helvetica,sans-serif;font-size:22px;font-weight:600;color:#141210;letter-spacing:-0.02em;">Appointment rescheduled</h1>
-    <p style="margin:0;font-family:'Inter Tight',Helvetica,sans-serif;font-size:14px;color:#4a4540;">Hi ${firstName(apt.clientName)}, here are your updated details.</p>
+    ${eyebrow('Updated booking')}
+    ${h1('Appointment rescheduled.')}
+    ${para(`Hi ${firstName(apt.clientName)}, here are your updated details.`)}
     ${aptDetailsHtml(apt)}
-    ${ctaBtn('Manage your appointment →', url)}
+    ${ctaBtn('Manage appointment', url)}
     ${muted('Questions? Call or text us at 778 535 3348.')}
   `);
 
@@ -331,10 +416,11 @@ export async function sendMigrationNotification(apt: Appointment): Promise<void>
   const url = manageUrl(apt.manageToken);
 
   const clientHtml = emailLayout(`
-    <h1 style="margin:0 0 6px;font-family:'Inter Tight',Helvetica,sans-serif;font-size:22px;font-weight:600;color:#141210;letter-spacing:-0.02em;">We've upgraded our booking system.</h1>
-    <p style="margin:0 0 0;font-family:'Inter Tight',Helvetica,sans-serif;font-size:14px;color:#4a4540;">Hi ${firstName(apt.clientName)}, we've made a few improvements to our booking platform behind the scenes. Your appointment is confirmed — your manage link below has been updated.</p>
+    ${eyebrow('Studio news')}
+    ${h1(`We've upgraded our booking system.`)}
+    ${para(`Hi ${firstName(apt.clientName)}, we've made a few improvements to our booking platform behind the scenes. Your appointment is confirmed — your manage link below has been updated.`)}
     ${aptDetailsHtml(apt)}
-    ${ctaBtn('Manage your appointment →', url)}
+    ${ctaBtn('Manage appointment', url)}
     ${muted('Use the link above to cancel or reschedule up to 3 hours before your appointment.')}
   `);
 
@@ -353,10 +439,11 @@ export async function sendReminderNotification(apt: Appointment): Promise<void> 
   const url = manageUrl(apt.manageToken);
 
   const clientHtml = emailLayout(`
-    <h1 style="margin:0 0 6px;font-family:'Inter Tight',Helvetica,sans-serif;font-size:22px;font-weight:600;color:#141210;letter-spacing:-0.02em;">See you tomorrow.</h1>
-    <p style="margin:0;font-family:'Inter Tight',Helvetica,sans-serif;font-size:14px;color:#4a4540;">Hi ${firstName(apt.clientName)}, just a reminder about your appointment.</p>
+    ${eyebrow('Appointment reminder')}
+    ${h1('See you tomorrow.')}
+    ${para(`Hi ${firstName(apt.clientName)}, just a reminder about your appointment.`)}
     ${aptDetailsHtml(apt)}
-    ${ctaBtn('Manage your appointment →', url)}
+    ${ctaBtn('Manage appointment', url)}
     ${muted('Need to cancel or reschedule? Please do so at least a few hours in advance.')}
   `);
 
