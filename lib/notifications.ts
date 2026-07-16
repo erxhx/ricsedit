@@ -59,8 +59,19 @@ function formatTime(timeStr: string): string {
   return `${hour}:${String(m).padStart(2, '0')} ${period}`;
 }
 
+/**
+ * Escape client-typed strings before HTML interpolation. Booking names,
+ * notes, etc. are attacker-controlled: without this, someone booking as
+ * "<a href=…>" gets live markup rendered in the OWNER's notification email.
+ */
+function esc(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+/** First name, HTML-escaped — every call site interpolates into HTML. */
 function firstName(fullName: string): string {
-  return fullName.split(' ')[0] ?? fullName;
+  return esc(fullName.split(' ')[0] ?? fullName);
 }
 
 function manageUrl(token: string): string {
@@ -95,10 +106,10 @@ export function buildPreviewEmail(kind: 'confirmation' | 'owner' | 'noshow-fee',
     return emailLayout(`
       ${eyebrow('New booking')}
       ${h1(`${firstName(apt.clientName)} just booked.`)}
-      ${para(apt.clientName + (apt.payment?.prepaid ? ' — paid in full online.' : ''))}
+      ${para(esc(apt.clientName) + (apt.payment?.prepaid ? ' — paid in full online.' : ''))}
       ${aptDetailsHtml(apt)}
-      <p style="margin:8px 0 0;font-family:${FONT_BODY};font-size:12px;color:#7a7268;">Email: <a href="mailto:${apt.clientEmail}" style="color:#7a7268;">${apt.clientEmail}</a></p>
-      <p style="margin:4px 0 0;font-family:${FONT_BODY};font-size:12px;color:#7a7268;">Phone: <a href="tel:${apt.clientPhone}" style="color:#7a7268;">${apt.clientPhone}</a></p>
+      <p style="margin:8px 0 0;font-family:${FONT_BODY};font-size:12px;color:#7a7268;">Email: <a href="mailto:${esc(apt.clientEmail)}" style="color:#7a7268;">${esc(apt.clientEmail)}</a></p>
+      <p style="margin:4px 0 0;font-family:${FONT_BODY};font-size:12px;color:#7a7268;">Phone: <a href="tel:${esc(apt.clientPhone)}" style="color:#7a7268;">${esc(apt.clientPhone)}</a></p>
     `);
   }
   if (kind === 'noshow-fee') {
@@ -150,7 +161,7 @@ function aptDetailsHtml(apt: Appointment): string {
     return `
     <tr>
       <td class="es-soft ${bordCls}" style="padding:13px 2px;border-top:1px solid ${bordCol};font-family:${FONT_MONO};font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#7a7268;white-space:nowrap;">${label}</td>
-      <td class="es-ink ${bordCls}" style="padding:13px 2px;border-top:1px solid ${bordCol};font-family:${FONT_BODY};font-size:${i === last ? 16 : 14}px;${i === last ? 'font-weight:600;' : ''}color:#141210;text-align:right;">${value}</td>
+      <td class="es-ink ${bordCls}" style="padding:13px 2px;border-top:1px solid ${bordCol};font-family:${FONT_BODY};font-size:${i === last ? 16 : 14}px;${i === last ? 'font-weight:600;' : ''}color:#141210;text-align:right;">${esc(value)}</td>
     </tr>`;
   }).join('');
 
@@ -274,11 +285,11 @@ export async function sendBookingConfirmation(apt: Appointment): Promise<void> {
   const ownerHtml = emailLayout(`
     ${eyebrow('New booking')}
     ${h1(`${firstName(apt.clientName)} just booked.`)}
-    ${para(apt.clientName + (apt.payment?.prepaid ? ' — paid in full online.' : apt.payment?.amountCents ? ' — deposit paid online.' : ''))}
+    ${para(esc(apt.clientName) + (apt.payment?.prepaid ? ' — paid in full online.' : apt.payment?.amountCents ? ' — deposit paid online.' : ''))}
     ${aptDetailsHtml(apt)}
-    ${apt.clientEmail ? `<p style="margin:8px 0 0;font-family:${FONT_BODY};font-size:12px;color:#7a7268;">Email: <a href="mailto:${apt.clientEmail}" style="color:#7a7268;">${apt.clientEmail}</a></p>` : ''}
-    ${apt.clientPhone ? `<p style="margin:4px 0 0;font-family:${FONT_BODY};font-size:12px;color:#7a7268;">Phone: <a href="tel:${apt.clientPhone}" style="color:#7a7268;">${apt.clientPhone}</a></p>` : ''}
-    ${apt.notes       ? `<p style="margin:4px 0 0;font-family:${FONT_BODY};font-size:12px;color:#7a7268;">Notes: ${apt.notes}</p>` : ''}
+    ${apt.clientEmail ? `<p style="margin:8px 0 0;font-family:${FONT_BODY};font-size:12px;color:#7a7268;">Email: <a href="mailto:${esc(apt.clientEmail)}" style="color:#7a7268;">${esc(apt.clientEmail)}</a></p>` : ''}
+    ${apt.clientPhone ? `<p style="margin:4px 0 0;font-family:${FONT_BODY};font-size:12px;color:#7a7268;">Phone: <a href="tel:${esc(apt.clientPhone)}" style="color:#7a7268;">${esc(apt.clientPhone)}</a></p>` : ''}
+    ${apt.notes       ? `<p style="margin:4px 0 0;font-family:${FONT_BODY};font-size:12px;color:#7a7268;">Notes: ${esc(apt.notes)}</p>` : ''}
   `);
 
   const clientSms =
@@ -314,7 +325,7 @@ export async function sendCancellationNotification(
         ? `Hi ${firstName(apt.clientName)}, we've had to cancel your upcoming appointment. We're sorry for any inconvenience.`
         : `Hi ${firstName(apt.clientName)}, your appointment has been cancelled.`)}
     ${aptDetailsHtml(apt)}
-    ${isAdmin && note ? `<p style="margin:0 0 16px;font-family:${FONT_BODY};font-size:14px;line-height:1.6;color:#4a4540;border-left:3px solid #dbd5c8;padding-left:12px;">${note}</p>` : ''}
+    ${isAdmin && note ? `<p style="margin:0 0 16px;font-family:${FONT_BODY};font-size:14px;line-height:1.6;color:#4a4540;border-left:3px solid #dbd5c8;padding-left:12px;">${esc(note)}</p>` : ''}
     ${isAdmin
       ? `${muted('Please call or text us at <a href="tel:+17785353348" style="color:#7a7268;">778 535 3348</a> to rebook.')}
          ${ctaBtn('Book Online', 'https://www.editstudio.space')}`

@@ -26,7 +26,9 @@ export async function GET(req: NextRequest) {
 
   const type = (req.nextUrl.searchParams.get('type') ?? 'confirmation') as
     'confirmation' | 'owner' | 'noshow-fee';
-  const html = buildPreviewEmail(type, SAMPLE);
+  // Optional override — lets us verify escaping of client-typed fields.
+  const name = req.nextUrl.searchParams.get('name');
+  const html = buildPreviewEmail(type, name ? { ...SAMPLE, clientName: name } : SAMPLE);
 
   if (req.nextUrl.searchParams.get('send') === '1') {
     await sendRawEmail(

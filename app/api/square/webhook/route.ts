@@ -36,18 +36,27 @@ function verifySignature(rawBody: string, signature: string | null): boolean {
   }
 }
 
-async function recordEvent(entry: Record<string, unknown>): Promise<void> {
+/**
+ * Record an event, deduplicating by Square's event_id against the stored
+ * buffer — a replayed delivery (valid signature, re-POSTed) is dropped so it
+ * can't re-trigger notifications. Returns false when the event was already
+ * seen.
+ */
+async function recordEventIfNew(eventId: string | undefined, entry: Record<string, unknown>): Promise<boolean> {
   try {
     const { data } = await db.from('settings').select('value').eq('key', EVENTS_KEY).maybeSingle();
-    const list = Array.isArray(data?.value) ? (data.value as unknown[]) : [];
-    list.unshift(entry);
+    const list = Array.isArray(data?.value) ? (data.value as Array<Record<string, unknown>>) : [];
+    if (eventId && list.some((e) => e.eventId === eventId)) return false;
+    list.unshift({ ...entry, eventId });
     await db.from('settings').upsert({
       key: EVENTS_KEY,
       value: list.slice(0, MAX_EVENTS),
       updated_at: new Date().toISOString(),
     });
+    return true;
   } catch (err) {
     console.error('[square/webhook] event record failed', err);
+    return true; // storage hiccup — better to process than to drop silently
   }
 }
 
@@ -79,7 +88,7 @@ export async function POST(request: Request) {
   if (/^(payment|refund|dispute)\./.test(type)) {
     const obj = (event.data?.object ?? {}) as Record<string, Record<string, unknown>>;
     const inner = obj.payment ?? obj.refund ?? obj.dispute ?? {};
-    await recordEvent({
+    const isNew = await recordEventIfNew(event.event_id, {
       type,
       at: event.created_at ?? new Date().toISOString(),
       id: inner.id ?? event.event_id,
@@ -88,6 +97,7 @@ export async function POST(request: Request) {
       status: inner.status ?? null,
       sourceType: inner.source_type ?? null,
     });
+    if (!isNew) return Response.json({ ok: true, replay: true });
 
     if (type.startsWith('dispute.')) {
       const cents = Number((inner.amount_disputed_money as { amount?: number } | undefined)?.amount ?? 0);
