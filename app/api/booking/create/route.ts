@@ -299,6 +299,14 @@ export async function POST(req: NextRequest) {
             paymentRecord.gstCents = tax.gstCents;
             paymentRecord.pstCents = tax.pstCents || undefined;
           }
+          if (!isFullPrepay) {
+            // Partial deposit: precompute what the studio collects at the
+            // POS — tax on the FULL bill (deposits are untaxed) minus the
+            // deposit. Stored now while the exact itemization is in hand.
+            const fullTax = taxBreakdownCents(resolved);
+            paymentRecord.balanceDueCents =
+              Math.round(totalPrice * 100) + fullTax.taxCents - baseCents;
+          }
         }
 
         if (mustStore) {

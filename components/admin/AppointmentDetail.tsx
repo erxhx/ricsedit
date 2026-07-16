@@ -308,6 +308,17 @@ export default function AppointmentDetail({
                 </span>
               </Row>
             )}
+            {/* Deposit bookings: the exact POS amount — tax on the full bill
+                minus the untaxed deposit. One number, no math at the counter. */}
+            {!apt.payment.prepaid && !apt.payment.refunded && (apt.payment.balanceDueCents ?? 0) > 0
+              && apt.status !== 'cancelled' && apt.status !== 'no_show' && (
+              <Row label="Collect at studio">
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, color: 'var(--admin-text)' }}>
+                  ${((apt.payment.balanceDueCents ?? 0) / 100).toFixed(2)}
+                  <span style={{ color: 'var(--admin-muted)', marginLeft: 6, fontSize: 12, fontWeight: 400 }}>incl. tax</span>
+                </span>
+              </Row>
+            )}
             {apt.payment.cardId && (
               <Row label="Card on file" last={!apt.payment.noShowCharge && !showChargeFee}>
                 <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)' }}>

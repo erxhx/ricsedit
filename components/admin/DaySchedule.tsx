@@ -860,8 +860,19 @@ export default function DaySchedule({
                       </>
                     ) : (
                       <>
-                        <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500, color: 'var(--admin-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: apt.notes ? 14 : 0 }}>
-                          {apt.clientName}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, paddingRight: apt.notes ? 14 : 0 }}>
+                          <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500, color: 'var(--admin-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
+                            {apt.clientName}
+                          </span>
+                          {apt.payment?.prepaid && !apt.payment.refunded && (
+                            <span style={{
+                              flexShrink: 0, fontSize: 7, fontWeight: 700,
+                              letterSpacing: '0.08em', lineHeight: 1,
+                              fontFamily: 'var(--font-body)', color: '#2e7d4f',
+                            }}>
+                              PAID
+                            </span>
+                          )}
                         </div>
                         {hPx > 38 && (
                           <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-text2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 1 }}>

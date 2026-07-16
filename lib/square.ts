@@ -47,6 +47,9 @@ export interface PaymentRecord {
   prepaid?: boolean;     // true when this was a full prepayment of the service
   gstCents?: number;     // 5% GST included in amountCents (full prepay only)
   pstCents?: number;     // 7% PST on products, included in amountCents
+  /** Deposits only: what the studio collects at the POS — tax on the full
+   * bill minus the (untaxed) deposit. */
+  balanceDueCents?: number;
 }
 
 /** Find or create a Square Customer for a booking client (matched by email). */

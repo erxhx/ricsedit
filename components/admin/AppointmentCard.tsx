@@ -43,6 +43,18 @@ export default function AppointmentCard({ apt }: { apt: Appointment }) {
           <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-text3)', whiteSpace: 'nowrap' }}>
             ${apt.price}
           </span>
+          {apt.payment?.prepaid && !apt.payment.refunded && (
+            <span style={{
+              flexShrink: 0, alignSelf: 'center',
+              fontFamily: 'var(--font-body)', fontSize: 9, fontWeight: 700,
+              letterSpacing: '0.08em',
+              color: '#2e7d4f', background: 'rgba(52,199,89,0.14)',
+              border: '1px solid rgba(52,199,89,0.35)',
+              borderRadius: 4, padding: '2px 5px', lineHeight: 1,
+            }}>
+              PAID
+            </span>
+          )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
           <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>

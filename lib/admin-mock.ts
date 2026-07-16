@@ -41,6 +41,7 @@ export interface Appointment {
     prepaid?: boolean;    // true when the client paid the service in full at booking
     gstCents?: number;    // GST included in amountCents
     pstCents?: number;    // PST (products) included in amountCents
+    balanceDueCents?: number; // deposits: amount to collect at the studio (incl. tax)
     /** Set when a no-show fee was charged to the card on file. */
     noShowCharge?: {
       paymentId: string;
