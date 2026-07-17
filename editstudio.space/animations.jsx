@@ -402,14 +402,18 @@ function LashAnim({ progress = 0, speed = 1 }) {
   const visLeft = 500 - (W / s) / 2, visW = W / s;
   const visTop  = 700 - (H / s) / 2, visH = H / s;
   const wide = W / H > 1.2;
+  const tall = W / H < 0.8;   // portrait phones (not near-square desktops)
   // diagram bounding box (incl. labels + title) and the eye's visual centre
   const BX0 = 157, BX1 = 883, BY0 = 160, BY1 = 725, EYE_CX = 500;
   const bw = BX1 - BX0, bh = BY1 - BY0;
   const topLimit = visTop + 200 / s + 12;         // below the nav pills
-  const botLimit = visTop + visH * (wide ? 0.60 : 0.50);  // above the headline
+  // Portrait phones give the lash map ~30% more presence (taller band, more
+  // width, higher scale cap). Near-square viewports have proportionally less
+  // height, so they keep the tighter sizing to stay clear of the headline.
+  const botLimit = visTop + visH * (wide ? 0.60 : tall ? 0.58 : 0.50);  // above the headline
   const availH = Math.max(40, botLimit - topLimit);
-  const availW = visW * (wide ? 0.52 : 0.94);
-  const k = Math.max(0.14, Math.min(0.5, availH / bh, availW / bw));
+  const availW = visW * (wide ? 0.52 : tall ? 0.98 : 0.94);
+  const k = Math.max(0.14, Math.min(wide ? 0.5 : tall ? 0.66 : 0.5, availH / bh, availW / bw));
   const ty = topLimit + (availH - k * bh) / 2 - k * BY0;
   const tx = wide
     ? (visLeft + visW * 0.97) - k * BX1            // tuck to the right edge
