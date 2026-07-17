@@ -241,11 +241,15 @@
       )
     );
   }
+  const LASH_MAPS = [
+    { name: "CAT EYE", sub: "8\u201313 MM", zones: [8, 10, 11, 12, 13], clusters: 11, strands: [4, 5], spread: 8, curlK: 46, tipK: 0.16 },
+    { name: "OPEN EYE", sub: "9\u201314 MM", zones: [9, 12, 14, 12, 9], clusters: 11, strands: [4, 5], spread: 7, curlK: 20, tipK: 0.18 },
+    { name: "WISPY", sub: "9\u201313 MM", zones: [10, 13, 9, 13, 10], clusters: 13, strands: [5, 6], spread: 11, curlK: 40, tipK: 0.14, wisp: true },
+    { name: "ANIME", sub: "12\u201316 MM", zones: [12, 15, 13, 16, 14], clusters: 9, strands: [3, 4], spread: 13, curlK: 26, tipK: 0.1, spike: true }
+  ];
   function LashAnim({ progress = 0, speed = 1 }) {
     const t = useTime(speed);
     const A = [260, 600], B = [740, 600], C = [500, 410];
-    const LASH_N = 27;
-    const ZONES = [8, 10, 11, 12, 13];
     const MM = 13;
     const FONT_MAP = "JetBrains Mono, ui-monospace, monospace";
     const qAt = (s2) => {
@@ -257,47 +261,50 @@
       const tl = Math.hypot(tx2, ty2);
       return { px, py, nx: ty2 / tl, ny: -tx2 / tl };
     };
-    const CLUSTERS = 11;
-    const lashes = useMemo(() => {
-      const out = [];
-      for (let k2 = 0; k2 < CLUSTERS; k2++) {
-        const s2 = k2 / (CLUSTERS - 1);
-        const zone = Math.min(ZONES.length - 1, Math.floor(s2 * ZONES.length));
+    const maps = useMemo(() => LASH_MAPS.map((m) => {
+      const nz = m.zones.length;
+      const lashes = [];
+      for (let k2 = 0; k2 < m.clusters; k2++) {
+        const s2 = k2 / (m.clusters - 1);
+        const zone = Math.min(nz - 1, Math.floor(s2 * nz));
         const root = qAt(s2);
-        const baseLen = ZONES[zone] * MM + k2 * 37 % 9;
-        const curl = (s2 - 0.42) * 46;
-        const strands = 4 + k2 % 2;
+        const baseLen = m.zones[zone] * MM + k2 * 37 % 9;
+        const curl = (s2 - 0.42) * m.curlK;
+        const strands = m.strands[k2 % m.strands.length];
         for (let j = 0; j < strands; j++) {
           const off = j - (strands - 1) / 2;
-          out.push({
+          const mid = Math.abs(off) < 0.6;
+          let len = baseLen * (1 - Math.abs(off) * m.tipK);
+          if (mid && m.spike) len *= 1.4;
+          if (mid && m.wisp && k2 % 2 === 0) len *= 1.3;
+          lashes.push({
             ...root,
             zone,
             curl,
             cluster: k2,
-            spread: off * 8,
-            // degrees within the fan
-            len: baseLen * (1 - Math.abs(off) * 0.16),
-            mid: Math.abs(off) < 0.6,
+            spread: off * m.spread,
+            len,
+            mid,
             jig: (k2 * 97 + j * 31) % 60
           });
         }
       }
-      return out;
-    }, []);
-    const dividers = useMemo(() => Array.from({ length: ZONES.length + 1 }).map((_, k2) => {
-      var _a, _b;
-      const q = qAt(k2 / ZONES.length);
-      const L = Math.max((_a = ZONES[k2 - 1]) != null ? _a : 0, (_b = ZONES[k2]) != null ? _b : 0) * MM;
-      return { ...q, reach: L + 46 };
-    }), []);
-    const zoneLabels = useMemo(() => ZONES.map((mm, z) => {
-      const q = qAt((z + 0.5) / ZONES.length);
-      return {
-        mm,
-        z,
-        lx: q.px + q.nx * (mm * MM + 62),
-        ly: q.py + q.ny * (mm * MM + 62)
-      };
+      const dividers = Array.from({ length: nz + 1 }).map((_, kk) => {
+        var _a, _b;
+        const q = qAt(kk / nz);
+        const L = Math.max((_a = m.zones[kk - 1]) != null ? _a : 0, (_b = m.zones[kk]) != null ? _b : 0) * MM;
+        return { ...q, reach: L + 46 };
+      });
+      const zoneLabels = m.zones.map((mm, z) => {
+        const q = qAt((z + 0.5) / nz);
+        return {
+          mm,
+          z,
+          lx: q.px + q.nx * (mm * MM + 62),
+          ly: Math.max(292, q.py + q.ny * (mm * MM + 62))
+        };
+      });
+      return { ...m, lashes, dividers, zoneLabels };
     }), []);
     const sparks = useMemo(() => Array.from({ length: 16 }).map((_, i) => ({
       x: i * 173 % 1e3,
@@ -305,14 +312,25 @@
       tw: 1400 + i * 211 % 1800,
       ph: i * 727 % 1e3
     })), []);
-    const CYCLE = 4600;
-    const cp = t % CYCLE / CYCLE;
-    const blink = cp > 0.9 ? Math.sin((cp - 0.9) / 0.1 * Math.PI) : 0;
-    const closed = Math.min(1, Math.max(blink, Math.abs(progress) * 1.4));
+    const N_ZONES = 5;
+    const OPEN_DUR = 320, CLOSE_DUR = 320, ZONE_DUR = 780;
+    const HILITE = N_ZONES * ZONE_DUR;
+    const MAP_CYCLE = OPEN_DUR + HILITE + CLOSE_DUR;
+    const cyc = Math.floor(t / MAP_CYCLE);
+    const local = t - cyc * MAP_CYCLE;
+    const M = maps[(cyc % maps.length + maps.length) % maps.length];
+    let blinkClose = 0, zi = -1;
+    if (local < OPEN_DUR) {
+      blinkClose = 1 - local / OPEN_DUR;
+    } else if (local < OPEN_DUR + HILITE) {
+      zi = Math.min(N_ZONES - 1, Math.floor((local - OPEN_DUR) / ZONE_DUR));
+    } else {
+      blinkClose = (local - OPEN_DUR - HILITE) / CLOSE_DUR;
+    }
+    const closed = Math.min(1, Math.max(blinkClose, Math.abs(progress) * 1.4));
     const open = 1 - closed * 0.92;
     const sway = Math.sin(t / 2600) * 1.4;
     const glow = 0.42 + Math.sin(t / 1900) * 0.14;
-    const zi = Math.floor(t / 1500) % ZONES.length;
     const W = typeof window !== "undefined" ? window.innerWidth : 1200;
     const H = typeof window !== "undefined" ? window.innerHeight : 800;
     const s = Math.max(W / 1e3, H / 1400);
@@ -354,7 +372,7 @@
             strokeLinecap: "round",
             opacity: "0.85"
           }
-        ), lashes.map((l, i) => {
+        ), M.lashes.map((l, i) => {
           const flut = Math.sin(t / 560 + l.cluster * 0.9) * 1.3 + Math.sin(t / 1400 + l.jig) * 0.4;
           const tipX = l.px + l.nx * l.len;
           const tipY = l.py + l.ny * l.len;
@@ -389,7 +407,7 @@
             strokeWidth: "1.6",
             opacity: 0.22 * (1 - closed)
           }
-        )), /* @__PURE__ */ React.createElement("g", null, dividers.map((d, k2) => /* @__PURE__ */ React.createElement(
+        )), /* @__PURE__ */ React.createElement("g", null, M.dividers.map((d, k2) => /* @__PURE__ */ React.createElement(
           "line",
           {
             key: k2,
@@ -402,7 +420,7 @@
             strokeDasharray: "3 8",
             opacity: "0.3"
           }
-        )), zoneLabels.map((zl) => /* @__PURE__ */ React.createElement(
+        )), M.zoneLabels.map((zl) => /* @__PURE__ */ React.createElement(
           "text",
           {
             key: zl.z,
@@ -440,7 +458,9 @@
             fill: "#3a2c50",
             opacity: "0.42"
           },
-          "CAT EYE \xB7 8\u201313 MM"
+          M.name,
+          " \xB7 ",
+          M.sub
         ), /* @__PURE__ */ React.createElement("line", { x1: "260", y1: "614", x2: "260", y2: "632", stroke: "#141210", strokeWidth: "1.2", opacity: "0.35" }), /* @__PURE__ */ React.createElement("line", { x1: "740", y1: "614", x2: "740", y2: "632", stroke: "#141210", strokeWidth: "1.2", opacity: "0.35" }), /* @__PURE__ */ React.createElement(
           "text",
           {

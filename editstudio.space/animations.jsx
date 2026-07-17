@@ -286,11 +286,20 @@ function WaxAnim({ progress = 0, speed = 1 }) {
 }
 
 // ────────────────────────────────────────────────────────────────
-// 5) LASHES — technical lash map on paper with a soft lilac wash:
-//    a cat-eye fan with zone-stepped lengths (8–13mm), dashed zone
-//    dividers and mono length labels; the "active" zone cycles like a
-//    mapping in progress. Blinks; closes on horizontal transition.
+// 5) LASHES — technical lash map on paper with a soft lilac wash. A
+//    zone-stepped wispy fan with dashed dividers + mono mm labels;
+//    the active zone steps along each length, then a blink swaps the
+//    map to the next style (cat eye → open eye → wispy → anime).
 // ────────────────────────────────────────────────────────────────
+// Length profiles per style, inner → outer (mm). All five-zoned so the
+// label/divider layout is identical between maps.
+const LASH_MAPS = [
+  { name: 'CAT EYE',  sub: '8–13 MM',  zones: [8, 10, 11, 12, 13], clusters: 11, strands: [4, 5], spread: 8,  curlK: 46, tipK: 0.16 },
+  { name: 'OPEN EYE', sub: '9–14 MM',  zones: [9, 12, 14, 12, 9],  clusters: 11, strands: [4, 5], spread: 7,  curlK: 20, tipK: 0.18 },
+  { name: 'WISPY',    sub: '9–13 MM',  zones: [10, 13, 9, 13, 10], clusters: 13, strands: [5, 6], spread: 11, curlK: 40, tipK: 0.14, wisp: true },
+  { name: 'ANIME',    sub: '12–16 MM', zones: [12, 15, 13, 16, 14], clusters: 9, strands: [3, 4], spread: 13, curlK: 26, tipK: 0.10, spike: true },
+];
+
 function LashAnim({ progress = 0, speed = 1 }) {
   const t = useTime(speed);
 
@@ -298,8 +307,6 @@ function LashAnim({ progress = 0, speed = 1 }) {
   // Kept narrow enough that zone labels survive the mobile slice-crop
   // (portrait phones only show roughly x ∈ [180, 820] of the viewBox).
   const A = [260, 600], B = [740, 600], C = [500, 410];
-  const LASH_N = 27;
-  const ZONES = [8, 10, 11, 12, 13];  // mm per zone, inner → outer (cat eye)
   const MM = 13;                      // px per mm
   const FONT_MAP = 'JetBrains Mono, ui-monospace, monospace';
 
@@ -314,41 +321,43 @@ function LashAnim({ progress = 0, speed = 1 }) {
     return { px, py, nx: ty / tl, ny: -tx / tl };
   };
 
-  // Static geometry — wispy style: clusters of strands sharing a root,
-  // fanned a few degrees apart, the middle spike longest.
-  const CLUSTERS = 11;
-  const lashes = useMemo(() => {
-    const out = [];
-    for (let k = 0; k < CLUSTERS; k++) {
-      const s = k / (CLUSTERS - 1);
-      const zone = Math.min(ZONES.length - 1, Math.floor(s * ZONES.length));
+  // Build every map's static geometry once: wispy clusters (strands sharing
+  // a root, fanned a few degrees, middle spike longest), zone dividers and
+  // mm label anchors. Style knobs come from LASH_MAPS.
+  const maps = useMemo(() => LASH_MAPS.map((m) => {
+    const nz = m.zones.length;
+    const lashes = [];
+    for (let k = 0; k < m.clusters; k++) {
+      const s = k / (m.clusters - 1);
+      const zone = Math.min(nz - 1, Math.floor(s * nz));
       const root = qAt(s);
-      const baseLen = ZONES[zone] * MM + ((k * 37) % 9);
-      const curl = (s - 0.42) * 46;             // curl away from centre
-      const strands = 4 + (k % 2);              // 4–5 per fan
+      const baseLen = m.zones[zone] * MM + ((k * 37) % 9);
+      const curl = (s - 0.42) * m.curlK;        // curl away from centre
+      const strands = m.strands[k % m.strands.length];
       for (let j = 0; j < strands; j++) {
         const off = j - (strands - 1) / 2;
-        out.push({ ...root, zone, curl, cluster: k,
-          spread: off * 8,                      // degrees within the fan
-          len: baseLen * (1 - Math.abs(off) * 0.16),
-          mid: Math.abs(off) < 0.6,
+        const mid = Math.abs(off) < 0.6;
+        let len = baseLen * (1 - Math.abs(off) * m.tipK);
+        if (mid && m.spike) len *= 1.4;               // anime centre spike
+        if (mid && m.wisp && k % 2 === 0) len *= 1.3; // wispy alternating spike
+        lashes.push({ ...root, zone, curl, cluster: k,
+          spread: off * m.spread, len, mid,
           jig: (k * 97 + j * 31) % 60 });
       }
     }
-    return out;
-  }, []);
-
-  // Zone dividers (boundaries incl. both ends) and label anchors.
-  const dividers = useMemo(() => Array.from({ length: ZONES.length + 1 }).map((_, k) => {
-    const q = qAt(k / ZONES.length);
-    const L = Math.max(ZONES[k - 1] ?? 0, ZONES[k] ?? 0) * MM;
-    return { ...q, reach: L + 46 };
-  }), []);
-  const zoneLabels = useMemo(() => ZONES.map((mm, z) => {
-    const q = qAt((z + 0.5) / ZONES.length);
-    return { mm, z,
-      lx: q.px + q.nx * (mm * MM + 62),
-      ly: q.py + q.ny * (mm * MM + 62) };
+    const dividers = Array.from({ length: nz + 1 }).map((_, kk) => {
+      const q = qAt(kk / nz);
+      const L = Math.max(m.zones[kk - 1] ?? 0, m.zones[kk] ?? 0) * MM;
+      return { ...q, reach: L + 46 };
+    });
+    const zoneLabels = m.zones.map((mm, z) => {
+      const q = qAt((z + 0.5) / nz);
+      // Floor the height so a centre-tallest map (open eye / anime) can't
+      // push its mm label up into the title block.
+      return { mm, z, lx: q.px + q.nx * (mm * MM + 62),
+        ly: Math.max(292, q.py + q.ny * (mm * MM + 62)) };
+    });
+    return { ...m, lashes, dividers, zoneLabels };
   }), []);
 
   // Sparkles, stable seeds.
@@ -357,16 +366,30 @@ function LashAnim({ progress = 0, speed = 1 }) {
     tw: 1400 + (i * 211) % 1800, ph: (i * 727) % 1000
   })), []);
 
-  // Blink: quick shut/open near the end of each cycle; transitions close
-  // the eye fully.
-  const CYCLE = 4600;
-  const cp = (t % CYCLE) / CYCLE;
-  const blink = cp > 0.9 ? Math.sin(((cp - 0.9) / 0.1) * Math.PI) : 0;
-  const closed = Math.min(1, Math.max(blink, Math.abs(progress) * 1.4));
+  // Sequence: within each map cycle the eye opens, steps the active-zone
+  // highlight along every length, then blinks shut. The blink brackets the
+  // cycle boundary, so the map swaps while the eye is closed and the new
+  // style is revealed as it reopens.
+  const N_ZONES = 5;
+  const OPEN_DUR = 320, CLOSE_DUR = 320, ZONE_DUR = 780;
+  const HILITE = N_ZONES * ZONE_DUR;
+  const MAP_CYCLE = OPEN_DUR + HILITE + CLOSE_DUR;
+  const cyc = Math.floor(t / MAP_CYCLE);
+  const local = t - cyc * MAP_CYCLE;
+  const M = maps[((cyc % maps.length) + maps.length) % maps.length];
+
+  let blinkClose = 0, zi = -1;
+  if (local < OPEN_DUR) {
+    blinkClose = 1 - local / OPEN_DUR;                    // opening
+  } else if (local < OPEN_DUR + HILITE) {
+    zi = Math.min(N_ZONES - 1, Math.floor((local - OPEN_DUR) / ZONE_DUR));
+  } else {
+    blinkClose = (local - OPEN_DUR - HILITE) / CLOSE_DUR; // closing
+  }
+  const closed = Math.min(1, Math.max(blinkClose, Math.abs(progress) * 1.4));
   const open = 1 - closed * 0.92;
   const sway = Math.sin(t / 2600) * 1.4;
   const glow = 0.42 + Math.sin(t / 1900) * 0.14;
-  const zi = Math.floor(t / 1500) % ZONES.length;  // active map zone
 
   // Fit the whole diagram into the gap between the nav pills and the
   // headline on ANY viewport. The canvas uses preserveAspectRatio="slice",
@@ -416,7 +439,7 @@ function LashAnim({ progress = 0, speed = 1 }) {
             {/* the lid itself */}
             <path d="M260 600 Q500 410 740 600" fill="none"
                   stroke="#141210" strokeWidth="5" strokeLinecap="round" opacity="0.85" />
-            {lashes.map((l, i) => {
+            {M.lashes.map((l, i) => {
               const flut = Math.sin(t / 560 + l.cluster * 0.9) * 1.3
                          + Math.sin(t / 1400 + l.jig) * 0.4;
               const tipX = l.px + l.nx * l.len;
@@ -447,7 +470,7 @@ function LashAnim({ progress = 0, speed = 1 }) {
         {/* map annotations — static diagram layer, unaffected by the blink */}
         <g>
           {/* dashed zone dividers */}
-          {dividers.map((d, k) => (
+          {M.dividers.map((d, k) => (
             <line key={k}
                   x1={d.px - d.nx * 14} y1={d.py - d.ny * 14}
                   x2={d.px + d.nx * d.reach} y2={d.py + d.ny * d.reach}
@@ -456,7 +479,7 @@ function LashAnim({ progress = 0, speed = 1 }) {
           ))}
 
           {/* per-zone length labels (mm) — active zone reads darker */}
-          {zoneLabels.map((zl) => (
+          {M.zoneLabels.map((zl) => (
             <text key={zl.z} x={zl.lx} y={zl.ly} textAnchor="middle"
                   fontFamily={FONT_MAP} fontSize="30"
                   fill="#141210" opacity={zl.z === zi ? 0.85 : 0.38}>
@@ -471,7 +494,7 @@ function LashAnim({ progress = 0, speed = 1 }) {
           </text>
           <text x="500" y="250" textAnchor="middle" fontFamily={FONT_MAP}
                 fontSize="15" letterSpacing="5" fill="#3a2c50" opacity="0.42">
-            CAT EYE &middot; 8&ndash;13 MM
+            {M.name} &middot; {M.sub}
           </text>
 
           {/* corner markers */}
