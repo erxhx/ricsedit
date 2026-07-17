@@ -1,12 +1,12 @@
 (() => {
   const { useState, useEffect, useRef, useCallback } = React;
   const SERVICES_DEF = {
-    home: { id: "home", label: "Edit Studio", num: "00", accent: "oklch(0.32 0.04 30)", hint: "A salon, edited." },
-    barber: { id: "barber", label: "Barbering", num: "01", accent: "oklch(0.42 0.12 25)", hint: "Cuts \xB7 shaves \xB7 beard work" },
-    tan: { id: "tan", label: "Sunless", num: "02", accent: "oklch(0.68 0.14 65)", hint: "Custom-blended spray tans" },
-    wax: { id: "wax", label: "Waxing", num: "03", accent: "oklch(0.62 0.12 18)", hint: "Brow \xB7 body \xB7 ritual" },
-    lashes: { id: "lashes", label: "Lashes", num: "04", accent: "oklch(0.55 0.13 290)", hint: "Lashes \xB7 lifts \xB7 brows" },
-    visit: { id: "visit", label: "Visit", num: "05", accent: "oklch(0.32 0.04 30)", hint: "Hours \xB7 FAQ \xB7 the shelf" }
+    home: { id: "home", label: "Edit Studio", num: "00", accent: "oklch(0.32 0.04 30)", hint: "A salon, edited.", ig: "editstudiospace" },
+    barber: { id: "barber", label: "Barbering", num: "01", accent: "oklch(0.42 0.12 25)", hint: "Cuts \xB7 shaves \xB7 beard work", ig: "ricthesurgeon" },
+    tan: { id: "tan", label: "Sunless", num: "02", accent: "oklch(0.68 0.14 65)", hint: "Custom-blended spray tans", ig: "estheticsbylivi_" },
+    wax: { id: "wax", label: "Waxing", num: "03", accent: "oklch(0.62 0.12 18)", hint: "Brow \xB7 body \xB7 ritual", ig: "estheticsbylivi_" },
+    lashes: { id: "lashes", label: "Lashes", num: "04", accent: "oklch(0.55 0.13 290)", hint: "Lashes \xB7 lifts \xB7 brows", ig: "lashedbyniamhh" },
+    visit: { id: "visit", label: "Visit", num: "05", accent: "oklch(0.32 0.04 30)", hint: "Hours \xB7 FAQ \xB7 the shelf", ig: "editstudiospace" }
   };
   const ANIM_FOR = {
     home: "HomeAura",
@@ -100,12 +100,12 @@
       "a",
       {
         className: "chrome-ig",
-        href: "https://www.instagram.com/editstudiospace/",
+        href: `https://www.instagram.com/${active.ig || "editstudiospace"}/`,
         target: "_blank",
         rel: "noopener noreferrer",
-        "aria-label": "Edit Studio on Instagram \u2014 @editstudiospace"
+        "aria-label": `${active.label} on Instagram \u2014 @${active.ig || "editstudiospace"}`
       },
-      /* @__PURE__ */ React.createElement("span", { className: "chrome-ig-label" }, "@editstudiospace"),
+      /* @__PURE__ */ React.createElement("span", { className: "chrome-ig-label" }, "@", active.ig || "editstudiospace"),
       /* @__PURE__ */ React.createElement("span", { className: "chrome-ig-arr", "aria-hidden": "true" }, "\u2197\uFE0E")
     )));
   }
