@@ -275,7 +275,7 @@
           const off = j - (strands - 1) / 2;
           const mid = Math.abs(off) < 0.6;
           let len = baseLen * (1 - Math.abs(off) * m.tipK);
-          if (mid && m.spike) len *= 1.4;
+          if (mid && m.spike) len *= 1.22;
           if (mid && m.wisp && k2 % 2 === 0) len *= 1.3;
           lashes.push({
             ...root,
@@ -337,7 +337,7 @@
     const visLeft = 500 - W / s / 2, visW = W / s;
     const visTop = 700 - H / s / 2, visH = H / s;
     const wide = W / H > 1.2;
-    const BX0 = 157, BX1 = 883, BY0 = 196, BY1 = 725, EYE_CX = 500;
+    const BX0 = 157, BX1 = 883, BY0 = 160, BY1 = 725, EYE_CX = 500;
     const bw = BX1 - BX0, bh = BY1 - BY0;
     const topLimit = visTop + 200 / s + 12;
     const botLimit = visTop + visH * (wide ? 0.6 : 0.5);
@@ -437,7 +437,7 @@
           "text",
           {
             x: "500",
-            y: "216",
+            y: "184",
             textAnchor: "middle",
             fontFamily: FONT_MAP,
             fontSize: "20",
@@ -450,7 +450,7 @@
           "text",
           {
             x: "500",
-            y: "250",
+            y: "214",
             textAnchor: "middle",
             fontFamily: FONT_MAP,
             fontSize: "15",

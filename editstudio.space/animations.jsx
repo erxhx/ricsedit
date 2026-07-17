@@ -338,7 +338,7 @@ function LashAnim({ progress = 0, speed = 1 }) {
         const off = j - (strands - 1) / 2;
         const mid = Math.abs(off) < 0.6;
         let len = baseLen * (1 - Math.abs(off) * m.tipK);
-        if (mid && m.spike) len *= 1.4;               // anime centre spike
+        if (mid && m.spike) len *= 1.22;              // anime centre spike
         if (mid && m.wisp && k % 2 === 0) len *= 1.3; // wispy alternating spike
         lashes.push({ ...root, zone, curl, cluster: k,
           spread: off * m.spread, len, mid,
@@ -403,7 +403,7 @@ function LashAnim({ progress = 0, speed = 1 }) {
   const visTop  = 700 - (H / s) / 2, visH = H / s;
   const wide = W / H > 1.2;
   // diagram bounding box (incl. labels + title) and the eye's visual centre
-  const BX0 = 157, BX1 = 883, BY0 = 196, BY1 = 725, EYE_CX = 500;
+  const BX0 = 157, BX1 = 883, BY0 = 160, BY1 = 725, EYE_CX = 500;
   const bw = BX1 - BX0, bh = BY1 - BY0;
   const topLimit = visTop + 200 / s + 12;         // below the nav pills
   const botLimit = visTop + visH * (wide ? 0.60 : 0.50);  // above the headline
@@ -487,12 +487,12 @@ function LashAnim({ progress = 0, speed = 1 }) {
             </text>
           ))}
 
-          {/* spec title block */}
-          <text x="500" y="216" textAnchor="middle" fontFamily={FONT_MAP}
+          {/* spec title block — sits above the tallest (anime) spikes */}
+          <text x="500" y="184" textAnchor="middle" fontFamily={FONT_MAP}
                 fontSize="20" letterSpacing="7" fill="#3a2c50" opacity="0.5">
             LASH MAP
           </text>
-          <text x="500" y="250" textAnchor="middle" fontFamily={FONT_MAP}
+          <text x="500" y="214" textAnchor="middle" fontFamily={FONT_MAP}
                 fontSize="15" letterSpacing="5" fill="#3a2c50" opacity="0.42">
             {M.name} &middot; {M.sub}
           </text>
