@@ -347,8 +347,7 @@ function LashAnim({ progress = 0, speed = 1 }) {
   const zoneLabels = useMemo(() => ZONES.map((mm, z) => {
     const q = qAt((z + 0.5) / ZONES.length);
     return { mm, z,
-      // clamped into the portrait-crop safe zone
-      lx: Math.max(66, Math.min(800, q.px + q.nx * (mm * MM + 62))),
+      lx: q.px + q.nx * (mm * MM + 62),
       ly: q.py + q.ny * (mm * MM + 62) };
   }), []);
 
@@ -369,18 +368,30 @@ function LashAnim({ progress = 0, speed = 1 }) {
   const glow = 0.42 + Math.sin(t / 1900) * 0.14;
   const zi = Math.floor(t / 1500) % ZONES.length;  // active map zone
 
-  // Fit: portrait viewports show the tall viewBox nearly whole; landscape
-  // slice-crops it to a ~centred band, so shrink the diagram into the top
-  // half of that band and tuck it right, clear of the HTML headline block.
-  const aspect = typeof window !== 'undefined'
-    ? window.innerWidth / Math.max(1, window.innerHeight) : 0.7;
-  let fit;
-  if (aspect > 1.05) {
-    const visH = 1000 / aspect;               // viewBox rows actually visible
-    const visTop = 700 - visH / 2;
-    const k = Math.min(0.45, (visH * 0.5 - 26) / 534);  // diagram spans y 196–730
-    fit = `translate(${722 - k * 500} ${visTop + 26 - k * 196}) scale(${k})`;
-  }
+  // Fit the whole diagram into the gap between the nav pills and the
+  // headline on ANY viewport. The canvas uses preserveAspectRatio="slice",
+  // so first recover the actually-visible viewBox band, then scale and
+  // place the diagram's bounding box inside a safe rectangle. Recomputed
+  // every frame, so it also tracks live resizes and orientation changes.
+  const W = typeof window !== 'undefined' ? window.innerWidth : 1200;
+  const H = typeof window !== 'undefined' ? window.innerHeight : 800;
+  const s = Math.max(W / 1000, H / 1400);         // slice "cover" scale
+  const visLeft = 500 - (W / s) / 2, visW = W / s;
+  const visTop  = 700 - (H / s) / 2, visH = H / s;
+  const wide = W / H > 1.2;
+  // diagram bounding box (incl. labels + title) and the eye's visual centre
+  const BX0 = 157, BX1 = 883, BY0 = 196, BY1 = 725, EYE_CX = 500;
+  const bw = BX1 - BX0, bh = BY1 - BY0;
+  const topLimit = visTop + 200 / s + 12;         // below the nav pills
+  const botLimit = visTop + visH * (wide ? 0.60 : 0.50);  // above the headline
+  const availH = Math.max(40, botLimit - topLimit);
+  const availW = visW * (wide ? 0.52 : 0.94);
+  const k = Math.max(0.14, Math.min(0.5, availH / bh, availW / bw));
+  const ty = topLimit + (availH - k * bh) / 2 - k * BY0;
+  const tx = wide
+    ? (visLeft + visW * 0.97) - k * BX1            // tuck to the right edge
+    : (visLeft + visW / 2) - k * EYE_CX;           // centre the eye
+  const fit = `translate(${tx} ${ty}) scale(${k})`;
 
   return (
     <div className="anim-canvas" aria-hidden

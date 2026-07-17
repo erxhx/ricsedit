@@ -248,46 +248,46 @@
     const ZONES = [8, 10, 11, 12, 13];
     const MM = 13;
     const FONT_MAP = "JetBrains Mono, ui-monospace, monospace";
-    const qAt = (s) => {
-      const u = 1 - s;
-      const px = u * u * A[0] + 2 * u * s * C[0] + s * s * B[0];
-      const py = u * u * A[1] + 2 * u * s * C[1] + s * s * B[1];
-      const tx = 2 * u * (C[0] - A[0]) + 2 * s * (B[0] - C[0]);
-      const ty = 2 * u * (C[1] - A[1]) + 2 * s * (B[1] - C[1]);
-      const tl = Math.hypot(tx, ty);
-      return { px, py, nx: ty / tl, ny: -tx / tl };
+    const qAt = (s2) => {
+      const u = 1 - s2;
+      const px = u * u * A[0] + 2 * u * s2 * C[0] + s2 * s2 * B[0];
+      const py = u * u * A[1] + 2 * u * s2 * C[1] + s2 * s2 * B[1];
+      const tx2 = 2 * u * (C[0] - A[0]) + 2 * s2 * (B[0] - C[0]);
+      const ty2 = 2 * u * (C[1] - A[1]) + 2 * s2 * (B[1] - C[1]);
+      const tl = Math.hypot(tx2, ty2);
+      return { px, py, nx: ty2 / tl, ny: -tx2 / tl };
     };
     const CLUSTERS = 11;
     const lashes = useMemo(() => {
       const out = [];
-      for (let k = 0; k < CLUSTERS; k++) {
-        const s = k / (CLUSTERS - 1);
-        const zone = Math.min(ZONES.length - 1, Math.floor(s * ZONES.length));
-        const root = qAt(s);
-        const baseLen = ZONES[zone] * MM + k * 37 % 9;
-        const curl = (s - 0.42) * 46;
-        const strands = 4 + k % 2;
+      for (let k2 = 0; k2 < CLUSTERS; k2++) {
+        const s2 = k2 / (CLUSTERS - 1);
+        const zone = Math.min(ZONES.length - 1, Math.floor(s2 * ZONES.length));
+        const root = qAt(s2);
+        const baseLen = ZONES[zone] * MM + k2 * 37 % 9;
+        const curl = (s2 - 0.42) * 46;
+        const strands = 4 + k2 % 2;
         for (let j = 0; j < strands; j++) {
           const off = j - (strands - 1) / 2;
           out.push({
             ...root,
             zone,
             curl,
-            cluster: k,
+            cluster: k2,
             spread: off * 8,
             // degrees within the fan
             len: baseLen * (1 - Math.abs(off) * 0.16),
             mid: Math.abs(off) < 0.6,
-            jig: (k * 97 + j * 31) % 60
+            jig: (k2 * 97 + j * 31) % 60
           });
         }
       }
       return out;
     }, []);
-    const dividers = useMemo(() => Array.from({ length: ZONES.length + 1 }).map((_, k) => {
+    const dividers = useMemo(() => Array.from({ length: ZONES.length + 1 }).map((_, k2) => {
       var _a, _b;
-      const q = qAt(k / ZONES.length);
-      const L = Math.max((_a = ZONES[k - 1]) != null ? _a : 0, (_b = ZONES[k]) != null ? _b : 0) * MM;
+      const q = qAt(k2 / ZONES.length);
+      const L = Math.max((_a = ZONES[k2 - 1]) != null ? _a : 0, (_b = ZONES[k2]) != null ? _b : 0) * MM;
       return { ...q, reach: L + 46 };
     }), []);
     const zoneLabels = useMemo(() => ZONES.map((mm, z) => {
@@ -295,8 +295,7 @@
       return {
         mm,
         z,
-        // clamped into the portrait-crop safe zone
-        lx: Math.max(66, Math.min(800, q.px + q.nx * (mm * MM + 62))),
+        lx: q.px + q.nx * (mm * MM + 62),
         ly: q.py + q.ny * (mm * MM + 62)
       };
     }), []);
@@ -314,14 +313,22 @@
     const sway = Math.sin(t / 2600) * 1.4;
     const glow = 0.42 + Math.sin(t / 1900) * 0.14;
     const zi = Math.floor(t / 1500) % ZONES.length;
-    const aspect = typeof window !== "undefined" ? window.innerWidth / Math.max(1, window.innerHeight) : 0.7;
-    let fit;
-    if (aspect > 1.05) {
-      const visH = 1e3 / aspect;
-      const visTop = 700 - visH / 2;
-      const k = Math.min(0.45, (visH * 0.5 - 26) / 534);
-      fit = `translate(${722 - k * 500} ${visTop + 26 - k * 196}) scale(${k})`;
-    }
+    const W = typeof window !== "undefined" ? window.innerWidth : 1200;
+    const H = typeof window !== "undefined" ? window.innerHeight : 800;
+    const s = Math.max(W / 1e3, H / 1400);
+    const visLeft = 500 - W / s / 2, visW = W / s;
+    const visTop = 700 - H / s / 2, visH = H / s;
+    const wide = W / H > 1.2;
+    const BX0 = 157, BX1 = 883, BY0 = 196, BY1 = 725, EYE_CX = 500;
+    const bw = BX1 - BX0, bh = BY1 - BY0;
+    const topLimit = visTop + 200 / s + 12;
+    const botLimit = visTop + visH * (wide ? 0.6 : 0.5);
+    const availH = Math.max(40, botLimit - topLimit);
+    const availW = visW * (wide ? 0.52 : 0.94);
+    const k = Math.max(0.14, Math.min(0.5, availH / bh, availW / bw));
+    const ty = topLimit + (availH - k * bh) / 2 - k * BY0;
+    const tx = wide ? visLeft + visW * 0.97 - k * BX1 : visLeft + visW / 2 - k * EYE_CX;
+    const fit = `translate(${tx} ${ty}) scale(${k})`;
     return /* @__PURE__ */ React.createElement(
       "div",
       {
@@ -382,10 +389,10 @@
             strokeWidth: "1.6",
             opacity: 0.22 * (1 - closed)
           }
-        )), /* @__PURE__ */ React.createElement("g", null, dividers.map((d, k) => /* @__PURE__ */ React.createElement(
+        )), /* @__PURE__ */ React.createElement("g", null, dividers.map((d, k2) => /* @__PURE__ */ React.createElement(
           "line",
           {
-            key: k,
+            key: k2,
             x1: d.px - d.nx * 14,
             y1: d.py - d.ny * 14,
             x2: d.px + d.nx * d.reach,
@@ -461,10 +468,10 @@
           },
           "OUTER"
         ))),
-        sparks.map((s, i) => {
-          const tw = Math.max(0, Math.sin((t + s.ph) / s.tw * Math.PI * 2));
+        sparks.map((s2, i) => {
+          const tw = Math.max(0, Math.sin((t + s2.ph) / s2.tw * Math.PI * 2));
           const r = 2.2 + tw * 3.2;
-          return /* @__PURE__ */ React.createElement("g", { key: i, transform: `translate(${s.x} ${s.y})`, opacity: tw * 0.55 }, /* @__PURE__ */ React.createElement("path", { d: `M0 ${-r} L${r * 0.32} 0 L0 ${r} L${-r * 0.32} 0 Z`, fill: "#7a5fae" }), /* @__PURE__ */ React.createElement("path", { d: `M${-r} 0 L0 ${r * 0.32} L${r} 0 L0 ${-r * 0.32} Z`, fill: "#7a5fae" }));
+          return /* @__PURE__ */ React.createElement("g", { key: i, transform: `translate(${s2.x} ${s2.y})`, opacity: tw * 0.55 }, /* @__PURE__ */ React.createElement("path", { d: `M0 ${-r} L${r * 0.32} 0 L0 ${r} L${-r * 0.32} 0 Z`, fill: "#7a5fae" }), /* @__PURE__ */ React.createElement("path", { d: `M${-r} 0 L0 ${r * 0.32} L${r} 0 L0 ${-r * 0.32} Z`, fill: "#7a5fae" }));
         }),
         /* @__PURE__ */ React.createElement(
           "text",
