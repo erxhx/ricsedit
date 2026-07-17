@@ -133,8 +133,8 @@ export function buildPreviewEmail(kind: 'confirmation' | 'owner' | 'noshow-fee',
 }
 
 function eyebrow(text: string): string {
-  return `<p class="es-soft" style="margin:0 0 14px;font-family:${FONT_MONO};font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#5f594f;">
-    <span style="color:#93b31c;">&#9679;</span>&nbsp;&nbsp;${text}</p>`;
+  return `<p class="es-body" style="margin:0 0 14px;font-family:${FONT_MONO};font-size:12px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:#3f3a33;">
+    <span style="color:#93b31c;font-size:22px;line-height:0;vertical-align:middle;">&#9679;</span>&nbsp;&nbsp;${text}</p>`;
 }
 
 /** Serif italic headline — the site's "Looks good?" voice. */
@@ -160,7 +160,7 @@ function aptDetailsHtml(apt: Appointment): string {
     const bordCol = i === 0 || i === last ? '#141210' : '#dbd5c8';
     return `
     <tr>
-      <td class="es-soft ${bordCls}" style="padding:13px 2px;border-top:1px solid ${bordCol};font-family:${FONT_MONO};font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5f594f;white-space:nowrap;">${label}</td>
+      <td class="es-body ${bordCls}" style="padding:13px 2px;border-top:1px solid ${bordCol};font-family:${FONT_MONO};font-size:12px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:#3f3a33;white-space:nowrap;">${label}</td>
       <td class="es-ink ${bordCls}" style="padding:13px 2px;border-top:1px solid ${bordCol};font-family:${FONT_BODY};font-size:${i === last ? 18 : 16}px;${i === last ? 'font-weight:600;' : ''}color:#141210;text-align:right;">${esc(value)}</td>
     </tr>`;
   }).join('');
@@ -212,13 +212,18 @@ function emailLayout(bodyHtml: string): string {
         </tr>
         <tr>
           <td class="es-rule" style="padding:22px 26px 0;border-top:1px solid #dbd5c8;">
-            <p class="es-soft" style="font-family:${FONT_MONO};font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#5f594f;margin:0 0 5px;text-align:center;">
-              Edit Studio &nbsp;&middot;&nbsp; 1846 Oak Bay Avenue, Victoria BC
+            <p class="es-ink" style="font-family:${FONT_MONO};font-size:12px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:#141210;margin:0 0 7px;text-align:center;">
+              Edit Studio
             </p>
-            <p class="es-soft" style="font-family:${FONT_MONO};font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#5f594f;margin:0;text-align:center;">
-              <a href="tel:+17785353348" class="es-soft" style="color:#5f594f;text-decoration:none;">778 535 3348</a>
+            <!-- Address wrapped in a styled anchor so Gmail's auto-link
+                 doesn't repaint it default-blue. -->
+            <p class="es-body" style="font-family:${FONT_MONO};font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#3f3a33;margin:0 0 6px;text-align:center;">
+              <a href="https://maps.google.com/?q=1846+Oak+Bay+Avenue,+Victoria+BC" class="es-body" style="color:#3f3a33;text-decoration:none;">1846 Oak Bay Avenue, Victoria BC</a>
+            </p>
+            <p class="es-body" style="font-family:${FONT_MONO};font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#3f3a33;margin:0;text-align:center;">
+              <a href="tel:+17785353348" class="es-body" style="color:#3f3a33;text-decoration:none;">778 535 3348</a>
               &nbsp;&middot;&nbsp;
-              <a href="https://www.editstudio.space" class="es-soft" style="color:#5f594f;text-decoration:none;">editstudio.space</a>
+              <a href="https://www.editstudio.space" class="es-body" style="color:#3f3a33;text-decoration:none;">editstudio.space</a>
             </p>
           </td>
         </tr>
