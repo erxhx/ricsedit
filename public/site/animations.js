@@ -258,12 +258,6 @@
       const curl = (s - 0.42) * 60;
       return { px, py, nx, ny, len, curl, jig: i * 97 % 60 };
     }), []);
-    const drifters = useMemo(() => Array.from({ length: 12 }).map((_, i) => ({
-      x: i * 269 % 1e3,
-      delay: i * 431 % 7e3,
-      dur: 6e3 + i * 157 % 3500,
-      curl: 18 + i * 13 % 22
-    })), []);
     const sparks = useMemo(() => Array.from({ length: 16 }).map((_, i) => ({
       x: i * 173 % 1e3,
       y: i * 337 % 1300,
@@ -282,7 +276,7 @@
       {
         className: "anim-canvas",
         "aria-hidden": true,
-        style: { background: "linear-gradient(180deg, #1a1714 0%, #221b28 55%, #2b2138 100%)" }
+        style: { background: "linear-gradient(180deg, #efeae0 0%, #ece4ea 55%, #e3d8ec 100%)" }
       },
       /* @__PURE__ */ React.createElement(
         "svg",
@@ -291,14 +285,14 @@
           preserveAspectRatio: "xMidYMid slice",
           style: { width: "100%", height: "100%", display: "block" }
         },
-        /* @__PURE__ */ React.createElement("defs", null, /* @__PURE__ */ React.createElement("radialGradient", { id: "lashGlow", cx: "50%", cy: "50%", r: "50%" }, /* @__PURE__ */ React.createElement("stop", { offset: "0%", stopColor: "#8a6cc0", stopOpacity: "0.5" }), /* @__PURE__ */ React.createElement("stop", { offset: "55%", stopColor: "#67509a", stopOpacity: "0.22" }), /* @__PURE__ */ React.createElement("stop", { offset: "100%", stopColor: "#67509a", stopOpacity: "0" }))),
+        /* @__PURE__ */ React.createElement("defs", null, /* @__PURE__ */ React.createElement("radialGradient", { id: "lashGlow", cx: "50%", cy: "50%", r: "50%" }, /* @__PURE__ */ React.createElement("stop", { offset: "0%", stopColor: "#c9b6e6", stopOpacity: "0.55" }), /* @__PURE__ */ React.createElement("stop", { offset: "55%", stopColor: "#b39ad8", stopOpacity: "0.25" }), /* @__PURE__ */ React.createElement("stop", { offset: "100%", stopColor: "#b39ad8", stopOpacity: "0" }))),
         /* @__PURE__ */ React.createElement("circle", { cx: "500", cy: "560", r: "430", fill: "url(#lashGlow)", opacity: glow * (1 - closed * 0.5) }),
         /* @__PURE__ */ React.createElement("g", { transform: `rotate(${sway} 500 600)` }, /* @__PURE__ */ React.createElement("g", { transform: `translate(500 604) scale(1 ${open}) translate(-500 -604)` }, /* @__PURE__ */ React.createElement(
           "path",
           {
             d: "M140 600 Q500 380 860 600",
             fill: "none",
-            stroke: "#f5f0e8",
+            stroke: "#141210",
             strokeWidth: "5",
             strokeLinecap: "round",
             opacity: "0.85"
@@ -312,7 +306,7 @@
             {
               d: `M${l.px} ${l.py} Q ${l.px + l.nx * l.len * 0.55} ${l.py + l.ny * l.len * 0.62} ${tipX + l.curl} ${tipY}`,
               fill: "none",
-              stroke: "#f5f0e8",
+              stroke: "#141210",
               strokeWidth: "2.6",
               strokeLinecap: "round",
               opacity: "0.75"
@@ -323,7 +317,7 @@
           {
             d: "M140 600 Q500 700 860 600",
             fill: "none",
-            stroke: "#f5f0e8",
+            stroke: "#141210",
             strokeWidth: "4",
             strokeLinecap: "round",
             opacity: closed * 0.9
@@ -333,35 +327,15 @@
           {
             d: "M240 640 Q500 730 760 640",
             fill: "none",
-            stroke: "#f5f0e8",
+            stroke: "#141210",
             strokeWidth: "1.6",
             opacity: 0.22 * (1 - closed)
           }
         )),
-        drifters.map((d, i) => {
-          const phase = (t + d.delay) % d.dur / d.dur;
-          const y = -40 + phase * 1500;
-          const x = d.x + Math.sin(t / 1e3 + i * 1.3) * 34;
-          const rot = Math.sin(t / 700 + i) * 50 + phase * 120;
-          const op = phase < 0.85 ? 0.35 : (1 - phase) / 0.15 * 0.35;
-          return /* @__PURE__ */ React.createElement(
-            "path",
-            {
-              key: i,
-              d: `M0 0 Q ${d.curl} ${d.curl * 0.4} ${d.curl * 1.6} ${-d.curl * 0.6}`,
-              transform: `translate(${x} ${y}) rotate(${rot})`,
-              fill: "none",
-              stroke: "#f5f0e8",
-              strokeWidth: "1.8",
-              strokeLinecap: "round",
-              opacity: op
-            }
-          );
-        }),
         sparks.map((s, i) => {
           const tw = Math.max(0, Math.sin((t + s.ph) / s.tw * Math.PI * 2));
           const r = 2.2 + tw * 3.2;
-          return /* @__PURE__ */ React.createElement("g", { key: i, transform: `translate(${s.x} ${s.y})`, opacity: tw * 0.55 }, /* @__PURE__ */ React.createElement("path", { d: `M0 ${-r} L${r * 0.32} 0 L0 ${r} L${-r * 0.32} 0 Z`, fill: "#e8ddf5" }), /* @__PURE__ */ React.createElement("path", { d: `M${-r} 0 L0 ${r * 0.32} L${r} 0 L0 ${-r * 0.32} Z`, fill: "#e8ddf5" }));
+          return /* @__PURE__ */ React.createElement("g", { key: i, transform: `translate(${s.x} ${s.y})`, opacity: tw * 0.55 }, /* @__PURE__ */ React.createElement("path", { d: `M0 ${-r} L${r * 0.32} 0 L0 ${r} L${-r * 0.32} 0 Z`, fill: "#7a5fae" }), /* @__PURE__ */ React.createElement("path", { d: `M${-r} 0 L0 ${r * 0.32} L${r} 0 L0 ${-r * 0.32} Z`, fill: "#7a5fae" }));
         }),
         /* @__PURE__ */ React.createElement(
           "text",
@@ -373,8 +347,8 @@
             fontStyle: "italic",
             fontWeight: "300",
             fontSize: "170",
-            fill: "#f5f0e8",
-            opacity: "0.07",
+            fill: "#3a2c50",
+            opacity: "0.09",
             letterSpacing: "-3"
           },
           "flutter"
