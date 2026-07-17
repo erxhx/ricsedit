@@ -294,9 +294,9 @@ function WaxAnim({ progress = 0, speed = 1 }) {
 // Length profiles per style, inner → outer (mm). All five-zoned so the
 // label/divider layout is identical between maps.
 const LASH_MAPS = [
-  { name: 'CAT EYE',  sub: '8–13 MM',  zones: [8, 10, 11, 12, 13], clusters: 11, strands: [4, 5], spread: 8,  curlK: 46, tipK: 0.16 },
-  { name: 'OPEN EYE', sub: '9–14 MM',  zones: [9, 12, 14, 12, 9],  clusters: 11, strands: [4, 5], spread: 7,  curlK: 20, tipK: 0.18 },
   { name: 'WISPY',    sub: '9–13 MM',  zones: [10, 13, 9, 13, 10], clusters: 13, strands: [5, 6], spread: 11, curlK: 40, tipK: 0.14, wisp: true },
+  { name: 'OPEN EYE', sub: '9–14 MM',  zones: [9, 12, 14, 12, 9],  clusters: 11, strands: [4, 5], spread: 7,  curlK: 20, tipK: 0.18 },
+  { name: 'CAT EYE',  sub: '8–13 MM',  zones: [8, 10, 11, 12, 13], clusters: 11, strands: [4, 5], spread: 8,  curlK: 46, tipK: 0.16 },
   { name: 'ANIME',    sub: '12–16 MM', zones: [12, 15, 13, 16, 14], clusters: 9, strands: [3, 4], spread: 13, curlK: 26, tipK: 0.10, spike: true },
 ];
 
