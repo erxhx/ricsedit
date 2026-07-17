@@ -108,8 +108,8 @@ export function buildPreviewEmail(kind: 'confirmation' | 'owner' | 'noshow-fee',
       ${h1(`${firstName(apt.clientName)} just booked.`)}
       ${para(esc(apt.clientName) + (apt.payment?.prepaid ? ' — paid in full online.' : ''))}
       ${aptDetailsHtml(apt)}
-      <p style="margin:8px 0 0;font-family:${FONT_BODY};font-size:12px;color:#7a7268;">Email: <a href="mailto:${esc(apt.clientEmail)}" style="color:#7a7268;">${esc(apt.clientEmail)}</a></p>
-      <p style="margin:4px 0 0;font-family:${FONT_BODY};font-size:12px;color:#7a7268;">Phone: <a href="tel:${esc(apt.clientPhone)}" style="color:#7a7268;">${esc(apt.clientPhone)}</a></p>
+      <p style="margin:8px 0 0;font-family:${FONT_BODY};font-size:13px;color:#5f594f;">Email: <a href="mailto:${esc(apt.clientEmail)}" style="color:#5f594f;">${esc(apt.clientEmail)}</a></p>
+      <p style="margin:4px 0 0;font-family:${FONT_BODY};font-size:13px;color:#5f594f;">Phone: <a href="tel:${esc(apt.clientPhone)}" style="color:#5f594f;">${esc(apt.clientPhone)}</a></p>
     `);
   }
   if (kind === 'noshow-fee') {
@@ -133,7 +133,7 @@ export function buildPreviewEmail(kind: 'confirmation' | 'owner' | 'noshow-fee',
 }
 
 function eyebrow(text: string): string {
-  return `<p style="margin:0 0 14px;font-family:${FONT_MONO};font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#7a7268;">
+  return `<p class="es-soft" style="margin:0 0 14px;font-family:${FONT_MONO};font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#5f594f;">
     <span style="color:#93b31c;">&#9679;</span>&nbsp;&nbsp;${text}</p>`;
 }
 
@@ -143,7 +143,7 @@ function h1(text: string): string {
 }
 
 function para(text: string): string {
-  return `<p class="es-soft" style="margin:0;font-family:${FONT_BODY};font-size:14px;line-height:1.6;color:#4a4540;">${text}</p>`;
+  return `<p class="es-body" style="margin:0;font-family:${FONT_BODY};font-size:16px;line-height:1.6;color:#2e2a26;">${text}</p>`;
 }
 
 function aptDetailsHtml(apt: Appointment): string {
@@ -160,8 +160,8 @@ function aptDetailsHtml(apt: Appointment): string {
     const bordCol = i === 0 || i === last ? '#141210' : '#dbd5c8';
     return `
     <tr>
-      <td class="es-soft ${bordCls}" style="padding:13px 2px;border-top:1px solid ${bordCol};font-family:${FONT_MONO};font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#7a7268;white-space:nowrap;">${label}</td>
-      <td class="es-ink ${bordCls}" style="padding:13px 2px;border-top:1px solid ${bordCol};font-family:${FONT_BODY};font-size:${i === last ? 16 : 14}px;${i === last ? 'font-weight:600;' : ''}color:#141210;text-align:right;">${esc(value)}</td>
+      <td class="es-soft ${bordCls}" style="padding:13px 2px;border-top:1px solid ${bordCol};font-family:${FONT_MONO};font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5f594f;white-space:nowrap;">${label}</td>
+      <td class="es-ink ${bordCls}" style="padding:13px 2px;border-top:1px solid ${bordCol};font-family:${FONT_BODY};font-size:${i === last ? 18 : 16}px;${i === last ? 'font-weight:600;' : ''}color:#141210;text-align:right;">${esc(value)}</td>
     </tr>`;
   }).join('');
 
@@ -185,7 +185,8 @@ function emailLayout(bodyHtml: string): string {
     @media (prefers-color-scheme: dark) {
       .es-paper    { background:#1c1a17 !important; }
       .es-ink      { color:#f0ece3 !important; }
-      .es-soft     { color:#b5aea3 !important; }
+      .es-body     { color:#ddd7cc !important; }
+      .es-soft     { color:#c0b9ad !important; }
       .es-rule     { border-color:#3d3831 !important; }
       .es-bord-ink { border-color:#f0ece3 !important; }
     }
@@ -211,13 +212,13 @@ function emailLayout(bodyHtml: string): string {
         </tr>
         <tr>
           <td class="es-rule" style="padding:22px 26px 0;border-top:1px solid #dbd5c8;">
-            <p class="es-soft" style="font-family:${FONT_MONO};font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:#7a7268;margin:0 0 5px;text-align:center;">
+            <p class="es-soft" style="font-family:${FONT_MONO};font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#5f594f;margin:0 0 5px;text-align:center;">
               Edit Studio &nbsp;&middot;&nbsp; 1846 Oak Bay Avenue, Victoria BC
             </p>
-            <p class="es-soft" style="font-family:${FONT_MONO};font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:#7a7268;margin:0;text-align:center;">
-              <a href="tel:+17785353348" class="es-soft" style="color:#7a7268;text-decoration:none;">778 535 3348</a>
+            <p class="es-soft" style="font-family:${FONT_MONO};font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#5f594f;margin:0;text-align:center;">
+              <a href="tel:+17785353348" class="es-soft" style="color:#5f594f;text-decoration:none;">778 535 3348</a>
               &nbsp;&middot;&nbsp;
-              <a href="https://www.editstudio.space" class="es-soft" style="color:#7a7268;text-decoration:none;">editstudio.space</a>
+              <a href="https://www.editstudio.space" class="es-soft" style="color:#5f594f;text-decoration:none;">editstudio.space</a>
             </p>
           </td>
         </tr>
@@ -229,11 +230,11 @@ function emailLayout(bodyHtml: string): string {
 }
 
 function ctaBtn(text: string, href: string): string {
-  return `<a href="${href}" style="display:block;text-align:center;background:#141210;color:#f7f3eb;font-family:${FONT_MONO};font-size:12px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;text-decoration:none;padding:16px 24px;border-radius:999px;margin-top:10px;">${text}</a>`;
+  return `<a href="${href}" style="display:block;text-align:center;background:#141210;color:#f7f3eb;font-family:${FONT_MONO};font-size:13px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;text-decoration:none;padding:16px 24px;border-radius:999px;margin-top:10px;">${text}</a>`;
 }
 
 function muted(text: string): string {
-  return `<p class="es-soft" style="margin:18px 0 0;font-family:${FONT_BODY};font-size:12px;line-height:1.6;color:#7a7268;text-align:center;">${text}</p>`;
+  return `<p class="es-soft" style="margin:18px 0 0;font-family:${FONT_BODY};font-size:13px;line-height:1.6;color:#5f594f;text-align:center;">${text}</p>`;
 }
 
 // ── Low-level send helpers ────────────────────────────────────────────────────
@@ -287,9 +288,9 @@ export async function sendBookingConfirmation(apt: Appointment): Promise<void> {
     ${h1(`${firstName(apt.clientName)} just booked.`)}
     ${para(esc(apt.clientName) + (apt.payment?.prepaid ? ' — paid in full online.' : apt.payment?.amountCents ? ' — deposit paid online.' : ''))}
     ${aptDetailsHtml(apt)}
-    ${apt.clientEmail ? `<p style="margin:8px 0 0;font-family:${FONT_BODY};font-size:12px;color:#7a7268;">Email: <a href="mailto:${esc(apt.clientEmail)}" style="color:#7a7268;">${esc(apt.clientEmail)}</a></p>` : ''}
-    ${apt.clientPhone ? `<p style="margin:4px 0 0;font-family:${FONT_BODY};font-size:12px;color:#7a7268;">Phone: <a href="tel:${esc(apt.clientPhone)}" style="color:#7a7268;">${esc(apt.clientPhone)}</a></p>` : ''}
-    ${apt.notes       ? `<p style="margin:4px 0 0;font-family:${FONT_BODY};font-size:12px;color:#7a7268;">Notes: ${esc(apt.notes)}</p>` : ''}
+    ${apt.clientEmail ? `<p style="margin:8px 0 0;font-family:${FONT_BODY};font-size:13px;color:#5f594f;">Email: <a href="mailto:${esc(apt.clientEmail)}" style="color:#5f594f;">${esc(apt.clientEmail)}</a></p>` : ''}
+    ${apt.clientPhone ? `<p style="margin:4px 0 0;font-family:${FONT_BODY};font-size:13px;color:#5f594f;">Phone: <a href="tel:${esc(apt.clientPhone)}" style="color:#5f594f;">${esc(apt.clientPhone)}</a></p>` : ''}
+    ${apt.notes       ? `<p style="margin:4px 0 0;font-family:${FONT_BODY};font-size:13px;color:#5f594f;">Notes: ${esc(apt.notes)}</p>` : ''}
   `);
 
   const clientSms =
@@ -325,9 +326,9 @@ export async function sendCancellationNotification(
         ? `Hi ${firstName(apt.clientName)}, we've had to cancel your upcoming appointment. We're sorry for any inconvenience.`
         : `Hi ${firstName(apt.clientName)}, your appointment has been cancelled.`)}
     ${aptDetailsHtml(apt)}
-    ${isAdmin && note ? `<p style="margin:0 0 16px;font-family:${FONT_BODY};font-size:14px;line-height:1.6;color:#4a4540;border-left:3px solid #dbd5c8;padding-left:12px;">${esc(note)}</p>` : ''}
+    ${isAdmin && note ? `<p class="es-body" style="margin:0 0 16px;font-family:${FONT_BODY};font-size:15px;line-height:1.6;color:#2e2a26;border-left:3px solid #dbd5c8;padding-left:12px;">${esc(note)}</p>` : ''}
     ${isAdmin
-      ? `${muted('Please call or text us at <a href="tel:+17785353348" style="color:#7a7268;">778 535 3348</a> to rebook.')}
+      ? `${muted('Please call or text us at <a href="tel:+17785353348" style="color:#5f594f;">778 535 3348</a> to rebook.')}
          ${ctaBtn('Book Online', 'https://www.editstudio.space')}`
       : `${ctaBtn('Book Again', 'https://www.editstudio.space')}
          ${muted('Questions? Call or text us at 778 535 3348.')}`}
