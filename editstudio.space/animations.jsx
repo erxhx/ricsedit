@@ -286,31 +286,55 @@ function WaxAnim({ progress = 0, speed = 1 }) {
 }
 
 // ────────────────────────────────────────────────────────────────
-// 5) LASHES — ink lash-fan eye on paper with a soft lilac wash; ambient
-//    flutter, periodic blink and sparkles. The eye closes on
-//    horizontal transition.
+// 5) LASHES — technical lash map on paper with a soft lilac wash:
+//    a cat-eye fan with zone-stepped lengths (8–13mm), dashed zone
+//    dividers and mono length labels; the "active" zone cycles like a
+//    mapping in progress. Blinks; closes on horizontal transition.
 // ────────────────────────────────────────────────────────────────
 function LashAnim({ progress = 0, speed = 1 }) {
   const t = useTime(speed);
 
-  // Upper-lid arc: quadratic A(140,600) → B(860,600), control C(500,380).
-  const A = [140, 600], B = [860, 600], C = [500, 380];
+  // Upper-lid arc: quadratic A(260,600) → B(740,600), control C(500,410).
+  // Kept narrow enough that zone labels survive the mobile slice-crop
+  // (portrait phones only show roughly x ∈ [180, 820] of the viewBox).
+  const A = [260, 600], B = [740, 600], C = [500, 410];
   const LASH_N = 27;
+  const ZONES = [8, 10, 11, 12, 13];  // mm per zone, inner → outer (cat eye)
+  const MM = 13;                      // px per mm
+  const FONT_MAP = 'JetBrains Mono, ui-monospace, monospace';
 
-  // Static geometry: root point, outward normal and length per lash.
-  const lashes = useMemo(() => Array.from({ length: LASH_N }).map((_, i) => {
-    const s = i / (LASH_N - 1);
+  // Point + outward normal on the lid arc at parameter s.
+  const qAt = (s) => {
     const u = 1 - s;
     const px = u*u*A[0] + 2*u*s*C[0] + s*s*B[0];
     const py = u*u*A[1] + 2*u*s*C[1] + s*s*B[1];
     const tx = 2*u*(C[0]-A[0]) + 2*s*(B[0]-C[0]);
     const ty = 2*u*(C[1]-A[1]) + 2*s*(B[1]-C[1]);
     const tl = Math.hypot(tx, ty);
-    const nx = ty / tl, ny = -tx / tl;          // normal, pointing up/out
-    // cat-eye profile: longest toward the outer (right) corner
-    const len = 70 + s * 95 + ((i * 37) % 23);
-    const curl = (s - 0.42) * 60;               // curl away from centre
-    return { px, py, nx, ny, len, curl, jig: (i * 97) % 60 };
+    return { px, py, nx: ty / tl, ny: -tx / tl };
+  };
+
+  // Static geometry: root point, normal, zone-stepped length per lash.
+  const lashes = useMemo(() => Array.from({ length: LASH_N }).map((_, i) => {
+    const s = i / (LASH_N - 1);
+    const zone = Math.min(ZONES.length - 1, Math.floor(s * ZONES.length));
+    const len = ZONES[zone] * MM + ((i * 37) % 9);
+    const curl = (s - 0.42) * 46;               // curl away from centre
+    return { ...qAt(s), len, curl, zone, jig: (i * 97) % 60 };
+  }), []);
+
+  // Zone dividers (boundaries incl. both ends) and label anchors.
+  const dividers = useMemo(() => Array.from({ length: ZONES.length + 1 }).map((_, k) => {
+    const q = qAt(k / ZONES.length);
+    const L = Math.max(ZONES[k - 1] ?? 0, ZONES[k] ?? 0) * MM;
+    return { ...q, reach: L + 46 };
+  }), []);
+  const zoneLabels = useMemo(() => ZONES.map((mm, z) => {
+    const q = qAt((z + 0.5) / ZONES.length);
+    return { mm, z,
+      // clamped into the portrait-crop safe zone
+      lx: Math.max(66, Math.min(800, q.px + q.nx * (mm * MM + 62))),
+      ly: q.py + q.ny * (mm * MM + 62) };
   }), []);
 
   // Sparkles, stable seeds.
@@ -328,6 +352,7 @@ function LashAnim({ progress = 0, speed = 1 }) {
   const open = 1 - closed * 0.92;
   const sway = Math.sin(t / 2600) * 1.4;
   const glow = 0.42 + Math.sin(t / 1900) * 0.14;
+  const zi = Math.floor(t / 1500) % ZONES.length;  // active map zone
 
   return (
     <div className="anim-canvas" aria-hidden
@@ -349,31 +374,71 @@ function LashAnim({ progress = 0, speed = 1 }) {
           {/* lash fan — squashes toward the lid line when blinking */}
           <g transform={`translate(500 604) scale(1 ${open}) translate(-500 -604)`}>
             {/* the lid itself */}
-            <path d="M140 600 Q500 380 860 600" fill="none"
+            <path d="M260 600 Q500 410 740 600" fill="none"
                   stroke="#141210" strokeWidth="5" strokeLinecap="round" opacity="0.85" />
             {lashes.map((l, i) => {
-              const flut = Math.sin(t / 480 + i * 0.45) * 2.2
-                         + Math.sin(t / 1300 + l.jig) * 1.2;
+              const flut = Math.sin(t / 560 + i * 0.45) * 1.3
+                         + Math.sin(t / 1400 + l.jig) * 0.7;
               const tipX = l.px + l.nx * l.len;
               const tipY = l.py + l.ny * l.len;
+              const active = l.zone === zi;
               return (
                 <g key={i} transform={`rotate(${flut} ${l.px} ${l.py})`}>
                   <path d={`M${l.px} ${l.py} Q ${l.px + l.nx * l.len * 0.55} ${l.py + l.ny * l.len * 0.62} ${tipX + l.curl} ${tipY}`}
-                        fill="none" stroke="#141210" strokeWidth="2.6"
-                        strokeLinecap="round" opacity="0.75" />
+                        fill="none" stroke="#141210" strokeWidth={active ? 3 : 2.3}
+                        strokeLinecap="round" opacity={active ? 0.92 : 0.55} />
                 </g>
               );
             })}
           </g>
 
           {/* closed-lid curve — fades in as the eye shuts */}
-          <path d="M140 600 Q500 700 860 600" fill="none"
+          <path d="M260 600 Q500 685 740 600" fill="none"
                 stroke="#141210" strokeWidth="4" strokeLinecap="round"
                 opacity={closed * 0.9} />
 
           {/* lower-lid hint */}
-          <path d="M240 640 Q500 730 760 640" fill="none"
+          <path d="M330 640 Q500 715 670 640" fill="none"
                 stroke="#141210" strokeWidth="1.6" opacity={0.22 * (1 - closed)} />
+        </g>
+
+        {/* map annotations — static diagram layer, unaffected by the blink */}
+        <g>
+          {/* dashed zone dividers */}
+          {dividers.map((d, k) => (
+            <line key={k}
+                  x1={d.px - d.nx * 14} y1={d.py - d.ny * 14}
+                  x2={d.px + d.nx * d.reach} y2={d.py + d.ny * d.reach}
+                  stroke="#141210" strokeWidth="1.2"
+                  strokeDasharray="3 8" opacity="0.3" />
+          ))}
+
+          {/* per-zone length labels (mm) — active zone reads darker */}
+          {zoneLabels.map((zl) => (
+            <text key={zl.z} x={zl.lx} y={zl.ly} textAnchor="middle"
+                  fontFamily={FONT_MAP} fontSize="30"
+                  fill="#141210" opacity={zl.z === zi ? 0.85 : 0.38}>
+              {zl.mm}
+            </text>
+          ))}
+
+          {/* spec title block */}
+          <text x="500" y="216" textAnchor="middle" fontFamily={FONT_MAP}
+                fontSize="20" letterSpacing="7" fill="#3a2c50" opacity="0.5">
+            LASH MAP
+          </text>
+          <text x="500" y="250" textAnchor="middle" fontFamily={FONT_MAP}
+                fontSize="15" letterSpacing="5" fill="#3a2c50" opacity="0.42">
+            CAT EYE &middot; 8&ndash;13 MM
+          </text>
+
+          {/* corner markers */}
+          <line x1="260" y1="614" x2="260" y2="632" stroke="#141210" strokeWidth="1.2" opacity="0.35" />
+          <line x1="740" y1="614" x2="740" y2="632" stroke="#141210" strokeWidth="1.2" opacity="0.35" />
+          <text x="260" y="662" textAnchor="middle" fontFamily={FONT_MAP}
+                fontSize="15" letterSpacing="3" fill="#141210" opacity="0.4">INNER</text>
+          <text x="740" y="662" textAnchor="middle" fontFamily={FONT_MAP}
+                fontSize="15" letterSpacing="3" fill="#141210" opacity="0.4">OUTER</text>
         </g>
 
         {/* sparkles */}
