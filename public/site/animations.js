@@ -257,13 +257,33 @@
       const tl = Math.hypot(tx, ty);
       return { px, py, nx: ty / tl, ny: -tx / tl };
     };
-    const lashes = useMemo(() => Array.from({ length: LASH_N }).map((_, i) => {
-      const s = i / (LASH_N - 1);
-      const zone = Math.min(ZONES.length - 1, Math.floor(s * ZONES.length));
-      const len = ZONES[zone] * MM + i * 37 % 9;
-      const curl = (s - 0.42) * 46;
-      return { ...qAt(s), len, curl, zone, jig: i * 97 % 60 };
-    }), []);
+    const CLUSTERS = 11;
+    const lashes = useMemo(() => {
+      const out = [];
+      for (let k = 0; k < CLUSTERS; k++) {
+        const s = k / (CLUSTERS - 1);
+        const zone = Math.min(ZONES.length - 1, Math.floor(s * ZONES.length));
+        const root = qAt(s);
+        const baseLen = ZONES[zone] * MM + k * 37 % 9;
+        const curl = (s - 0.42) * 46;
+        const strands = 4 + k % 2;
+        for (let j = 0; j < strands; j++) {
+          const off = j - (strands - 1) / 2;
+          out.push({
+            ...root,
+            zone,
+            curl,
+            cluster: k,
+            spread: off * 8,
+            // degrees within the fan
+            len: baseLen * (1 - Math.abs(off) * 0.16),
+            mid: Math.abs(off) < 0.6,
+            jig: (k * 97 + j * 31) % 60
+          });
+        }
+      }
+      return out;
+    }, []);
     const dividers = useMemo(() => Array.from({ length: ZONES.length + 1 }).map((_, k) => {
       var _a, _b;
       const q = qAt(k / ZONES.length);
@@ -294,6 +314,14 @@
     const sway = Math.sin(t / 2600) * 1.4;
     const glow = 0.42 + Math.sin(t / 1900) * 0.14;
     const zi = Math.floor(t / 1500) % ZONES.length;
+    const aspect = typeof window !== "undefined" ? window.innerWidth / Math.max(1, window.innerHeight) : 0.7;
+    let fit;
+    if (aspect > 1.05) {
+      const visH = 1e3 / aspect;
+      const visTop = 700 - visH / 2;
+      const k = Math.min(0.45, (visH * 0.5 - 26) / 534);
+      fit = `translate(${722 - k * 500} ${visTop + 26 - k * 196}) scale(${k})`;
+    }
     return /* @__PURE__ */ React.createElement(
       "div",
       {
@@ -309,8 +337,7 @@
           style: { width: "100%", height: "100%", display: "block" }
         },
         /* @__PURE__ */ React.createElement("defs", null, /* @__PURE__ */ React.createElement("radialGradient", { id: "lashGlow", cx: "50%", cy: "50%", r: "50%" }, /* @__PURE__ */ React.createElement("stop", { offset: "0%", stopColor: "#c9b6e6", stopOpacity: "0.55" }), /* @__PURE__ */ React.createElement("stop", { offset: "55%", stopColor: "#b39ad8", stopOpacity: "0.25" }), /* @__PURE__ */ React.createElement("stop", { offset: "100%", stopColor: "#b39ad8", stopOpacity: "0" }))),
-        /* @__PURE__ */ React.createElement("circle", { cx: "500", cy: "560", r: "430", fill: "url(#lashGlow)", opacity: glow * (1 - closed * 0.5) }),
-        /* @__PURE__ */ React.createElement("g", { transform: `rotate(${sway} 500 600)` }, /* @__PURE__ */ React.createElement("g", { transform: `translate(500 604) scale(1 ${open}) translate(-500 -604)` }, /* @__PURE__ */ React.createElement(
+        /* @__PURE__ */ React.createElement("g", { transform: fit }, /* @__PURE__ */ React.createElement("circle", { cx: "500", cy: "560", r: "430", fill: "url(#lashGlow)", opacity: glow * (1 - closed * 0.5) }), /* @__PURE__ */ React.createElement("g", { transform: `rotate(${sway} 500 600)` }, /* @__PURE__ */ React.createElement("g", { transform: `translate(500 604) scale(1 ${open}) translate(-500 -604)` }, /* @__PURE__ */ React.createElement(
           "path",
           {
             d: "M260 600 Q500 410 740 600",
@@ -321,19 +348,19 @@
             opacity: "0.85"
           }
         ), lashes.map((l, i) => {
-          const flut = Math.sin(t / 560 + i * 0.45) * 1.3 + Math.sin(t / 1400 + l.jig) * 0.7;
+          const flut = Math.sin(t / 560 + l.cluster * 0.9) * 1.3 + Math.sin(t / 1400 + l.jig) * 0.4;
           const tipX = l.px + l.nx * l.len;
           const tipY = l.py + l.ny * l.len;
           const active = l.zone === zi;
-          return /* @__PURE__ */ React.createElement("g", { key: i, transform: `rotate(${flut} ${l.px} ${l.py})` }, /* @__PURE__ */ React.createElement(
+          return /* @__PURE__ */ React.createElement("g", { key: i, transform: `rotate(${flut + l.spread} ${l.px} ${l.py})` }, /* @__PURE__ */ React.createElement(
             "path",
             {
               d: `M${l.px} ${l.py} Q ${l.px + l.nx * l.len * 0.55} ${l.py + l.ny * l.len * 0.62} ${tipX + l.curl} ${tipY}`,
               fill: "none",
               stroke: "#141210",
-              strokeWidth: active ? 3 : 2.3,
+              strokeWidth: l.mid ? active ? 3 : 2.4 : active ? 2 : 1.5,
               strokeLinecap: "round",
-              opacity: active ? 0.92 : 0.55
+              opacity: l.mid ? active ? 0.92 : 0.55 : active ? 0.7 : 0.4
             }
           ));
         })), /* @__PURE__ */ React.createElement(
@@ -355,8 +382,7 @@
             strokeWidth: "1.6",
             opacity: 0.22 * (1 - closed)
           }
-        )),
-        /* @__PURE__ */ React.createElement("g", null, dividers.map((d, k) => /* @__PURE__ */ React.createElement(
+        )), /* @__PURE__ */ React.createElement("g", null, dividers.map((d, k) => /* @__PURE__ */ React.createElement(
           "line",
           {
             key: k,
@@ -434,7 +460,7 @@
             opacity: "0.4"
           },
           "OUTER"
-        )),
+        ))),
         sparks.map((s, i) => {
           const tw = Math.max(0, Math.sin((t + s.ph) / s.tw * Math.PI * 2));
           const r = 2.2 + tw * 3.2;
