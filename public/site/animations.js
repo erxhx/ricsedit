@@ -241,8 +241,149 @@
       )
     );
   }
+  function LashAnim({ progress = 0, speed = 1 }) {
+    const t = useTime(speed);
+    const A = [140, 600], B = [860, 600], C = [500, 380];
+    const LASH_N = 27;
+    const lashes = useMemo(() => Array.from({ length: LASH_N }).map((_, i) => {
+      const s = i / (LASH_N - 1);
+      const u = 1 - s;
+      const px = u * u * A[0] + 2 * u * s * C[0] + s * s * B[0];
+      const py = u * u * A[1] + 2 * u * s * C[1] + s * s * B[1];
+      const tx = 2 * u * (C[0] - A[0]) + 2 * s * (B[0] - C[0]);
+      const ty = 2 * u * (C[1] - A[1]) + 2 * s * (B[1] - C[1]);
+      const tl = Math.hypot(tx, ty);
+      const nx = ty / tl, ny = -tx / tl;
+      const len = 70 + s * 95 + i * 37 % 23;
+      const curl = (s - 0.42) * 60;
+      return { px, py, nx, ny, len, curl, jig: i * 97 % 60 };
+    }), []);
+    const drifters = useMemo(() => Array.from({ length: 12 }).map((_, i) => ({
+      x: i * 269 % 1e3,
+      delay: i * 431 % 7e3,
+      dur: 6e3 + i * 157 % 3500,
+      curl: 18 + i * 13 % 22
+    })), []);
+    const sparks = useMemo(() => Array.from({ length: 16 }).map((_, i) => ({
+      x: i * 173 % 1e3,
+      y: i * 337 % 1300,
+      tw: 1400 + i * 211 % 1800,
+      ph: i * 727 % 1e3
+    })), []);
+    const CYCLE = 4600;
+    const cp = t % CYCLE / CYCLE;
+    const blink = cp > 0.9 ? Math.sin((cp - 0.9) / 0.1 * Math.PI) : 0;
+    const closed = Math.min(1, Math.max(blink, Math.abs(progress) * 1.4));
+    const open = 1 - closed * 0.92;
+    const sway = Math.sin(t / 2600) * 1.4;
+    const glow = 0.42 + Math.sin(t / 1900) * 0.14;
+    return /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        className: "anim-canvas",
+        "aria-hidden": true,
+        style: { background: "linear-gradient(180deg, #1a1714 0%, #221b28 55%, #2b2138 100%)" }
+      },
+      /* @__PURE__ */ React.createElement(
+        "svg",
+        {
+          viewBox: "0 0 1000 1400",
+          preserveAspectRatio: "xMidYMid slice",
+          style: { width: "100%", height: "100%", display: "block" }
+        },
+        /* @__PURE__ */ React.createElement("defs", null, /* @__PURE__ */ React.createElement("radialGradient", { id: "lashGlow", cx: "50%", cy: "50%", r: "50%" }, /* @__PURE__ */ React.createElement("stop", { offset: "0%", stopColor: "#8a6cc0", stopOpacity: "0.5" }), /* @__PURE__ */ React.createElement("stop", { offset: "55%", stopColor: "#67509a", stopOpacity: "0.22" }), /* @__PURE__ */ React.createElement("stop", { offset: "100%", stopColor: "#67509a", stopOpacity: "0" }))),
+        /* @__PURE__ */ React.createElement("circle", { cx: "500", cy: "560", r: "430", fill: "url(#lashGlow)", opacity: glow * (1 - closed * 0.5) }),
+        /* @__PURE__ */ React.createElement("g", { transform: `rotate(${sway} 500 600)` }, /* @__PURE__ */ React.createElement("g", { transform: `translate(500 604) scale(1 ${open}) translate(-500 -604)` }, /* @__PURE__ */ React.createElement(
+          "path",
+          {
+            d: "M140 600 Q500 380 860 600",
+            fill: "none",
+            stroke: "#f5f0e8",
+            strokeWidth: "5",
+            strokeLinecap: "round",
+            opacity: "0.85"
+          }
+        ), lashes.map((l, i) => {
+          const flut = Math.sin(t / 480 + i * 0.45) * 2.2 + Math.sin(t / 1300 + l.jig) * 1.2;
+          const tipX = l.px + l.nx * l.len;
+          const tipY = l.py + l.ny * l.len;
+          return /* @__PURE__ */ React.createElement("g", { key: i, transform: `rotate(${flut} ${l.px} ${l.py})` }, /* @__PURE__ */ React.createElement(
+            "path",
+            {
+              d: `M${l.px} ${l.py} Q ${l.px + l.nx * l.len * 0.55} ${l.py + l.ny * l.len * 0.62} ${tipX + l.curl} ${tipY}`,
+              fill: "none",
+              stroke: "#f5f0e8",
+              strokeWidth: "2.6",
+              strokeLinecap: "round",
+              opacity: "0.75"
+            }
+          ));
+        })), /* @__PURE__ */ React.createElement(
+          "path",
+          {
+            d: "M140 600 Q500 700 860 600",
+            fill: "none",
+            stroke: "#f5f0e8",
+            strokeWidth: "4",
+            strokeLinecap: "round",
+            opacity: closed * 0.9
+          }
+        ), /* @__PURE__ */ React.createElement(
+          "path",
+          {
+            d: "M240 640 Q500 730 760 640",
+            fill: "none",
+            stroke: "#f5f0e8",
+            strokeWidth: "1.6",
+            opacity: 0.22 * (1 - closed)
+          }
+        )),
+        drifters.map((d, i) => {
+          const phase = (t + d.delay) % d.dur / d.dur;
+          const y = -40 + phase * 1500;
+          const x = d.x + Math.sin(t / 1e3 + i * 1.3) * 34;
+          const rot = Math.sin(t / 700 + i) * 50 + phase * 120;
+          const op = phase < 0.85 ? 0.35 : (1 - phase) / 0.15 * 0.35;
+          return /* @__PURE__ */ React.createElement(
+            "path",
+            {
+              key: i,
+              d: `M0 0 Q ${d.curl} ${d.curl * 0.4} ${d.curl * 1.6} ${-d.curl * 0.6}`,
+              transform: `translate(${x} ${y}) rotate(${rot})`,
+              fill: "none",
+              stroke: "#f5f0e8",
+              strokeWidth: "1.8",
+              strokeLinecap: "round",
+              opacity: op
+            }
+          );
+        }),
+        sparks.map((s, i) => {
+          const tw = Math.max(0, Math.sin((t + s.ph) / s.tw * Math.PI * 2));
+          const r = 2.2 + tw * 3.2;
+          return /* @__PURE__ */ React.createElement("g", { key: i, transform: `translate(${s.x} ${s.y})`, opacity: tw * 0.55 }, /* @__PURE__ */ React.createElement("path", { d: `M0 ${-r} L${r * 0.32} 0 L0 ${r} L${-r * 0.32} 0 Z`, fill: "#e8ddf5" }), /* @__PURE__ */ React.createElement("path", { d: `M${-r} 0 L0 ${r * 0.32} L${r} 0 L0 ${-r * 0.32} Z`, fill: "#e8ddf5" }));
+        }),
+        /* @__PURE__ */ React.createElement(
+          "text",
+          {
+            x: "500",
+            y: "1060",
+            textAnchor: "middle",
+            fontFamily: "Fraunces, serif",
+            fontStyle: "italic",
+            fontWeight: "300",
+            fontSize: "170",
+            fill: "#f5f0e8",
+            opacity: "0.07",
+            letterSpacing: "-3"
+          },
+          "flutter"
+        )
+      )
+    );
+  }
   function HomeAura() {
     return /* @__PURE__ */ React.createElement("div", { className: "anim-canvas home-aura", "aria-hidden": true }, /* @__PURE__ */ React.createElement("span", { className: "aura-blob aura-a" }), /* @__PURE__ */ React.createElement("span", { className: "aura-blob aura-b" }), /* @__PURE__ */ React.createElement("span", { className: "aura-blob aura-c" }), /* @__PURE__ */ React.createElement("span", { className: "aura-blob aura-d" }));
   }
-  Object.assign(window, { HomeAnim, HomeAura, BarberAnim, TanAnim, WaxAnim });
+  Object.assign(window, { HomeAnim, HomeAura, BarberAnim, TanAnim, WaxAnim, LashAnim });
 })();

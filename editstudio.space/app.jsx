@@ -16,7 +16,7 @@ const ANIM_FOR = {
   barber: 'HomeAnim',
   tan: 'TanAnim',
   wax: 'WaxAnim',
-  lashes: 'HomeAnim',
+  lashes: 'LashAnim',
   visit: 'HomeAnim'
 };
 
