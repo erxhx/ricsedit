@@ -72,6 +72,8 @@ function HomeAnim({ progress = 0, speed = 1 }) {
 
 // ────────────────────────────────────────────────────────────────
 // 2) BARBERING — falling hair strands; clipper sweep on transition
+//    ARCHIVED: no page maps to this since the barber hero switched to
+//    HomeAnim (see ANIM_FOR in app.jsx). Kept for easy restoration.
 // ────────────────────────────────────────────────────────────────
 function BarberAnim({ progress = 0, speed = 1 }) {
   const t = useTime(speed);
