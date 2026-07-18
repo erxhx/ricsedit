@@ -938,16 +938,20 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
   font-size: clamp(46px, min(9vw, 42vh - 220px), 128px);
 }
 
-/* Collage — fanned photo stack, right side (desktop) */
+/* Collage — staggered horizontal line, right side (desktop). A single row
+   reads as a filmstrip across the empty right band and, being short, no
+   longer drifts with viewport height the way the old tall 2×2 stack did. */
 .aura-collage {
-  position: absolute; right: 5vw; top: 44.5%;
+  position: absolute; right: 4vw; top: 44%;
   transform: translateY(-50%);
-  width: 28vw; max-width: 420px;
-  aspect-ratio: 5 / 6;
+  display: flex; align-items: center;
+  gap: clamp(12px, 1.3vw, 24px);
+  width: auto; max-width: none; aspect-ratio: auto;
   z-index: 1;
 }
 .aura-card {
-  position: absolute; width: 47%; aspect-ratio: 3 / 4;
+  position: relative; flex: 0 0 clamp(120px, 13vw, 200px);
+  width: auto; aspect-ratio: 3 / 4;
   padding: 10px 10px 32px; overflow: hidden;
   /* Transparent fill + the sheen overlay reads as a frosted-glass frame
      (matches the mobile strip); a hint of paper keeps it consistent over
@@ -992,15 +996,15 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
 .aura-card-num { opacity: 0.7; }
 .aura-card-arr { opacity: 0; width: 0; margin-left: -7px; transform: translateX(-4px); transition: opacity 0.3s, transform 0.3s, width 0.3s, margin 0.3s; }
 .aura-card:hover .aura-card-arr { opacity: 1; width: auto; margin-left: 0; transform: none; }
-/* Top row sits IN FRONT of the bottom row so all four labels (which live
-   at each card's bottom edge, where the lower cards overlap) stay legible. */
-.aura-card-barber { left: 1%;  top: 2%;    transform: rotate(-6deg);  z-index: 4; }
-.aura-card-tan    { right: 2%; top: 0;     transform: rotate(4.5deg); z-index: 3; }
-.aura-card-wax    { left: 6%;  bottom: 0;  transform: rotate(3deg);   z-index: 2; }
-.aura-card-lashes { right: 5%; bottom: 3%; transform: rotate(-3.5deg); z-index: 1; }
+/* Staggered zigzag: alternate cards ride high and low along the line, each
+   tipped a few degrees for the hand-placed polaroid feel. */
+.aura-card-barber { transform: translateY(24px)  rotate(-5deg);  z-index: 4; }
+.aura-card-tan    { transform: translateY(-26px) rotate(3.5deg); z-index: 3; }
+.aura-card-wax    { transform: translateY(20px)  rotate(4deg);   z-index: 2; }
+.aura-card-lashes { transform: translateY(-22px) rotate(-3.5deg); z-index: 1; }
 .aura-card:hover,
 .aura-card:focus-visible {
-  transform: rotate(0deg) translateY(-10px) scale(1.03);
+  transform: translateY(-16px) rotate(0deg) scale(1.04);
   z-index: 9;
   box-shadow: 0 34px 80px -20px rgba(20,18,16,0.34), 0 10px 24px rgba(20,18,16,0.10);
 }
