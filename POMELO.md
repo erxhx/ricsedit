@@ -226,6 +226,31 @@ Design language: port the site's editorial ink-on-paper system (mono uppercase l
 serif italic headlines, hairline rules, lime accent) — it's distinctive and already
 proven; don't ship a generic template UI.
 
+## 5b. Distribution — how salons get the funnel (decided July 2026)
+
+**Hosted page first; embed is a veneer; never an inline iframe checkout.**
+
+1. **Hosted booking page** (default): `{slug}.pomelo.app` + custom domain via CNAME
+   (`book.salon.com`). This is where payments, Apple Pay, and email deep links
+   (confirmation / reminder / manage) actually work. It's also what the two real
+   booking front doors want: the Instagram bio link and the Google Business Profile
+   "Book" button — both take a URL, not an embed.
+2. **"Book Now" snippet** for salons' existing sites: one line of HTML rendering a
+   styled button that opens the hosted funnel (overlay on desktop, new tab on mobile —
+   Calendly's pattern). Feels embedded, is actually our domain.
+3. **Premium tier — Pomelo hosts the whole site**: the Edit Studio model, templated
+   (hero system, menus, galleries + booking woven in). Competitors' hosted pages are
+   ugly; a beautiful full site is the upsell, with editstudio.space as the live demo.
+
+Why NOT inline iframes (learned the hard way in this repo): Apple Pay domain
+verification is per top-level domain (impossible to manage across salons' Wix/
+Squarespace sites); the Square card form is itself an iframe → nested-iframe Safari
+storage-partitioning and 3DS-popup breakage per host platform; the funnel is
+full-screen mobile-first and dies inside a fixed-height frame under someone's sticky
+header; and email links need a canonical URL anyway, so the hosted page must exist
+regardless. Later distribution: Reserve with Google, Instagram action buttons,
+front-counter QR codes.
+
 ## 6. Build phases
 
 **Phase 0 — extract & de-hardcode (in this repo)**
