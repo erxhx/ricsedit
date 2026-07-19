@@ -534,6 +534,118 @@ function LashAnim({ progress = 0, speed = 1 }) {
   );
 }
 
+// ────────────────────────────────────────────────────────────────
+// 6) BARBER — the cut log, photo edition: a mannequin reference shot
+//    sitting frameless in the hero, its edges feathered away into
+//    the paper background. Warm-tinted so the grey studio photo sits
+//    in the site palette. Data-driven: add styles to CUT_STYLES;
+//    `cat` is the grouping key so several styles can share one
+//    category later. One style for now — cycling comes back once the
+//    blended look is approved.
+// ────────────────────────────────────────────────────────────────
+const CUT_STYLES = [
+  { name: 'TEXTURED QUIFF', cat: 'MID', img: 'assets/cut-textured-quiff.jpg' },
+];
+
+function BarberCutAnim({ progress = 0, speed = 1 }) {
+  const t = useTime(speed);
+  const FONT_MAP = 'JetBrains Mono, ui-monospace, monospace';
+  const C = CUT_STYLES[0];
+
+  // Photo rect — matches the source aspect (578×721); the mask feathers
+  // roughly the outer 60px of every edge into the background.
+  const IW = 500, IH = 624, IX = 500 - IW / 2, IY = 236;
+
+  const sway = Math.sin(t / 2800) * 1.0;
+  const bob = Math.sin(t / 2100) * 5;
+  const glow = 0.4 + Math.sin(t / 2000) * 0.12;
+  const dim = 1 - Math.min(1, Math.abs(progress)) * 0.6;
+
+  // Same viewport-fit approach as LashAnim: recover the slice-cropped
+  // visible band, then place the content between nav pills and headline.
+  const W = typeof window !== 'undefined' ? window.innerWidth : 1200;
+  const H = typeof window !== 'undefined' ? window.innerHeight : 800;
+  const s = Math.max(W / 1000, H / 1400);
+  const visLeft = 500 - (W / s) / 2, visW = W / s;
+  const visTop  = 700 - (H / s) / 2, visH = H / s;
+  const wide = W / H > 1.2;
+  const tall = W / H < 0.8;
+  const BX0 = 260, BX1 = 740, BY0 = 160, BY1 = 880, CX = 500;
+  const bw = BX1 - BX0, bh = BY1 - BY0;
+  const topLimit = visTop + 200 / s + 12;
+  const botLimit = visTop + visH * (wide ? 0.60 : tall ? 0.52 : 0.50);
+  const availH = Math.max(40, botLimit - topLimit);
+  const availW = visW * (wide ? 0.52 : tall ? 0.98 : 0.94);
+  const k = Math.max(0.14, Math.min(wide ? 0.5 : tall ? 0.66 : 0.5, availH / bh, availW / bw));
+  const ty = topLimit + (availH - k * bh) / 2 - k * BY0;
+  const tx = wide
+    ? (visLeft + visW * 0.97) - k * BX1
+    : (visLeft + visW / 2) - k * CX;
+  const fit = `translate(${tx} ${ty}) scale(${k})`;
+
+  return (
+    <div className="anim-canvas" aria-hidden
+         style={{ background: 'linear-gradient(180deg, #efeae0 0%, #ece7dd 55%, #e8dccb 100%)' }}>
+      <svg viewBox="0 0 1000 1400" preserveAspectRatio="xMidYMid slice"
+           style={{ width: '100%', height: '100%', display: 'block' }}>
+        <defs>
+          <radialGradient id="cutGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#e2bd93" stopOpacity="0.5" />
+            <stop offset="55%" stopColor="#cfa170" stopOpacity="0.22" />
+            <stop offset="100%" stopColor="#cfa170" stopOpacity="0" />
+          </radialGradient>
+          {/* feathered-edge mask: a blurred white rect — soft, even alpha
+              ramp on all four sides so the photo dissolves into the bg */}
+          <filter id="cutFeather" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="30" />
+          </filter>
+          <mask id="cutFade">
+            <rect x={IX + 62} y={IY + 62} width={IW - 124} height={IH - 124}
+                  rx="40" fill="#fff" filter="url(#cutFeather)" />
+          </mask>
+          {/* warm the neutral grey studio shot toward the paper palette */}
+          <filter id="cutWarm">
+            <feColorMatrix type="matrix" values="
+              1.04 0    0    0 0.02
+              0    1.00 0    0 0.012
+              0    0    0.94 0 0
+              0    0    0    1 0" />
+          </filter>
+        </defs>
+
+        <g transform={fit} opacity={dim}>
+          {/* warm aura breathing behind the photo */}
+          <circle cx="500" cy="548" r="430" fill="url(#cutGlow)" opacity={glow} />
+
+          <g transform={`translate(0 ${bob}) rotate(${sway} 500 ${IY + IH / 2})`}>
+            <g mask="url(#cutFade)">
+              <image href={C.img} x={IX} y={IY} width={IW} height={IH}
+                     preserveAspectRatio="xMidYMid slice" filter="url(#cutWarm)" />
+            </g>
+          </g>
+
+          {/* spec title block — the reference-card voice */}
+          <text x="500" y="184" textAnchor="middle" fontFamily={FONT_MAP}
+                fontSize="20" letterSpacing="7" fill="#50352c" opacity="0.5">
+            CUT LOG
+          </text>
+          <text x="500" y="214" textAnchor="middle" fontFamily={FONT_MAP}
+                fontSize="15" letterSpacing="5" fill="#50352c" opacity="0.42">
+            {C.name} &middot; {C.cat}
+          </text>
+        </g>
+
+        {/* italic word ghost */}
+        <text x="500" y="1060" textAnchor="middle"
+              fontFamily="Fraunces, serif" fontStyle="italic" fontWeight="300"
+              fontSize="170" fill="#50352c" opacity="0.07" letterSpacing="-3">
+          fresh
+        </text>
+      </svg>
+    </div>
+  );
+}
+
 // ── Home aura — milky drifting colour fields (Rhode-soft, CSS-driven) ──────
 // Replaces the logo-ghost canvas on the home hero. All motion lives in CSS
 // keyframes (styles.css) so it's GPU-cheap and respects reduced-motion.
@@ -549,4 +661,4 @@ function HomeAura() {
 }
 
 // Export to window for the main app
-Object.assign(window, { HomeAnim, HomeAura, BarberAnim, TanAnim, WaxAnim, LashAnim });
+Object.assign(window, { HomeAnim, HomeAura, BarberAnim, TanAnim, WaxAnim, LashAnim, BarberCutAnim });

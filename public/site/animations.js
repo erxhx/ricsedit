@@ -513,8 +513,122 @@
       )
     );
   }
+  const CUT_STYLES = [
+    { name: "TEXTURED QUIFF", cat: "MID", img: "assets/cut-textured-quiff.jpg" }
+  ];
+  function BarberCutAnim({ progress = 0, speed = 1 }) {
+    const t = useTime(speed);
+    const FONT_MAP = "JetBrains Mono, ui-monospace, monospace";
+    const C = CUT_STYLES[0];
+    const IW = 500, IH = 624, IX = 500 - IW / 2, IY = 236;
+    const sway = Math.sin(t / 2800) * 1;
+    const bob = Math.sin(t / 2100) * 5;
+    const glow = 0.4 + Math.sin(t / 2e3) * 0.12;
+    const dim = 1 - Math.min(1, Math.abs(progress)) * 0.6;
+    const W = typeof window !== "undefined" ? window.innerWidth : 1200;
+    const H = typeof window !== "undefined" ? window.innerHeight : 800;
+    const s = Math.max(W / 1e3, H / 1400);
+    const visLeft = 500 - W / s / 2, visW = W / s;
+    const visTop = 700 - H / s / 2, visH = H / s;
+    const wide = W / H > 1.2;
+    const tall = W / H < 0.8;
+    const BX0 = 260, BX1 = 740, BY0 = 160, BY1 = 880, CX = 500;
+    const bw = BX1 - BX0, bh = BY1 - BY0;
+    const topLimit = visTop + 200 / s + 12;
+    const botLimit = visTop + visH * (wide ? 0.6 : tall ? 0.52 : 0.5);
+    const availH = Math.max(40, botLimit - topLimit);
+    const availW = visW * (wide ? 0.52 : tall ? 0.98 : 0.94);
+    const k = Math.max(0.14, Math.min(wide ? 0.5 : tall ? 0.66 : 0.5, availH / bh, availW / bw));
+    const ty = topLimit + (availH - k * bh) / 2 - k * BY0;
+    const tx = wide ? visLeft + visW * 0.97 - k * BX1 : visLeft + visW / 2 - k * CX;
+    const fit = `translate(${tx} ${ty}) scale(${k})`;
+    return /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        className: "anim-canvas",
+        "aria-hidden": true,
+        style: { background: "linear-gradient(180deg, #efeae0 0%, #ece7dd 55%, #e8dccb 100%)" }
+      },
+      /* @__PURE__ */ React.createElement(
+        "svg",
+        {
+          viewBox: "0 0 1000 1400",
+          preserveAspectRatio: "xMidYMid slice",
+          style: { width: "100%", height: "100%", display: "block" }
+        },
+        /* @__PURE__ */ React.createElement("defs", null, /* @__PURE__ */ React.createElement("radialGradient", { id: "cutGlow", cx: "50%", cy: "50%", r: "50%" }, /* @__PURE__ */ React.createElement("stop", { offset: "0%", stopColor: "#e2bd93", stopOpacity: "0.5" }), /* @__PURE__ */ React.createElement("stop", { offset: "55%", stopColor: "#cfa170", stopOpacity: "0.22" }), /* @__PURE__ */ React.createElement("stop", { offset: "100%", stopColor: "#cfa170", stopOpacity: "0" })), /* @__PURE__ */ React.createElement("filter", { id: "cutFeather", x: "-30%", y: "-30%", width: "160%", height: "160%" }, /* @__PURE__ */ React.createElement("feGaussianBlur", { stdDeviation: "30" })), /* @__PURE__ */ React.createElement("mask", { id: "cutFade" }, /* @__PURE__ */ React.createElement(
+          "rect",
+          {
+            x: IX + 62,
+            y: IY + 62,
+            width: IW - 124,
+            height: IH - 124,
+            rx: "40",
+            fill: "#fff",
+            filter: "url(#cutFeather)"
+          }
+        )), /* @__PURE__ */ React.createElement("filter", { id: "cutWarm" }, /* @__PURE__ */ React.createElement("feColorMatrix", { type: "matrix", values: "\n              1.04 0    0    0 0.02\n              0    1.00 0    0 0.012\n              0    0    0.94 0 0\n              0    0    0    1 0" }))),
+        /* @__PURE__ */ React.createElement("g", { transform: fit, opacity: dim }, /* @__PURE__ */ React.createElement("circle", { cx: "500", cy: "548", r: "430", fill: "url(#cutGlow)", opacity: glow }), /* @__PURE__ */ React.createElement("g", { transform: `translate(0 ${bob}) rotate(${sway} 500 ${IY + IH / 2})` }, /* @__PURE__ */ React.createElement("g", { mask: "url(#cutFade)" }, /* @__PURE__ */ React.createElement(
+          "image",
+          {
+            href: C.img,
+            x: IX,
+            y: IY,
+            width: IW,
+            height: IH,
+            preserveAspectRatio: "xMidYMid slice",
+            filter: "url(#cutWarm)"
+          }
+        ))), /* @__PURE__ */ React.createElement(
+          "text",
+          {
+            x: "500",
+            y: "184",
+            textAnchor: "middle",
+            fontFamily: FONT_MAP,
+            fontSize: "20",
+            letterSpacing: "7",
+            fill: "#50352c",
+            opacity: "0.5"
+          },
+          "CUT LOG"
+        ), /* @__PURE__ */ React.createElement(
+          "text",
+          {
+            x: "500",
+            y: "214",
+            textAnchor: "middle",
+            fontFamily: FONT_MAP,
+            fontSize: "15",
+            letterSpacing: "5",
+            fill: "#50352c",
+            opacity: "0.42"
+          },
+          C.name,
+          " \xB7 ",
+          C.cat
+        )),
+        /* @__PURE__ */ React.createElement(
+          "text",
+          {
+            x: "500",
+            y: "1060",
+            textAnchor: "middle",
+            fontFamily: "Fraunces, serif",
+            fontStyle: "italic",
+            fontWeight: "300",
+            fontSize: "170",
+            fill: "#50352c",
+            opacity: "0.07",
+            letterSpacing: "-3"
+          },
+          "fresh"
+        )
+      )
+    );
+  }
   function HomeAura() {
     return /* @__PURE__ */ React.createElement("div", { className: "anim-canvas home-aura", "aria-hidden": true }, /* @__PURE__ */ React.createElement("span", { className: "aura-blob aura-a" }), /* @__PURE__ */ React.createElement("span", { className: "aura-blob aura-b" }), /* @__PURE__ */ React.createElement("span", { className: "aura-blob aura-c" }), /* @__PURE__ */ React.createElement("span", { className: "aura-blob aura-d" }));
   }
-  Object.assign(window, { HomeAnim, HomeAura, BarberAnim, TanAnim, WaxAnim, LashAnim });
+  Object.assign(window, { HomeAnim, HomeAura, BarberAnim, TanAnim, WaxAnim, LashAnim, BarberCutAnim });
 })();

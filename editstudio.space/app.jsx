@@ -13,9 +13,11 @@ const SERVICES_DEF = {
   visit: { id: 'visit', label: 'Visit', num: '05', accent: 'oklch(0.32 0.04 30)', hint: 'Hours · FAQ · the shelf', ig: 'editstudiospace' }
 };
 
+// barber previously borrowed HomeAnim (still used by visit); before that,
+// the falling-strands BarberAnim — both remain archived in animations.jsx.
 const ANIM_FOR = {
   home: 'HomeAura',
-  barber: 'HomeAnim',
+  barber: 'BarberCutAnim',
   tan: 'TanAnim',
   wax: 'WaxAnim',
   lashes: 'LashAnim',

@@ -10,7 +10,7 @@
   };
   const ANIM_FOR = {
     home: "HomeAura",
-    barber: "HomeAnim",
+    barber: "BarberCutAnim",
     tan: "TanAnim",
     wax: "WaxAnim",
     lashes: "LashAnim",
