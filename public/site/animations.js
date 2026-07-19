@@ -591,7 +591,7 @@
             fill: "#50352c",
             opacity: "0.5"
           },
-          "CUT LOG"
+          "CUT LAB"
         ), /* @__PURE__ */ React.createElement(
           "text",
           {
@@ -607,23 +607,7 @@
           C.name,
           " \xB7 ",
           C.cat
-        )),
-        /* @__PURE__ */ React.createElement(
-          "text",
-          {
-            x: "500",
-            y: "1060",
-            textAnchor: "middle",
-            fontFamily: "Fraunces, serif",
-            fontStyle: "italic",
-            fontWeight: "300",
-            fontSize: "170",
-            fill: "#50352c",
-            opacity: "0.07",
-            letterSpacing: "-3"
-          },
-          "fresh"
-        )
+        ))
       )
     );
   }

@@ -627,20 +627,13 @@ function BarberCutAnim({ progress = 0, speed = 1 }) {
           {/* spec title block — the reference-card voice */}
           <text x="500" y="184" textAnchor="middle" fontFamily={FONT_MAP}
                 fontSize="20" letterSpacing="7" fill="#50352c" opacity="0.5">
-            CUT LOG
+            CUT LAB
           </text>
           <text x="500" y="214" textAnchor="middle" fontFamily={FONT_MAP}
                 fontSize="15" letterSpacing="5" fill="#50352c" opacity="0.42">
             {C.name} &middot; {C.cat}
           </text>
         </g>
-
-        {/* italic word ghost */}
-        <text x="500" y="1060" textAnchor="middle"
-              fontFamily="Fraunces, serif" fontStyle="italic" fontWeight="300"
-              fontSize="170" fill="#50352c" opacity="0.07" letterSpacing="-3">
-          fresh
-        </text>
       </svg>
     </div>
   );
