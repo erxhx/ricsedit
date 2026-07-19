@@ -538,19 +538,40 @@ function LashAnim({ progress = 0, speed = 1 }) {
 // 6) BARBER — the cut log, photo edition: a mannequin reference shot
 //    sitting frameless in the hero, its edges feathered away into
 //    the paper background. Warm-tinted so the grey studio photo sits
-//    in the site palette. Data-driven: add styles to CUT_STYLES;
-//    `cat` is the grouping key so several styles can share one
-//    category later. One style for now — cycling comes back once the
-//    blended look is approved.
+//    in the site palette. Styles cycle with a soft clipper sweep —
+//    a wide feathered wipe travelling left→right, so the transition
+//    stays as frameless as the image itself. Data-driven: add styles
+//    to CUT_STYLES; `cat` is the grouping key so several styles can
+//    share one category later.
 // ────────────────────────────────────────────────────────────────
 const CUT_STYLES = [
-  { name: 'TEXTURED QUIFF', cat: 'MID', img: 'assets/cut-textured-quiff.jpg' },
+  { name: 'TEXTURED QUIFF', cat: 'MID',  img: 'assets/cut-textured-quiff.jpg' },
+  { name: 'FLOW',           cat: 'FLOW', img: 'assets/cut-flow.jpg' },
 ];
 
 function BarberCutAnim({ progress = 0, speed = 1 }) {
   const t = useTime(speed);
   const FONT_MAP = 'JetBrains Mono, ui-monospace, monospace';
-  const C = CUT_STYLES[0];
+
+  // Cycle: hold each style, then a feathered sweep reveals the next.
+  // The offset makes the first visible frame a fully-held style 01.
+  const n = CUT_STYLES.length;
+  const HOLD = 4200, SWEEP = 900, CYCLE = HOLD + SWEEP;
+  const tt = t + 800;
+  const cyc = Math.floor(tt / CYCLE);
+  const local = tt - cyc * CYCLE;
+  const idx = ((cyc % n) + n) % n;
+  const nxt = (idx + 1) % n;
+  let wp = 0;
+  if (local > HOLD) {
+    const x = (local - HOLD) / SWEEP;
+    wp = x * x * (3 - 2 * x);                       // smoothstep ease
+  }
+  const C = CUT_STYLES[idx];
+  const L = wp > 0.5 ? CUT_STYLES[nxt] : C;         // label follows the reveal
+  // sweep front travels past 1 so the soft band fully clears the frame
+  const BAND = 0.34;
+  const front = wp * (1 + BAND);
 
   // Photo rect — matches the source aspect (578×721); the mask feathers
   // roughly the outer 60px of every edge into the background.
@@ -611,6 +632,15 @@ function BarberCutAnim({ progress = 0, speed = 1 }) {
               0    0    0.94 0 0
               0    0    0    1 0" />
           </filter>
+          {/* travelling soft wipe: white = incoming style revealed. The
+              gradient stops move with the sweep front each frame. */}
+          <linearGradient id="cutSweepGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset={Math.max(0, Math.min(1, front - BAND))} stopColor="#fff" />
+            <stop offset={Math.max(0, Math.min(1, front))} stopColor="#000" />
+          </linearGradient>
+          <mask id="cutSweep">
+            <rect x={IX} y={IY} width={IW} height={IH} fill="url(#cutSweepGrad)" />
+          </mask>
         </defs>
 
         <g transform={fit} opacity={dim}>
@@ -619,8 +649,15 @@ function BarberCutAnim({ progress = 0, speed = 1 }) {
 
           <g transform={`translate(0 ${bob}) rotate(${sway} 500 ${IY + IH / 2})`}>
             <g mask="url(#cutFade)">
+              {/* current style */}
               <image href={C.img} x={IX} y={IY} width={IW} height={IH}
                      preserveAspectRatio="xMidYMid slice" filter="url(#cutWarm)" />
+              {/* incoming style — kept mounted so it's decoded before its
+                  sweep; hidden while the travelling mask is fully black */}
+              <g mask="url(#cutSweep)">
+                <image href={CUT_STYLES[nxt].img} x={IX} y={IY} width={IW} height={IH}
+                       preserveAspectRatio="xMidYMid slice" filter="url(#cutWarm)" />
+              </g>
             </g>
           </g>
 
@@ -631,7 +668,7 @@ function BarberCutAnim({ progress = 0, speed = 1 }) {
           </text>
           <text x="500" y="214" textAnchor="middle" fontFamily={FONT_MAP}
                 fontSize="15" letterSpacing="5" fill="#50352c" opacity="0.42">
-            {C.name} &middot; {C.cat}
+            {L.name} &middot; {L.cat}
           </text>
         </g>
       </svg>

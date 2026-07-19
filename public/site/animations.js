@@ -514,12 +514,28 @@
     );
   }
   const CUT_STYLES = [
-    { name: "TEXTURED QUIFF", cat: "MID", img: "assets/cut-textured-quiff.jpg" }
+    { name: "TEXTURED QUIFF", cat: "MID", img: "assets/cut-textured-quiff.jpg" },
+    { name: "FLOW", cat: "FLOW", img: "assets/cut-flow.jpg" }
   ];
   function BarberCutAnim({ progress = 0, speed = 1 }) {
     const t = useTime(speed);
     const FONT_MAP = "JetBrains Mono, ui-monospace, monospace";
-    const C = CUT_STYLES[0];
+    const n = CUT_STYLES.length;
+    const HOLD = 4200, SWEEP = 900, CYCLE = HOLD + SWEEP;
+    const tt = t + 800;
+    const cyc = Math.floor(tt / CYCLE);
+    const local = tt - cyc * CYCLE;
+    const idx = (cyc % n + n) % n;
+    const nxt = (idx + 1) % n;
+    let wp = 0;
+    if (local > HOLD) {
+      const x = (local - HOLD) / SWEEP;
+      wp = x * x * (3 - 2 * x);
+    }
+    const C = CUT_STYLES[idx];
+    const L = wp > 0.5 ? CUT_STYLES[nxt] : C;
+    const BAND = 0.34;
+    const front = wp * (1 + BAND);
     const IW = 500, IH = 624, IX = 500 - IW / 2, IY = 236;
     const sway = Math.sin(t / 2800) * 1;
     const bob = Math.sin(t / 2100) * 5;
@@ -567,7 +583,7 @@
             fill: "#fff",
             filter: "url(#cutFeather)"
           }
-        )), /* @__PURE__ */ React.createElement("filter", { id: "cutWarm" }, /* @__PURE__ */ React.createElement("feColorMatrix", { type: "matrix", values: "\n              1.04 0    0    0 0.02\n              0    1.00 0    0 0.012\n              0    0    0.94 0 0\n              0    0    0    1 0" }))),
+        )), /* @__PURE__ */ React.createElement("filter", { id: "cutWarm" }, /* @__PURE__ */ React.createElement("feColorMatrix", { type: "matrix", values: "\n              1.04 0    0    0 0.02\n              0    1.00 0    0 0.012\n              0    0    0.94 0 0\n              0    0    0    1 0" })), /* @__PURE__ */ React.createElement("linearGradient", { id: "cutSweepGrad", x1: "0", y1: "0", x2: "1", y2: "0" }, /* @__PURE__ */ React.createElement("stop", { offset: Math.max(0, Math.min(1, front - BAND)), stopColor: "#fff" }), /* @__PURE__ */ React.createElement("stop", { offset: Math.max(0, Math.min(1, front)), stopColor: "#000" })), /* @__PURE__ */ React.createElement("mask", { id: "cutSweep" }, /* @__PURE__ */ React.createElement("rect", { x: IX, y: IY, width: IW, height: IH, fill: "url(#cutSweepGrad)" }))),
         /* @__PURE__ */ React.createElement("g", { transform: fit, opacity: dim }, /* @__PURE__ */ React.createElement("circle", { cx: "500", cy: "548", r: "430", fill: "url(#cutGlow)", opacity: glow }), /* @__PURE__ */ React.createElement("g", { transform: `translate(0 ${bob}) rotate(${sway} 500 ${IY + IH / 2})` }, /* @__PURE__ */ React.createElement("g", { mask: "url(#cutFade)" }, /* @__PURE__ */ React.createElement(
           "image",
           {
@@ -579,7 +595,18 @@
             preserveAspectRatio: "xMidYMid slice",
             filter: "url(#cutWarm)"
           }
-        ))), /* @__PURE__ */ React.createElement(
+        ), /* @__PURE__ */ React.createElement("g", { mask: "url(#cutSweep)" }, /* @__PURE__ */ React.createElement(
+          "image",
+          {
+            href: CUT_STYLES[nxt].img,
+            x: IX,
+            y: IY,
+            width: IW,
+            height: IH,
+            preserveAspectRatio: "xMidYMid slice",
+            filter: "url(#cutWarm)"
+          }
+        )))), /* @__PURE__ */ React.createElement(
           "text",
           {
             x: "500",
@@ -604,9 +631,9 @@
             fill: "#50352c",
             opacity: "0.42"
           },
-          C.name,
+          L.name,
           " \xB7 ",
-          C.cat
+          L.cat
         ))
       )
     );
