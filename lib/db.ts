@@ -3,8 +3,16 @@
  * All queries run server-side using the secret Supabase key.
  */
 
+import { randomBytes } from 'crypto';
 import { db } from './supabase';
 import type { Appointment, AppointmentStatus, ClientRecord } from './admin-mock';
+
+/** High-entropy, unguessable self-serve manage token (192 bits). Generated in
+ *  app code so it never depends on a DB column default, and is never derived
+ *  from the row id (which would make it predictable if the id ever leaked). */
+function newManageToken(): string {
+  return randomBytes(24).toString('base64url');
+}
 
 // ── Row mapper ────────────────────────────────────────────────────────────────
 // Supabase returns snake_case; our app uses camelCase.
@@ -226,6 +234,7 @@ export async function dbCreateAppointment(
       status:           data.status,
       notes:            data.notes           ?? null,
       intake_responses: data.intakeResponses ?? null,
+      manage_token:     newManageToken(),
     })
     .select()
     .single();

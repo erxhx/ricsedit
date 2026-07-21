@@ -21,7 +21,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import { createHash, randomBytes } from 'crypto';
+import { randomBytes } from 'crypto';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { fileURLToPath } from 'url';
@@ -185,14 +185,10 @@ function addMinutes(timeStr, minutes) {
   return `${String(Math.floor(total / 60) % 24).padStart(2,'0')}:${String(total % 60).padStart(2,'0')}:00`;
 }
 
-/** Deterministic manage token from appointment id (matches the app's makeToken) */
-function makeToken(id) {
-  return createHash('sha256').update(`edit-studio-manage-${id}`).digest('hex').slice(0, 24);
-}
-
-/** Fallback: random token for rows we can't derive an id for in advance */
+/** Random, unguessable manage token. Never derive tokens from the row id —
+ *  a predictable token is a self-serve-cancel IDOR (this repo is public). */
 function randomToken() {
-  return randomBytes(12).toString('hex');
+  return randomBytes(24).toString('base64url');
 }
 
 // ── Map staff ─────────────────────────────────────────────────────────────────
@@ -419,9 +415,9 @@ for (let i = 0; i < records.length; i += BATCH) {
     continue;
   }
 
-  // Back-fill manage_token using the DB-assigned id
+  // Back-fill a random manage_token per row using the DB-assigned id
   if (data && data.length) {
-    const updates = data.map(r => ({ id: r.id, manage_token: makeToken(String(r.id)) }));
+    const updates = data.map(r => ({ id: r.id, manage_token: randomToken() }));
     for (const u of updates) {
       await db.from('appointments').update({ manage_token: u.manage_token }).eq('id', u.id);
     }

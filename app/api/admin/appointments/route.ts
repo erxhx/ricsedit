@@ -32,7 +32,8 @@ export async function GET(request: Request) {
     }
     return Response.json({ error: 'Provide ?date= or ?start=&end=' }, { status: 400 });
   } catch (e) {
-    return Response.json({ error: e instanceof Error ? e.message : 'Failed' }, { status: 500 });
+    console.error('[admin/appointments GET]', e);
+    return Response.json({ error: 'Failed to load appointments' }, { status: 500 });
   }
 }
 
@@ -55,6 +56,7 @@ export async function POST(request: Request) {
     if (!isBlock) await sendBookingConfirmation(apt).catch(() => {});
     return Response.json(apt, { status: 201 });
   } catch (e) {
-    return Response.json({ error: e instanceof Error ? e.message : 'Failed to create' }, { status: 500 });
+    console.error('[admin/appointments POST]', e);
+    return Response.json({ error: 'Failed to create appointment' }, { status: 500 });
   }
 }

@@ -31,13 +31,16 @@ function tomorrowPacific(): string {
 }
 
 export async function GET(req: NextRequest) {
-  // Verify the request is from Vercel Cron (or an authorised caller)
+  // Verify the request is from Vercel Cron (or an authorised caller).
+  // Fail closed: if CRON_SECRET isn't configured, refuse rather than run
+  // open — this endpoint sends emails/SMS and must never be publicly triggerable.
   const secret = process.env.CRON_SECRET;
-  if (secret) {
-    const auth = req.headers.get('authorization');
-    if (auth !== `Bearer ${secret}`) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  if (!secret) {
+    console.error('[cron/reminders] CRON_SECRET is not set — refusing to run');
+    return Response.json({ error: 'Not configured' }, { status: 503 });
+  }
+  if (req.headers.get('authorization') !== `Bearer ${secret}`) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const date = tomorrowPacific();
