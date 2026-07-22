@@ -387,7 +387,7 @@ const HOME_CARDS = [
   { svc: 'barber', label: 'Barbering', num: '01', img: 'assets/mid-taper-textured-fringe.webp', alt: 'Mid taper haircut with textured fringe — barbering at Edit Studio' },
   { svc: 'tan',    label: 'Sunless',   num: '02', img: 'assets/sunless-tan-closeup-bikini.webp', alt: 'Custom sunless spray tan — golden, streak-free glow' },
   { svc: 'wax',    label: 'Waxing',    num: '03', img: 'assets/wax-brow-shaping-studio.webp',    alt: 'Brow shaping and waxing at Edit Studio' },
-  { svc: 'lashes', label: 'Lashes',    num: '04', img: 'assets/livi-furtado-headshot.webp',      alt: 'Lash artistry at Edit Studio' }];
+  { svc: 'lashes', label: 'Lashes',    num: '04', img: 'assets/lash-hybrid-set.webp',            alt: 'Wispy hybrid lash extension set on green eyes — lash artistry at Edit Studio Oak Bay Victoria BC' }];
 
 
 function HomeCollage() {
