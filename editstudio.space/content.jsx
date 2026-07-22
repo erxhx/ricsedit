@@ -227,9 +227,7 @@ function LashesContent({ headline }) {
       <Eyebrow left="Your artist" right="Lash + brow" />
       <div className="stylists">
         <div className="stylist">
-          {/* Placeholder headshot — shows "NF" initials until a photo is set.
-              To add: style={{ backgroundImage: "url('assets/niamh-frazer-headshot.webp')" }} */}
-          <div className="avatar" data-initials="NF" />
+          <div className="avatar" role="img" aria-label="Niamh Frazer, lash and brow artist at Edit Studio Oak Bay Victoria BC" style={{ backgroundImage: "url('assets/niamh-frazer-headshot.webp')", backgroundSize: "cover", backgroundPosition: "center 22%" }} />
           <div>
             <h3>Niamh Frazer</h3>
             <div className="role">Lash Artist</div>
