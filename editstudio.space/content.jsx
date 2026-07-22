@@ -50,7 +50,7 @@ function BarberingContent({ headline }) {
       <Eyebrow left="The chair" right="Your barber" />
       <div className="stylists">
         <div className="stylist">
-          <div className="avatar" style={{ backgroundImage: "url('assets/eric-he-headshot.jpg')", backgroundSize: "cover", backgroundPosition: "center 22%" }} />
+          <div className="avatar" role="img" aria-label="Eric He, cofounder and barber at Edit Studio Oak Bay Victoria BC" style={{ backgroundImage: "url('assets/eric-he-headshot.jpg')", backgroundSize: "cover", backgroundPosition: "center 22%" }} />
           <div>
             <h3>Eric He <a className="ig" href="https://www.instagram.com/ricthesurgeon/" target="_blank" rel="noopener noreferrer" aria-label="Eric He on Instagram — @ricthesurgeon"><em>@ricthesurgeon</em></a></h3>
             <div className="role">CoFounder · Barber</div>
@@ -137,7 +137,7 @@ function TanContent({ headline }) {
       <Eyebrow left="Your artist" right="Spray specialist" />
       <div className="stylists">
         <div className="stylist">
-          <div className="avatar" style={{ backgroundImage: "url('assets/livi-furtado-headshot.webp')", backgroundSize: "cover", backgroundPosition: "center" }} />
+          <div className="avatar" role="img" aria-label="Livi Furtado, cofounder and sunless tan artist at Edit Studio Oak Bay Victoria BC" style={{ backgroundImage: "url('assets/livi-furtado-headshot.webp')", backgroundSize: "cover", backgroundPosition: "center" }} />
           <div>
             <h3>Livi Furtado <a className="ig" href="https://www.instagram.com/estheticsbylivi_/" target="_blank" rel="noopener noreferrer" aria-label="Livi Furtado on Instagram — @estheticsbylivi_"><em>@estheticsbylivi_</em></a></h3>
             <div className="role">CoFounder · Esthetician</div>
@@ -182,7 +182,7 @@ function WaxContent({ headline }) {
       <Eyebrow left="Your specialist" right="Brow + body" />
       <div className="stylists">
         <div className="stylist">
-          <div className="avatar" style={{ backgroundImage: "url('assets/livi-furtado-waxing-headshot.webp')", backgroundSize: "cover", backgroundPosition: "center" }} />
+          <div className="avatar" role="img" aria-label="Livi Furtado, cofounder and waxing esthetician at Edit Studio Oak Bay Victoria BC" style={{ backgroundImage: "url('assets/livi-furtado-waxing-headshot.webp')", backgroundSize: "cover", backgroundPosition: "center" }} />
           <div>
             <h3>Livi Furtado <a className="ig" href="https://www.instagram.com/estheticsbylivi_/" target="_blank" rel="noopener noreferrer" aria-label="Livi Furtado on Instagram — @estheticsbylivi_"><em>@estheticsbylivi_</em></a></h3>
             <div className="role">CoFounder · Esthetician</div>
