@@ -209,7 +209,9 @@ function LashesContent({ headline }) {
       {/* Placeholder tiles — swap each .ph for an <img> once photos are ready
           (mirror the Barbering / Waxing gallery markup). */}
       <div className="gallery">
-        <div className="tile tall"><div className="ph">Classic set</div></div>
+        <div className="tile tall">
+          <img src="assets/lash-hybrid-set.webp" alt="Wispy hybrid lash extension set with textured volume spikes and natural length on green eyes, groomed brows and a glossy lip — lash artist Niamh Frazer at Edit Studio Oak Bay Victoria BC" loading="lazy" decoding="async" width="1500" height="2000" />
+        </div>
         <div className="tile square"><div className="ph">Volume set</div></div>
         <div className="tile"><div className="ph">Lash lift</div></div>
         <div className="tile wide"><div className="ph">Brow lamination</div></div>
