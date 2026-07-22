@@ -210,7 +210,7 @@ function LashesContent({ headline }) {
           (mirror the Barbering / Waxing gallery markup). */}
       <div className="gallery">
         <div className="tile tall">
-          <img src="assets/lash-hybrid-set.webp" alt="Wispy hybrid lash extension set with textured volume spikes and natural length on green eyes, groomed brows and a glossy lip — lash artist Niamh Frazer at Edit Studio Oak Bay Victoria BC" loading="lazy" decoding="async" width="1500" height="2000" />
+          <img src="assets/lash-hybrid-set.webp" alt="Wispy hybrid lash extension set with textured volume spikes and natural length on green eyes, fluffy brushed-up laminated brows and a glossy lip — lash and brow lamination work by Niamh Frazer at Edit Studio Oak Bay Victoria BC" loading="lazy" decoding="async" width="1500" height="2000" />
         </div>
         <div className="tile square">
           <img src="assets/lash-classic-set.webp" alt="Natural classic lash extension set — one extension per natural lash for a defined, lengthened, low-maintenance look on green eyes, by lash artist Niamh Frazer at Edit Studio Oak Bay Victoria BC" loading="lazy" decoding="async" width="1647" height="2000" />
@@ -218,7 +218,9 @@ function LashesContent({ headline }) {
         <div className="tile">
           <img src="assets/lash-lift-and-extensions.webp" alt="Close-up of dark, curled and lifted lashes with soft length and wispy separation on a green eye — lash lift and extension work by lash artist Niamh Frazer at Edit Studio Oak Bay Victoria BC" loading="lazy" decoding="async" width="1336" height="2000" />
         </div>
-        <div className="tile wide"><div className="ph">Brow lamination</div></div>
+        <div className="tile wide">
+          <img src="assets/lash-extensions-natural-set.webp" alt="Natural lash extension set with soft length and curl opening up green eyes, groomed brows and freckled skin — lash artist Niamh Frazer at Edit Studio Oak Bay Victoria BC" loading="lazy" decoding="async" width="1336" height="2000" style={{ objectPosition: "center 32%" }} />
+        </div>
       </div>
 
       <div className="rule" />
