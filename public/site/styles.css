@@ -966,7 +966,8 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
               inset 0 1px 0 rgba(255,255,255,0.5);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: transform 0.45s cubic-bezier(0.22,1,0.36,1), box-shadow 0.45s ease;
+  transition: transform 0.45s cubic-bezier(0.22,1,0.36,1), box-shadow 0.45s ease,
+              filter 0.4s ease, opacity 0.4s ease;
 }
 /* Glass sheen — a soft diagonal gloss across the tile, brightest at the
    top-left corner. Sits above the photo but below the label. */
@@ -1010,6 +1011,13 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
   transform: translateY(-16px) rotate(0deg) scale(1.04);
   z-index: 9;
   box-shadow: 0 34px 80px -20px rgba(20,18,16,0.34), 0 10px 24px rgba(20,18,16,0.10);
+}
+/* Hover reveal — the pointed-at (or keyboard-focused) card stays crisp while
+   the rest blur and fade back, pulling focus to the one in play. */
+.aura-collage:hover .aura-card:not(:hover),
+.aura-collage:focus-within .aura-card:not(:focus-visible) {
+  filter: blur(3px) saturate(0.9);
+  opacity: 0.5;
 }
 
 /* Mobile — horizontal snap strip between headline and CTA */
