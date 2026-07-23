@@ -521,38 +521,85 @@
     { name: "CURLY CROP", cat: "CURLS", img: "assets/cut-curly-crop.webp" }
   ];
   function BarberCutAnim({ progress = 0, speed = 1 }) {
-    const t = useTime(speed);
     const FONT_MAP = "JetBrains Mono, ui-monospace, monospace";
-    const n = CUT_STYLES.length;
-    const FADE_IN = 650, HOLD = 3800, FADE_OUT = 650, GAP = 220;
-    const CYCLE = FADE_IN + HOLD + FADE_OUT + GAP;
-    const tt = t + FADE_IN + 900;
-    const cyc = Math.floor(tt / CYCLE);
-    const local = tt - cyc * CYCLE;
-    const idx = (cyc % n + n) % n;
-    const ease = (x) => x * x * (3 - 2 * x);
-    let alpha, breathe;
-    if (local < FADE_IN) {
-      const x = ease(local / FADE_IN);
-      alpha = x;
-      breathe = 0.965 + 0.035 * x;
-    } else if (local < FADE_IN + HOLD) {
-      alpha = 1;
-      breathe = 1 + 0.02 * ((local - FADE_IN) / HOLD);
-    } else if (local < FADE_IN + HOLD + FADE_OUT) {
-      const x = ease((local - FADE_IN - HOLD) / FADE_OUT);
-      alpha = 1 - x;
-      breathe = 1.02 + 0.015 * x;
-    } else {
-      alpha = 0;
-      breathe = 1;
-    }
-    const C = CUT_STYLES[idx];
     const IW = 500, IH = 624, IX = 500 - IW / 2, IY = 236;
-    const sway = Math.sin(t / 2800) * 1;
-    const bob = Math.sin(t / 2100) * 5;
-    const glow = 0.4 + Math.sin(t / 2e3) * 0.12;
+    const CY = IY + IH / 2;
     const dim = 1 - Math.min(1, Math.abs(progress)) * 0.6;
+    const bobRef = useRef();
+    const breatheRef = useRef();
+    const auraRef = useRef();
+    const subRef = useRef();
+    const imgRefs = useRef([]);
+    const shownRef = useRef(0);
+    const progRef = useRef(progress);
+    progRef.current = progress;
+    useEffect(() => {
+      const n = CUT_STYLES.length;
+      const FADE_IN = 650, HOLD = 3800, FADE_OUT = 650, GAP = 220;
+      const CYCLE = FADE_IN + HOLD + FADE_OUT + GAP;
+      const ease = (x) => x * x * (3 - 2 * x);
+      let raf, last = performance.now(), t = 0;
+      const tick = (now) => {
+        const dt = Math.min(48, now - last);
+        last = now;
+        if (Math.abs(progRef.current) >= 1) {
+          raf = requestAnimationFrame(tick);
+          return;
+        }
+        t += dt * speed;
+        const tt = t + FADE_IN + 900;
+        const cyc = Math.floor(tt / CYCLE);
+        const local = tt - cyc * CYCLE;
+        const idx = (cyc % n + n) % n;
+        let alpha, breathe;
+        if (local < FADE_IN) {
+          const x = ease(local / FADE_IN);
+          alpha = x;
+          breathe = 0.965 + 0.035 * x;
+        } else if (local < FADE_IN + HOLD) {
+          alpha = 1;
+          breathe = 1 + 0.02 * ((local - FADE_IN) / HOLD);
+        } else if (local < FADE_IN + HOLD + FADE_OUT) {
+          const x = ease((local - FADE_IN - HOLD) / FADE_OUT);
+          alpha = 1 - x;
+          breathe = 1.02 + 0.015 * x;
+        } else {
+          alpha = 0;
+          breathe = 1;
+        }
+        const sway = Math.sin(t / 2800) * 1;
+        const bob = Math.sin(t / 2100) * 5;
+        const glow = 0.4 + Math.sin(t / 2e3) * 0.12;
+        if (bobRef.current)
+          bobRef.current.setAttribute(
+            "transform",
+            `translate(0 ${bob}) rotate(${sway} 500 ${CY})`
+          );
+        if (breatheRef.current) {
+          breatheRef.current.setAttribute("opacity", alpha);
+          breatheRef.current.setAttribute(
+            "transform",
+            `translate(500 ${CY}) scale(${breathe}) translate(-500 ${-CY})`
+          );
+        }
+        if (auraRef.current) auraRef.current.setAttribute("opacity", glow);
+        if (subRef.current) {
+          subRef.current.setAttribute("opacity", 0.42 * (0.3 + 0.7 * alpha));
+          if (idx !== shownRef.current)
+            subRef.current.textContent = `${CUT_STYLES[idx].name} \xB7 ${CUT_STYLES[idx].cat}`;
+        }
+        if (idx !== shownRef.current) {
+          imgRefs.current.forEach((im, i) => {
+            if (im) im.setAttribute("opacity", i === idx ? 1 : 0);
+          });
+          shownRef.current = idx;
+        }
+        raf = requestAnimationFrame(tick);
+      };
+      raf = requestAnimationFrame(tick);
+      return () => cancelAnimationFrame(raf);
+    }, [speed]);
+    const C0 = CUT_STYLES[0];
     const W = typeof window !== "undefined" ? window.innerWidth : 1200;
     const H = typeof window !== "undefined" ? window.innerHeight : 800;
     const s = Math.max(W / 1e3, H / 1400);
@@ -596,27 +643,33 @@
             filter: "url(#cutFeather)"
           }
         )), /* @__PURE__ */ React.createElement("filter", { id: "cutWarm" }, /* @__PURE__ */ React.createElement("feColorMatrix", { type: "matrix", values: "\n              1.04 0    0    0 0.02\n              0    1.00 0    0 0.012\n              0    0    0.94 0 0\n              0    0    0    1 0" }))),
-        /* @__PURE__ */ React.createElement("g", { transform: fit, opacity: dim }, /* @__PURE__ */ React.createElement("circle", { cx: "500", cy: "548", r: "430", fill: "url(#cutGlow)", opacity: glow }), /* @__PURE__ */ React.createElement("g", { transform: `translate(0 ${bob}) rotate(${sway} 500 ${IY + IH / 2})` }, /* @__PURE__ */ React.createElement(
-          "g",
+        /* @__PURE__ */ React.createElement("g", { transform: fit, opacity: dim }, /* @__PURE__ */ React.createElement(
+          "circle",
           {
-            opacity: alpha,
-            transform: `translate(500 ${IY + IH / 2}) scale(${breathe}) translate(-500 ${-(IY + IH / 2)})`
-          },
-          /* @__PURE__ */ React.createElement("g", { mask: "url(#cutFade)" }, CUT_STYLES.map((cst, i) => /* @__PURE__ */ React.createElement(
-            "image",
-            {
-              key: i,
-              href: cst.img,
-              x: IX,
-              y: IY,
-              width: IW,
-              height: IH,
-              preserveAspectRatio: "xMidYMid slice",
-              filter: "url(#cutWarm)",
-              opacity: i === idx ? 1 : 0
-            }
-          )))
-        )), /* @__PURE__ */ React.createElement(
+            ref: auraRef,
+            cx: "500",
+            cy: "548",
+            r: "430",
+            fill: "url(#cutGlow)",
+            opacity: "0.4"
+          }
+        ), /* @__PURE__ */ React.createElement("g", { ref: bobRef }, /* @__PURE__ */ React.createElement("g", { ref: breatheRef, opacity: "1" }, /* @__PURE__ */ React.createElement("g", { mask: "url(#cutFade)" }, CUT_STYLES.map((cst, i) => /* @__PURE__ */ React.createElement(
+          "image",
+          {
+            key: i,
+            ref: (el) => {
+              imgRefs.current[i] = el;
+            },
+            href: cst.img,
+            x: IX,
+            y: IY,
+            width: IW,
+            height: IH,
+            preserveAspectRatio: "xMidYMid slice",
+            filter: "url(#cutWarm)",
+            opacity: i === 0 ? 1 : 0
+          }
+        ))))), /* @__PURE__ */ React.createElement(
           "text",
           {
             x: "500",
@@ -632,6 +685,7 @@
         ), /* @__PURE__ */ React.createElement(
           "text",
           {
+            ref: subRef,
             x: "500",
             y: "214",
             textAnchor: "middle",
@@ -639,11 +693,11 @@
             fontSize: "15",
             letterSpacing: "5",
             fill: "#50352c",
-            opacity: 0.42 * (0.3 + 0.7 * alpha)
+            opacity: "0.42"
           },
-          C.name,
+          C0.name,
           " \xB7 ",
-          C.cat
+          C0.cat
         ))
       )
     );

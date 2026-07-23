@@ -553,43 +553,97 @@ const CUT_STYLES = [
 ];
 
 function BarberCutAnim({ progress = 0, speed = 1 }) {
-  const t = useTime(speed);
   const FONT_MAP = 'JetBrains Mono, ui-monospace, monospace';
-
-  // Cycle: breathe in → hold (slow inhale) → dissolve out → one short
-  // empty breath on the paper. The offset makes the first visible frame
-  // a fully-held style 01.
-  const n = CUT_STYLES.length;
-  const FADE_IN = 650, HOLD = 3800, FADE_OUT = 650, GAP = 220;
-  const CYCLE = FADE_IN + HOLD + FADE_OUT + GAP;
-  const tt = t + FADE_IN + 900;
-  const cyc = Math.floor(tt / CYCLE);
-  const local = tt - cyc * CYCLE;
-  const idx = ((cyc % n) + n) % n;
-  const ease = (x) => x * x * (3 - 2 * x);          // smoothstep
-  let alpha, breathe;
-  if (local < FADE_IN) {
-    const x = ease(local / FADE_IN);
-    alpha = x; breathe = 0.965 + 0.035 * x;         // inhale in
-  } else if (local < FADE_IN + HOLD) {
-    alpha = 1;
-    breathe = 1 + 0.02 * ((local - FADE_IN) / HOLD); // slow inhale through the hold
-  } else if (local < FADE_IN + HOLD + FADE_OUT) {
-    const x = ease((local - FADE_IN - HOLD) / FADE_OUT);
-    alpha = 1 - x; breathe = 1.02 + 0.015 * x;      // exhale away
-  } else {
-    alpha = 0; breathe = 1;                          // empty breath
-  }
-  const C = CUT_STYLES[idx];
 
   // Photo rect — matches the source aspect (578×721); the mask feathers
   // roughly the outer 60px of every edge into the background.
   const IW = 500, IH = 624, IX = 500 - IW / 2, IY = 236;
+  const CY = IY + IH / 2;
 
-  const sway = Math.sin(t / 2800) * 1.0;
-  const bob = Math.sin(t / 2100) * 5;
-  const glow = 0.4 + Math.sin(t / 2000) * 0.12;
   const dim = 1 - Math.min(1, Math.abs(progress)) * 0.6;
+
+  // ── Imperative motion ────────────────────────────────────────────
+  // Every value below (breathe/sway/bob/glow/alpha + the visible style)
+  // changes each frame. Driving that through React state re-renders the
+  // whole SVG — five <image>s, a blur mask and a colour-matrix filter —
+  // 60×/s, which mobile CPUs can't keep up with (the steppy look). So we
+  // write the handful of animated attributes straight to the DOM nodes
+  // via refs and let React render the static structure exactly once.
+  const bobRef = useRef();       // translate + rotate group
+  const breatheRef = useRef();   // opacity + scale group
+  const auraRef = useRef();      // aura circle opacity
+  const subRef = useRef();       // subtitle text (opacity + label)
+  const imgRefs = useRef([]);    // the five cut photos
+  const shownRef = useRef(0);    // last visible style index
+  const progRef = useRef(progress);
+  progRef.current = progress;    // latest carousel offset, read inside the loop
+
+  useEffect(() => {
+    const n = CUT_STYLES.length;
+    const FADE_IN = 650, HOLD = 3800, FADE_OUT = 650, GAP = 220;
+    const CYCLE = FADE_IN + HOLD + FADE_OUT + GAP;
+    const ease = (x) => x * x * (3 - 2 * x);         // smoothstep
+    let raf, last = performance.now(), t = 0;
+    const tick = (now) => {
+      const dt = Math.min(48, now - last);            // clamp tab-hidden jumps
+      last = now;
+      // When the panel is scrolled fully off-screen, keep the rAF alive so
+      // it resumes cleanly but skip the expensive filter/mask raster.
+      if (Math.abs(progRef.current) >= 1) { raf = requestAnimationFrame(tick); return; }
+      t += dt * speed;
+
+      // Cycle: breathe in → hold (slow inhale) → dissolve out → empty
+      // breath. The offset makes the first visible frame a held style 01.
+      const tt = t + FADE_IN + 900;
+      const cyc = Math.floor(tt / CYCLE);
+      const local = tt - cyc * CYCLE;
+      const idx = ((cyc % n) + n) % n;
+      let alpha, breathe;
+      if (local < FADE_IN) {
+        const x = ease(local / FADE_IN);
+        alpha = x; breathe = 0.965 + 0.035 * x;       // inhale in
+      } else if (local < FADE_IN + HOLD) {
+        alpha = 1;
+        breathe = 1 + 0.02 * ((local - FADE_IN) / HOLD);
+      } else if (local < FADE_IN + HOLD + FADE_OUT) {
+        const x = ease((local - FADE_IN - HOLD) / FADE_OUT);
+        alpha = 1 - x; breathe = 1.02 + 0.015 * x;    // exhale away
+      } else {
+        alpha = 0; breathe = 1;                        // empty breath
+      }
+
+      const sway = Math.sin(t / 2800) * 1.0;
+      const bob = Math.sin(t / 2100) * 5;
+      const glow = 0.4 + Math.sin(t / 2000) * 0.12;
+
+      if (bobRef.current)
+        bobRef.current.setAttribute('transform',
+          `translate(0 ${bob}) rotate(${sway} 500 ${CY})`);
+      if (breatheRef.current) {
+        breatheRef.current.setAttribute('opacity', alpha);
+        breatheRef.current.setAttribute('transform',
+          `translate(500 ${CY}) scale(${breathe}) translate(-500 ${-CY})`);
+      }
+      if (auraRef.current) auraRef.current.setAttribute('opacity', glow);
+      if (subRef.current) {
+        subRef.current.setAttribute('opacity', 0.42 * (0.3 + 0.7 * alpha));
+        if (idx !== shownRef.current)
+          subRef.current.textContent =
+            `${CUT_STYLES[idx].name} · ${CUT_STYLES[idx].cat}`;
+      }
+      if (idx !== shownRef.current) {
+        imgRefs.current.forEach((im, i) => {
+          if (im) im.setAttribute('opacity', i === idx ? 1 : 0);
+        });
+        shownRef.current = idx;
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [speed]);
+
+  const C0 = CUT_STYLES[0];
 
   // Same viewport-fit approach as LashAnim: recover the slice-cropped
   // visible band, then place the content between nav pills and headline.
@@ -644,20 +698,21 @@ function BarberCutAnim({ progress = 0, speed = 1 }) {
         </defs>
 
         <g transform={fit} opacity={dim}>
-          {/* warm aura breathing behind the photo */}
-          <circle cx="500" cy="548" r="430" fill="url(#cutGlow)" opacity={glow} />
+          {/* warm aura breathing behind the photo (opacity driven by rAF) */}
+          <circle ref={auraRef} cx="500" cy="548" r="430"
+                  fill="url(#cutGlow)" opacity="0.4" />
 
-          <g transform={`translate(0 ${bob}) rotate(${sway} 500 ${IY + IH / 2})`}>
+          <g ref={bobRef}>
             {/* breathe: alpha + a gentle scale about the photo's centre */}
-            <g opacity={alpha}
-               transform={`translate(500 ${IY + IH / 2}) scale(${breathe}) translate(-500 ${-(IY + IH / 2)})`}>
+            <g ref={breatheRef} opacity="1">
               <g mask="url(#cutFade)">
                 {/* all styles stay mounted so each is decoded before its
                     turn; only the current one is visible */}
                 {CUT_STYLES.map((cst, i) => (
-                  <image key={i} href={cst.img} x={IX} y={IY} width={IW} height={IH}
+                  <image key={i} ref={(el) => { imgRefs.current[i] = el; }}
+                         href={cst.img} x={IX} y={IY} width={IW} height={IH}
                          preserveAspectRatio="xMidYMid slice" filter="url(#cutWarm)"
-                         opacity={i === idx ? 1 : 0} />
+                         opacity={i === 0 ? 1 : 0} />
                 ))}
               </g>
             </g>
@@ -668,10 +723,9 @@ function BarberCutAnim({ progress = 0, speed = 1 }) {
                 fontSize="20" letterSpacing="7" fill="#50352c" opacity="0.5">
             CUT LAB
           </text>
-          <text x="500" y="214" textAnchor="middle" fontFamily={FONT_MAP}
-                fontSize="15" letterSpacing="5" fill="#50352c"
-                opacity={0.42 * (0.3 + 0.7 * alpha)}>
-            {C.name} &middot; {C.cat}
+          <text ref={subRef} x="500" y="214" textAnchor="middle" fontFamily={FONT_MAP}
+                fontSize="15" letterSpacing="5" fill="#50352c" opacity="0.42">
+            {C0.name} &middot; {C0.cat}
           </text>
         </g>
       </svg>
