@@ -555,9 +555,10 @@ const CUT_STYLES = [
 function BarberCutAnim({ progress = 0, speed = 1 }) {
   const FONT_MAP = 'JetBrains Mono, ui-monospace, monospace';
 
-  // Photo rect — matches the baked file aspect (962×1200 ≈ 0.80); each file
-  // already carries its warm tint and a feathered alpha edge, so it's drawn
-  // plain (no runtime mask/filter) and dissolves into the background itself.
+  // Photo rect — matches the baked file aspect (962×1200 ≈ 0.80). Each file is
+  // an AI-matted cutout (transparent background) with the warm tint baked in
+  // and a soft bottom-neck fade, so it's drawn plain (no runtime mask/filter)
+  // and the head floats cleanly on the background.
   const IW = 500, IH = 624, IX = 500 - IW / 2, IY = 236;
   const CY = IY + IH / 2;
 
@@ -682,12 +683,12 @@ function BarberCutAnim({ progress = 0, speed = 1 }) {
             <stop offset="55%" stopColor="#cfa170" stopOpacity="0.22" />
             <stop offset="100%" stopColor="#cfa170" stopOpacity="0" />
           </radialGradient>
-          {/* NB: the warm tint and the feathered edge are baked into the
-              WebP files themselves (crop + linear tint + alpha feather), so
-              there is no runtime colour-matrix filter or blur mask to
-              re-rasterise every frame — the moving photo is a plain image
-              the compositor can transform cheaply. That's what keeps it
-              smooth on mobile. */}
+          {/* NB: each cut is a pre-processed WebP — AI background-removal
+              cutout + baked warm tint + soft bottom-neck fade — so there is
+              no runtime colour-matrix filter or blur mask to re-rasterise
+              every frame. The moving photo is a plain image the compositor
+              can transform cheaply, which is what keeps it smooth on mobile,
+              and the matte means the head floats with no backdrop. */}
         </defs>
 
         <g transform={fit} opacity={dim}>
