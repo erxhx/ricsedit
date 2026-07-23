@@ -660,15 +660,15 @@ function BarberCutAnim({ progress = 0, speed = 1 }) {
   // The barber hero has no headline now, so the photo claims the band that
   // used to sit above it: it reaches further down the panel (botLimit) and
   // is allowed to scale up more (the k caps) before the sub/CTA block.
-  const topLimit = visTop + (tall ? 150 : 200) / s + 12;
-  const botLimit = visTop + visH * (wide ? 0.74 : tall ? 0.70 : 0.64);
+  const topLimit = visTop + (wide || tall ? 150 : 200) / s + 12;
+  const botLimit = visTop + visH * (wide ? 0.76 : tall ? 0.70 : 0.64);
   const availH = Math.max(40, botLimit - topLimit);
   const availW = visW * (wide ? 0.62 : tall ? 0.98 : 0.94);
   const k = Math.max(0.14, Math.min(wide ? 0.72 : tall ? 0.92 : 0.72, availH / bh, availW / bw));
   const ty = topLimit + (availH - k * bh) / 2 - k * BY0;
-  const tx = wide
-    ? (visLeft + visW * 0.97) - k * BX1
-    : (visLeft + visW / 2) - k * CX;
+  // Headline-free hero: centre the photo on every viewport (it used to tuck
+  // right on desktop to sit beside the headline).
+  const tx = (visLeft + visW / 2) - k * CX;
   const fit = `translate(${tx} ${ty}) scale(${k})`;
 
   return (
