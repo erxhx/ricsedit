@@ -370,6 +370,11 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
 .hero .swipe-hint .glyph {
   display: inline-block; width: 18px; height: 1px; background: currentColor; opacity: 0.5;
 }
+/* Barber hero runs headline-free, so its sub is the top of the bottom-anchored
+   cluster and sits right under the animation's neck. Trim the swipe-hint's top
+   margin (overrides the inline 28px) so the sub slides down ~a line and clears
+   the photo. Scoped to barber; other heroes keep their spacing. */
+.hero[data-service="barber"] .swipe-hint { margin-top: 6px !important; }
 .hero .hero-book-link {
   margin-left: auto;
   color: var(--ink);
