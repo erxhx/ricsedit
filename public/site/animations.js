@@ -514,8 +514,11 @@
     );
   }
   const CUT_STYLES = [
-    { name: "TEXTURED QUIFF", cat: "MID", img: "assets/cut-textured-quiff.jpg" },
-    { name: "FLOW", cat: "FLOW", img: "assets/cut-flow.jpg" }
+    { name: "FLOW", cat: "MID", img: "assets/cut-flow.webp" },
+    { name: "TEXTURED QUIFF", cat: "MID", img: "assets/cut-textured-quiff.webp" },
+    { name: "TEXTURED CROP", cat: "TAPER", img: "assets/cut-textured-crop.webp" },
+    { name: "BUZZ CUT", cat: "SKIN FADE", img: "assets/cut-buzz-skin-fade.webp" },
+    { name: "CURLY CROP", cat: "CURLS", img: "assets/cut-curly-crop.webp" }
   ];
   function BarberCutAnim({ progress = 0, speed = 1 }) {
     const t = useTime(speed);
