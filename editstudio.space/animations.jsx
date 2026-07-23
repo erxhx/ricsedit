@@ -545,11 +545,11 @@ function LashAnim({ progress = 0, speed = 1 }) {
 //    grouping key so several styles can share one category later.
 // ────────────────────────────────────────────────────────────────
 const CUT_STYLES = [
-  { name: 'FLOW',           cat: 'MID',        img: 'assets/cut-flow.webp' },
-  { name: 'TEXTURED QUIFF', cat: 'MID',        img: 'assets/cut-textured-quiff.webp' },
-  { name: 'TEXTURED CROP',  cat: 'TAPER',      img: 'assets/cut-textured-crop.webp' },
-  { name: 'BUZZ CUT',       cat: 'SKIN FADE',  img: 'assets/cut-buzz-skin-fade.webp' },
-  { name: 'CURLY CROP',     cat: 'CURLS',      img: 'assets/cut-curly-crop.webp' },
+  { name: 'FLOW',            cat: 'LOW TAPER',      img: 'assets/cut-flow.webp' },
+  { name: 'BRUSHBACK',       cat: 'MID TAPER',      img: 'assets/cut-textured-quiff.webp' },
+  { name: 'TEXTURED FRINGE', cat: 'BLOWOUT TAPER',  img: 'assets/cut-textured-crop.webp' },
+  { name: 'BUZZ CUT',        cat: 'SKIN FADE',      img: 'assets/cut-buzz-skin-fade.webp' },
+  { name: 'CURLY',           cat: 'MIDDLE PART',    img: 'assets/cut-curly-crop.webp' },
 ];
 
 function BarberCutAnim({ progress = 0, speed = 1 }) {
