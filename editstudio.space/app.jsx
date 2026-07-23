@@ -439,7 +439,7 @@ function Hero({ data, animComp, progress, speed, service }) {
         {service === 'home' &&
         <p className="hero-eyebrow">Barber · Sunless · Wax · Lash — Oak Bay, Victoria</p>
         }
-        <h1 style={{ fontFamily: "sans-serif", margin: "0px" }}>{data.h1}</h1>
+        {data.h1 && <h1 style={{ fontFamily: "sans-serif", margin: "0px" }}>{data.h1}</h1>}
         {service === 'home' && <HomeCollage />}
         {data.sub && <p className="sub" style={{ margin: "22px 0px 14px 5px" }}>{data.sub}</p>}
         <div className="swipe-hint" style={{ margin: "28px 0px 0px 10px" }}>
@@ -476,6 +476,9 @@ function ServiceColumn({ service, isActive, hProgress, animSpeed, density, headl
   if (headlines && headlines[service]) {
     heroData.h1 = headlines[service];
   }
+  // Barber hero runs headline-free — the cut animation fills that space.
+  // Forced here so it wins over the default and any stored headline tweak.
+  if (service === 'barber') heroData.h1 = null;
 
   // Pick content for this service
   const ContentComp =

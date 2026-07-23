@@ -348,7 +348,7 @@
   }
   function Hero({ data, animComp, progress, speed, service }) {
     const Anim = window[animComp] || (() => null);
-    return /* @__PURE__ */ React.createElement("div", { className: "panel" }, /* @__PURE__ */ React.createElement(Anim, { progress, speed }), /* @__PURE__ */ React.createElement("div", { className: "hero", "data-service": service, style: { padding: "0px 56px 110px 80px" } }, service === "home" && /* @__PURE__ */ React.createElement("p", { className: "hero-eyebrow" }, "Barber \xB7 Sunless \xB7 Wax \xB7 Lash \u2014 Oak Bay, Victoria"), /* @__PURE__ */ React.createElement("h1", { style: { fontFamily: "sans-serif", margin: "0px" } }, data.h1), service === "home" && /* @__PURE__ */ React.createElement(HomeCollage, null), data.sub && /* @__PURE__ */ React.createElement("p", { className: "sub", style: { margin: "22px 0px 14px 5px" } }, data.sub), /* @__PURE__ */ React.createElement("div", { className: "swipe-hint", style: { margin: "28px 0px 0px 10px" } }, /* @__PURE__ */ React.createElement("span", { className: "glyph" }), /* @__PURE__ */ React.createElement("span", null, data.cta)), /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("div", { className: "panel" }, /* @__PURE__ */ React.createElement(Anim, { progress, speed }), /* @__PURE__ */ React.createElement("div", { className: "hero", "data-service": service, style: { padding: "0px 56px 110px 80px" } }, service === "home" && /* @__PURE__ */ React.createElement("p", { className: "hero-eyebrow" }, "Barber \xB7 Sunless \xB7 Wax \xB7 Lash \u2014 Oak Bay, Victoria"), data.h1 && /* @__PURE__ */ React.createElement("h1", { style: { fontFamily: "sans-serif", margin: "0px" } }, data.h1), service === "home" && /* @__PURE__ */ React.createElement(HomeCollage, null), data.sub && /* @__PURE__ */ React.createElement("p", { className: "sub", style: { margin: "22px 0px 14px 5px" } }, data.sub), /* @__PURE__ */ React.createElement("div", { className: "swipe-hint", style: { margin: "28px 0px 0px 10px" } }, /* @__PURE__ */ React.createElement("span", { className: "glyph" }), /* @__PURE__ */ React.createElement("span", null, data.cta)), /* @__PURE__ */ React.createElement(
       "a",
       {
         className: "book",
@@ -372,6 +372,7 @@
     if (headlines && headlines[service]) {
       heroData.h1 = headlines[service];
     }
+    if (service === "barber") heroData.h1 = null;
     const ContentComp = service === "barber" ? window.BarberingContent : service === "tan" ? window.TanContent : service === "wax" ? window.WaxContent : service === "lashes" ? window.LashesContent : service === "visit" ? window.VisitContent : null;
     const panels = [
       /* @__PURE__ */ React.createElement(Hero, { key: "hero", data: heroData, animComp: ANIM_FOR[service], progress: hProgress, speed: animSpeed, service })

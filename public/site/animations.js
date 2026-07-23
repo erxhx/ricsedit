@@ -609,11 +609,11 @@
     const tall = W / H < 0.8;
     const BX0 = 260, BX1 = 740, BY0 = 160, BY1 = 880, CX = 500;
     const bw = BX1 - BX0, bh = BY1 - BY0;
-    const topLimit = visTop + 200 / s + 12;
-    const botLimit = visTop + visH * (wide ? 0.68 : tall ? 0.55 : 0.55);
+    const topLimit = visTop + (tall ? 150 : 200) / s + 12;
+    const botLimit = visTop + visH * (wide ? 0.74 : tall ? 0.7 : 0.64);
     const availH = Math.max(40, botLimit - topLimit);
-    const availW = visW * (wide ? 0.6 : tall ? 0.98 : 0.94);
-    const k = Math.max(0.14, Math.min(wide ? 0.62 : tall ? 0.74 : 0.6, availH / bh, availW / bw));
+    const availW = visW * (wide ? 0.62 : tall ? 0.98 : 0.94);
+    const k = Math.max(0.14, Math.min(wide ? 0.72 : tall ? 0.92 : 0.72, availH / bh, availW / bw));
     const ty = topLimit + (availH - k * bh) / 2 - k * BY0;
     const tx = wide ? visLeft + visW * 0.97 - k * BX1 : visLeft + visW / 2 - k * CX;
     const fit = `translate(${tx} ${ty}) scale(${k})`;
