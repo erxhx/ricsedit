@@ -555,8 +555,9 @@ const CUT_STYLES = [
 function BarberCutAnim({ progress = 0, speed = 1 }) {
   const FONT_MAP = 'JetBrains Mono, ui-monospace, monospace';
 
-  // Photo rect — matches the source aspect (578×721); the mask feathers
-  // roughly the outer 60px of every edge into the background.
+  // Photo rect — matches the baked file aspect (962×1200 ≈ 0.80); each file
+  // already carries its warm tint and a feathered alpha edge, so it's drawn
+  // plain (no runtime mask/filter) and dissolves into the background itself.
   const IW = 500, IH = 624, IX = 500 - IW / 2, IY = 236;
   const CY = IY + IH / 2;
 
@@ -678,23 +679,12 @@ function BarberCutAnim({ progress = 0, speed = 1 }) {
             <stop offset="55%" stopColor="#cfa170" stopOpacity="0.22" />
             <stop offset="100%" stopColor="#cfa170" stopOpacity="0" />
           </radialGradient>
-          {/* feathered-edge mask: a blurred white rect — soft, even alpha
-              ramp on all four sides so the photo dissolves into the bg */}
-          <filter id="cutFeather" x="-30%" y="-30%" width="160%" height="160%">
-            <feGaussianBlur stdDeviation="30" />
-          </filter>
-          <mask id="cutFade">
-            <rect x={IX + 62} y={IY + 62} width={IW - 124} height={IH - 124}
-                  rx="40" fill="#fff" filter="url(#cutFeather)" />
-          </mask>
-          {/* warm the neutral grey studio shot toward the paper palette */}
-          <filter id="cutWarm">
-            <feColorMatrix type="matrix" values="
-              1.04 0    0    0 0.02
-              0    1.00 0    0 0.012
-              0    0    0.94 0 0
-              0    0    0    1 0" />
-          </filter>
+          {/* NB: the warm tint and the feathered edge are baked into the
+              WebP files themselves (crop + linear tint + alpha feather), so
+              there is no runtime colour-matrix filter or blur mask to
+              re-rasterise every frame — the moving photo is a plain image
+              the compositor can transform cheaply. That's what keeps it
+              smooth on mobile. */}
         </defs>
 
         <g transform={fit} opacity={dim}>
@@ -705,16 +695,15 @@ function BarberCutAnim({ progress = 0, speed = 1 }) {
           <g ref={bobRef}>
             {/* breathe: alpha + a gentle scale about the photo's centre */}
             <g ref={breatheRef} opacity="1">
-              <g mask="url(#cutFade)">
-                {/* all styles stay mounted so each is decoded before its
-                    turn; only the current one is visible */}
-                {CUT_STYLES.map((cst, i) => (
-                  <image key={i} ref={(el) => { imgRefs.current[i] = el; }}
-                         href={cst.img} x={IX} y={IY} width={IW} height={IH}
-                         preserveAspectRatio="xMidYMid slice" filter="url(#cutWarm)"
-                         opacity={i === 0 ? 1 : 0} />
-                ))}
-              </g>
+              {/* all styles stay mounted so each is decoded before its turn;
+                  only the current one is visible. Warm tint + feathered edge
+                  are baked into each file, so these are plain images. */}
+              {CUT_STYLES.map((cst, i) => (
+                <image key={i} ref={(el) => { imgRefs.current[i] = el; }}
+                       href={cst.img} x={IX} y={IY} width={IW} height={IH}
+                       preserveAspectRatio="xMidYMid slice"
+                       opacity={i === 0 ? 1 : 0} />
+              ))}
             </g>
           </g>
 

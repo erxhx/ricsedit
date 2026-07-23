@@ -631,18 +631,7 @@
           preserveAspectRatio: "xMidYMid slice",
           style: { width: "100%", height: "100%", display: "block" }
         },
-        /* @__PURE__ */ React.createElement("defs", null, /* @__PURE__ */ React.createElement("radialGradient", { id: "cutGlow", cx: "50%", cy: "50%", r: "50%" }, /* @__PURE__ */ React.createElement("stop", { offset: "0%", stopColor: "#e2bd93", stopOpacity: "0.5" }), /* @__PURE__ */ React.createElement("stop", { offset: "55%", stopColor: "#cfa170", stopOpacity: "0.22" }), /* @__PURE__ */ React.createElement("stop", { offset: "100%", stopColor: "#cfa170", stopOpacity: "0" })), /* @__PURE__ */ React.createElement("filter", { id: "cutFeather", x: "-30%", y: "-30%", width: "160%", height: "160%" }, /* @__PURE__ */ React.createElement("feGaussianBlur", { stdDeviation: "30" })), /* @__PURE__ */ React.createElement("mask", { id: "cutFade" }, /* @__PURE__ */ React.createElement(
-          "rect",
-          {
-            x: IX + 62,
-            y: IY + 62,
-            width: IW - 124,
-            height: IH - 124,
-            rx: "40",
-            fill: "#fff",
-            filter: "url(#cutFeather)"
-          }
-        )), /* @__PURE__ */ React.createElement("filter", { id: "cutWarm" }, /* @__PURE__ */ React.createElement("feColorMatrix", { type: "matrix", values: "\n              1.04 0    0    0 0.02\n              0    1.00 0    0 0.012\n              0    0    0.94 0 0\n              0    0    0    1 0" }))),
+        /* @__PURE__ */ React.createElement("defs", null, /* @__PURE__ */ React.createElement("radialGradient", { id: "cutGlow", cx: "50%", cy: "50%", r: "50%" }, /* @__PURE__ */ React.createElement("stop", { offset: "0%", stopColor: "#e2bd93", stopOpacity: "0.5" }), /* @__PURE__ */ React.createElement("stop", { offset: "55%", stopColor: "#cfa170", stopOpacity: "0.22" }), /* @__PURE__ */ React.createElement("stop", { offset: "100%", stopColor: "#cfa170", stopOpacity: "0" }))),
         /* @__PURE__ */ React.createElement("g", { transform: fit, opacity: dim }, /* @__PURE__ */ React.createElement(
           "circle",
           {
@@ -653,7 +642,7 @@
             fill: "url(#cutGlow)",
             opacity: "0.4"
           }
-        ), /* @__PURE__ */ React.createElement("g", { ref: bobRef }, /* @__PURE__ */ React.createElement("g", { ref: breatheRef, opacity: "1" }, /* @__PURE__ */ React.createElement("g", { mask: "url(#cutFade)" }, CUT_STYLES.map((cst, i) => /* @__PURE__ */ React.createElement(
+        ), /* @__PURE__ */ React.createElement("g", { ref: bobRef }, /* @__PURE__ */ React.createElement("g", { ref: breatheRef, opacity: "1" }, CUT_STYLES.map((cst, i) => /* @__PURE__ */ React.createElement(
           "image",
           {
             key: i,
@@ -666,10 +655,9 @@
             width: IW,
             height: IH,
             preserveAspectRatio: "xMidYMid slice",
-            filter: "url(#cutWarm)",
             opacity: i === 0 ? 1 : 0
           }
-        ))))), /* @__PURE__ */ React.createElement(
+        )))), /* @__PURE__ */ React.createElement(
           "text",
           {
             x: "500",
