@@ -689,10 +689,50 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
   letter-spacing: 0.14em; text-transform: uppercase;
   border: none; cursor: default;
   border-radius: 1px;
-  transition: gap 0.4s var(--easing-spring), background 0.3s ease;
+  position: relative; isolation: isolate;
+  transition: gap 0.4s var(--easing-spring), background 0.3s ease, box-shadow 0.35s ease;
 }
 .book:hover { gap: 18px; background: var(--accent, var(--ink)); }
 .book .arr { font-family: var(--display); font-style: italic; font-size: 16px; }
+
+/* Hover-border-gradient (21st.dev, adapted to pure CSS) — a warm light sweeps
+   around the pill's edge. A conic gradient rotated via @property --hbg-angle,
+   masked to a 1.5px ring. Animation is gated to hover-capable pointers so
+   touch devices get a clean static pill with no continuous repaint. */
+@property --hbg-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+.book::before {
+  content: "";
+  position: absolute; inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: conic-gradient(from var(--hbg-angle),
+    transparent 0turn,
+    transparent 0.6turn,
+    var(--accent-2) 0.73turn,
+    oklch(0.96 0.02 85) 0.8turn,
+    var(--accent-3) 0.87turn,
+    transparent 0.99turn);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+          mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .book::before { opacity: 0.7; animation: hbg-rotate 5s linear infinite; }
+  .book:hover::before { opacity: 1; animation-duration: 2.4s; }
+  .book:hover { box-shadow: 0 0 26px -8px color-mix(in oklch, var(--accent-2) 70%, transparent); }
+}
+@keyframes hbg-rotate { to { --hbg-angle: 1turn; } }
+@media (prefers-reduced-motion: reduce) {
+  .book::before { animation: none !important; }
+}
 
 /* ── Custom booking embed ────────────────────────────────── */
 
