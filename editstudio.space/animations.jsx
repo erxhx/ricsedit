@@ -711,12 +711,13 @@ function BarberCutAnim({ progress = 0, speed = 1 }) {
             </g>
           </g>
 
-          {/* spec title block — the reference-card voice */}
-          <text x="500" y="184" textAnchor="middle" fontFamily={FONT_MAP}
+          {/* spec title block — the reference-card voice. On mobile (tall)
+              it sits tight under the nav pills, so nudge it down a little. */}
+          <text x="500" y={184 + (tall ? 26 : 0)} textAnchor="middle" fontFamily={FONT_MAP}
                 fontSize="20" letterSpacing="7" fill="#50352c" opacity="0.5">
             CUT LAB
           </text>
-          <text ref={subRef} x="500" y="214" textAnchor="middle" fontFamily={FONT_MAP}
+          <text ref={subRef} x="500" y={214 + (tall ? 26 : 0)} textAnchor="middle" fontFamily={FONT_MAP}
                 fontSize="15" letterSpacing="5" fill="#50352c" opacity="0.42">
             {C0.name} &middot; {C0.cat}
           </text>

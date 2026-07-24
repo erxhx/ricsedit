@@ -661,7 +661,7 @@
           "text",
           {
             x: "500",
-            y: "184",
+            y: 184 + (tall ? 26 : 0),
             textAnchor: "middle",
             fontFamily: FONT_MAP,
             fontSize: "20",
@@ -675,7 +675,7 @@
           {
             ref: subRef,
             x: "500",
-            y: "214",
+            y: 214 + (tall ? 26 : 0),
             textAnchor: "middle",
             fontFamily: FONT_MAP,
             fontSize: "15",
