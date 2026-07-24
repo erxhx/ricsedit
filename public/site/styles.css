@@ -690,6 +690,9 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
   border: none; cursor: default;
   border-radius: 1px;
   position: relative; isolation: isolate;
+  /* the "lit" full metallic ring, reused by hover (desktop) and :active (tap) */
+  --hbg-lit: conic-gradient(from 0deg,
+    #e6e6e6, #ffffff, #d6d6d6, #ffffff, #e6e6e6, #ffffff, #d6d6d6, #ffffff, #e6e6e6);
   transition: gap 0.4s var(--easing-spring), background 0.3s ease, box-shadow 0.35s ease;
 }
 .book:hover { gap: 18px; background: var(--accent, var(--ink)); }
@@ -720,25 +723,23 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
   -webkit-mask-composite: xor;
           mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
           mask-composite: exclude;
-  opacity: 0;
+  opacity: 0.8;
+  animation: hbg-rotate 5s linear infinite;
   transition: opacity 0.35s ease, background 0.3s ease;
   pointer-events: none;
 }
+/* Engaged state — the whole edge lights up into a bright metallic ring
+   (static, ignores --hbg-angle so it holds still). :active covers touch taps
+   and clears on release, so it can't stick the way :hover would on touch. */
+.book:active::before { opacity: 1; background: var(--hbg-lit); }
 @media (hover: hover) and (pointer: fine) {
-  .book::before { opacity: 0.8; animation: hbg-rotate 5s linear infinite; }
-  /* Like the reference: on hover the whole edge lights up into a bright
-     metallic ring, rather than the idle spot just spinning faster. The
-     static gradient ignores --hbg-angle, so it holds still while lit. */
-  .book:hover::before {
-    opacity: 1;
-    background: conic-gradient(from 0deg,
-      #e6e6e6, #ffffff, #d6d6d6, #ffffff, #e6e6e6, #ffffff, #d6d6d6, #ffffff, #e6e6e6);
-  }
+  .book:hover::before { opacity: 1; background: var(--hbg-lit); }
   .book:hover { box-shadow: 0 0 26px -8px rgba(255, 255, 255, 0.4); }
 }
 @keyframes hbg-rotate { to { --hbg-angle: 1turn; } }
+/* Reduced motion: no rotation — show a still, symmetric metallic edge. */
 @media (prefers-reduced-motion: reduce) {
-  .book::before { animation: none !important; }
+  .book::before { animation: none; background: var(--hbg-lit); opacity: 0.6; }
 }
 
 /* ── Custom booking embed ────────────────────────────────── */
