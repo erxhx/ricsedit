@@ -711,23 +711,30 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
   padding: 2px;
   background: conic-gradient(from var(--hbg-angle),
     transparent 0turn,
-    transparent 0.6turn,
-    var(--accent-2) 0.73turn,
-    oklch(0.96 0.02 85) 0.8turn,
-    var(--accent-3) 0.87turn,
+    transparent 0.58turn,
+    rgba(255, 255, 255, 0.45) 0.7turn,
+    #ffffff 0.8turn,
+    rgba(255, 255, 255, 0.45) 0.9turn,
     transparent 0.99turn);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
           mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
           mask-composite: exclude;
   opacity: 0;
-  transition: opacity 0.35s ease;
+  transition: opacity 0.35s ease, background 0.3s ease;
   pointer-events: none;
 }
 @media (hover: hover) and (pointer: fine) {
-  .book::before { opacity: 0.7; animation: hbg-rotate 5s linear infinite; }
-  .book:hover::before { opacity: 1; animation-duration: 2.4s; }
-  .book:hover { box-shadow: 0 0 26px -8px color-mix(in oklch, var(--accent-2) 70%, transparent); }
+  .book::before { opacity: 0.8; animation: hbg-rotate 5s linear infinite; }
+  /* Like the reference: on hover the whole edge lights up into a bright
+     metallic ring, rather than the idle spot just spinning faster. The
+     static gradient ignores --hbg-angle, so it holds still while lit. */
+  .book:hover::before {
+    opacity: 1;
+    background: conic-gradient(from 0deg,
+      #e6e6e6, #ffffff, #d6d6d6, #ffffff, #e6e6e6, #ffffff, #d6d6d6, #ffffff, #e6e6e6);
+  }
+  .book:hover { box-shadow: 0 0 26px -8px rgba(255, 255, 255, 0.4); }
 }
 @keyframes hbg-rotate { to { --hbg-angle: 1turn; } }
 @media (prefers-reduced-motion: reduce) {
