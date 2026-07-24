@@ -1018,11 +1018,16 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
   box-shadow: 0 34px 80px -20px rgba(20,18,16,0.34), 0 10px 24px rgba(20,18,16,0.10);
 }
 /* Hover reveal — the pointed-at (or keyboard-focused) card stays crisp while
-   the rest blur and fade back, pulling focus to the one in play. */
-.aura-collage:hover .aura-card:not(:hover),
-.aura-collage:focus-within .aura-card:not(:focus-visible) {
-  filter: blur(3px) saturate(0.9);
-  opacity: 0.5;
+   the rest blur and fade back, pulling focus to the one in play. Gated to
+   hover-capable pointers: on touch, a tap emulates :hover and focuses the
+   card, and neither clears on swipe — which left the other cards stuck
+   blurred. Coarse-pointer (touch) devices skip the effect entirely. */
+@media (hover: hover) and (pointer: fine) {
+  .aura-collage:hover .aura-card:not(:hover),
+  .aura-collage:focus-within .aura-card:not(:focus-visible) {
+    filter: blur(3px) saturate(0.9);
+    opacity: 0.5;
+  }
 }
 
 /* Mobile — horizontal snap strip between headline and CTA */
