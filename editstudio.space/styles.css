@@ -14,13 +14,20 @@
   --body: "Inter Tight", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --easing-cinematic: cubic-bezier(0.65, 0, 0.35, 1);
   --easing-spring: cubic-bezier(0.34, 1.2, 0.64, 1);
+  /* Colour iOS Safari extends into its status/toolbar strips. Seeded to the home
+     panel (the default landing) so first paint is already right; app.jsx rewrites
+     it per panel. A deep link to another service flashes this for one frame. */
+  --chrome-tint: #f6dbdc;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-/* --chrome-tint is rewritten per panel in app.jsx and kept in sync with the
-   theme-color meta, so the colour behind any rubber-band overscroll matches the
-   panel on screen rather than snapping to a flat beige. */
-html, body { margin: 0; padding: 0; background: var(--chrome-tint, var(--bg)); color: var(--ink); font-family: var(--body); overscroll-behavior: none; }
+/* --chrome-tint is rewritten per panel in app.jsx. It needs a real initial value
+   rather than falling back to --bg: measured on an iPhone 17 Pro Max, iOS Safari
+   lays the page out in the 796pt safe area (not the full 956pt screen) and fills
+   the leftover 62pt status strip and ~98pt toolbar strip by extending the page's
+   background colour. It samples that colour at first paint, before the per-panel
+   JS has run, so a fallback to --bg is what painted those strips flat beige. */
+html, body { margin: 0; padding: 0; background: var(--chrome-tint); color: var(--ink); font-family: var(--body); overscroll-behavior: none; }
 body { overflow: hidden; height: 100vh; height: 100dvh; }
 
 #root { width: 100vw; height: 100vh; height: 100dvh; overflow: hidden; }
@@ -28,7 +35,9 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
 /* ── App shell ─────────────────────────────────────────────── */
 .app {
   position: fixed; inset: 0;
-  background: var(--bg);
+  /* Match the shell to the panel too, so whichever layer Safari samples for its
+     edge strips reads the same colour as the content. */
+  background: var(--chrome-tint, var(--bg));
   color: var(--ink);
   /* overflow: clip instead of hidden — clip does not create a scroll container,
      so scrollIntoView() inside an off-screen panel can never set app.scrollLeft
@@ -1099,6 +1108,14 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
     position: static; transform: none;
     width: auto; max-width: none; aspect-ratio: auto;
     display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    /* Row height is driven by viewport WIDTH (the tiles are 1fr of a full-bleed
+       grid) but hard-capped. Uncapped, a 440pt phone produced 158px-tall tiles
+       and a 329px grid, which pushed the bottom-anchored hero up until the
+       eyebrow overlapped the nav pills by 15px. Sizing the row rather than
+       putting max-height on the card keeps each tile filling its cell — a
+       capped card would sit 180px wide in a 198px column with the slack all on
+       one side. 34vw reproduces the previous height at 390pt exactly. */
+    grid-auto-rows: min(34vw, 144px);
     overflow: visible;
     /* Cancel the hero's asymmetric indent (left 75 / right 56) so the grid
        runs edge to edge, then inset both sides evenly. The old strip only got
@@ -1107,8 +1124,10 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
     padding: 0 16px;
   }
   .aura-card {
-    position: relative; flex: none; width: auto;
-    aspect-ratio: 5 / 4;
+    /* Height comes from the row, width from the column — no aspect-ratio, so
+       the tile always fills its cell whatever the cap does. */
+    position: relative; flex: none; width: auto; height: 100%;
+    aspect-ratio: auto;
     padding: 6px; border-radius: 14px;
     box-shadow: 0 14px 30px -12px rgba(20,18,16,0.24), 0 3px 10px rgba(20,18,16,0.07);
   }
@@ -1144,7 +1163,6 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
    the gap and top margin just fit. (The old strip was 213px here and already
    collided with the nav by ~16px.) */
 @media (max-width: 759px) and (max-height: 700px) {
-  .aura-collage { gap: 8px; margin-top: 10px; }
-  .aura-card { aspect-ratio: 2 / 1; }
+  .aura-collage { gap: 8px; margin-top: 10px; grid-auto-rows: min(21vw, 88px); }
   .aura-card-label { left: 8px; bottom: 8px; padding: 3px 8px; font-size: 9px; }
 }
