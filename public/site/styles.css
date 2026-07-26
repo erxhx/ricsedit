@@ -1109,6 +1109,16 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
      against a hard column edge just reads as misalignment. */
   .aura-card-barber, .aura-card-tan, .aura-card-wax, .aura-card-lashes { transform: none; }
   .aura-card img { border-radius: 10px; }
+  /* Per-photo crop anchors. These are tall portraits squeezed into a landscape
+     tile, so `cover` keeps only a narrow horizontal band and the default 50%
+     rarely lands on the subject: the sunless shot showed a bare midriff and
+     the lash shot favoured the lips over the lashes, so both pull upward.
+     Waxing goes the other way — its top third is empty wall, so raising the
+     band added dead space and pushed the face down behind the label; dropping
+     it instead fills the tile with the brow being worked on. */
+  .aura-card-tan img    { object-position: 50% 10%; }
+  .aura-card-wax img    { object-position: 50% 68%; }
+  .aura-card-lashes img { object-position: 50% 12%; }
   /* Bigger than the old 8px: these tiles are the primary service nav. */
   .aura-card-label { left: 10px; bottom: 10px; padding: 4px 10px; font-size: 10px; letter-spacing: 0.12em; }
   .aura-card-arr { display: none; }
