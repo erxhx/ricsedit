@@ -9,7 +9,7 @@
     visit: { id: "visit", label: "Visit", num: "05", accent: "oklch(0.32 0.04 30)", hint: "Hours \xB7 FAQ \xB7 the shelf", ig: "editstudiospace" }
   };
   const CHROME_TINT = {
-    home: "#f6dbdc",
+    home: "#f5d0cf",
     // paper under the pink aura blob
     barber: "#efeae0",
     tan: "#eec793",

@@ -63,7 +63,7 @@ export const viewport: Viewport = {
   // first paint, so it matches the home panel.
   // No dark variant: the site has no dark theme, and the old #1a1814 painted a
   // near-black strip above an always-light page for dark-mode users.
-  themeColor: "#f6dbdc",
+  themeColor: "#f5d0cf",
 };
 
 export default function RootLayout({

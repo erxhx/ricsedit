@@ -17,7 +17,7 @@
   /* Colour iOS Safari extends into its status/toolbar strips. Seeded to the home
      panel (the default landing) so first paint is already right; app.jsx rewrites
      it per panel. A deep link to another service flashes this for one frame. */
-  --chrome-tint: #f6dbdc;
+  --chrome-tint: #f5d0cf;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }

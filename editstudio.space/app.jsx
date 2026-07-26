@@ -21,7 +21,7 @@ const SERVICES_DEF = {
 // gradient runs light-to-dark (tan, wax) therefore still differ a little at the
 // bottom — one meta tag has to serve both strips.
 const CHROME_TINT = {
-  home: '#f6dbdc',   // paper under the pink aura blob
+  home: '#f5d0cf',   // paper under the pink aura blob
   barber: '#efeae0',
   tan: '#eec793',
   wax: '#f7e6df',
