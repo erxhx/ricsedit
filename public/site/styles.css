@@ -1078,33 +1078,51 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
   }
 }
 
-/* Mobile — horizontal snap strip between headline and CTA */
+/* Mobile — full-bleed 2×2 grid between headline and CTA.
+   Replaces the old horizontal snap strip, which had three problems: it ended
+   56px short of the screen edge (hero's right padding) so the third card was
+   guillotined by a hard vertical line; `overflow-x: auto` forces `overflow-y`
+   to `auto` too, so the strip clipped its own children — shearing the card
+   shadows flat and cutting the corners off the tilted cards; and its swipe
+   competed with the panel swipe in the same band of screen. A grid shows all
+   four services at once with no hidden gesture and nothing to clip. */
 @media (max-width: 759px) {
   .hero-eyebrow { font-size: 9px; letter-spacing: 0.18em; margin-bottom: 12px; }
   .aura-collage {
     position: static; transform: none;
     width: auto; max-width: none; aspect-ratio: auto;
-    display: flex; gap: 14px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
-    margin: 20px 0 0 -50px;           /* bleed past the hero's 75px indent */
-    padding: 10px 24px 12px 50px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    overflow: visible;
+    /* Cancel the hero's asymmetric indent (left 75 / right 56) so the grid
+       runs edge to edge, then inset both sides evenly. The old strip only got
+       294px of a 375px screen; this gets the full width. */
+    margin: 22px -56px 0 -75px;
+    padding: 0 16px;
   }
-  .aura-collage::-webkit-scrollbar { display: none; }
   .aura-card {
-    position: static; flex: 0 0 128px; scroll-snap-align: start;
-    padding: 7px 7px 25px; border-radius: 13px;
+    position: relative; flex: none; width: auto;
+    aspect-ratio: 5 / 4;
+    padding: 6px; border-radius: 14px;
     box-shadow: 0 14px 30px -12px rgba(20,18,16,0.24), 0 3px 10px rgba(20,18,16,0.07);
   }
+  /* No tilt in a grid — the stagger is a desktop-only conceit, and rotation
+     against a hard column edge just reads as misalignment. */
   .aura-card-barber, .aura-card-tan, .aura-card-wax, .aura-card-lashes { transform: none; }
-  .aura-card:nth-child(odd)  { transform: rotate(-1.5deg); }
-  .aura-card:nth-child(even) { transform: rotate(1.5deg); }
-  .aura-card-label { left: 11px; bottom: 11px; padding: 4px 9px; font-size: 8px; letter-spacing: 0.1em; }
+  .aura-card img { border-radius: 10px; }
+  /* Bigger than the old 8px: these tiles are the primary service nav. */
+  .aura-card-label { left: 10px; bottom: 10px; padding: 4px 10px; font-size: 10px; letter-spacing: 0.12em; }
   .aura-card-arr { display: none; }
+  /* Touch feedback, since there's no hover to lean on. */
+  .aura-card:active { transform: scale(0.97); }
 }
-/* Very short phones: drop the strip so the CTA stays comfortably placed */
-@media (max-width: 759px) and (max-height: 600px) {
-  .aura-collage { display: none; }
+/* Short phones: flatten the tiles rather than dropping the grid entirely, so
+   the home page keeps its imagery instead of going bare. The hero is
+   bottom-anchored, so anything the grid takes pushes the eyebrow up into the
+   nav — measured at 375×667 there is ~187px of room, which two 2:1 rows plus
+   the gap and top margin just fit. (The old strip was 213px here and already
+   collided with the nav by ~16px.) */
+@media (max-width: 759px) and (max-height: 700px) {
+  .aura-collage { gap: 8px; margin-top: 10px; }
+  .aura-card { aspect-ratio: 2 / 1; }
+  .aura-card-label { left: 8px; bottom: 8px; padding: 3px 8px; font-size: 9px; }
 }

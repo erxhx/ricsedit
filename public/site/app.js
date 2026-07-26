@@ -322,12 +322,15 @@
       const el = ref.current;
       if (!el) return;
       const stop = (e) => e.stopPropagation();
-      el.addEventListener("touchstart", stop, { passive: true });
-      el.addEventListener("touchmove", stop, { passive: true });
+      const stopIfScrollable = (e) => {
+        if (el.scrollWidth > el.clientWidth + 1) e.stopPropagation();
+      };
+      el.addEventListener("touchstart", stopIfScrollable, { passive: true });
+      el.addEventListener("touchmove", stopIfScrollable, { passive: true });
       el.addEventListener("mousedown", stop);
       return () => {
-        el.removeEventListener("touchstart", stop);
-        el.removeEventListener("touchmove", stop);
+        el.removeEventListener("touchstart", stopIfScrollable);
+        el.removeEventListener("touchmove", stopIfScrollable);
         el.removeEventListener("mousedown", stop);
       };
     }, []);

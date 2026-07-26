@@ -392,20 +392,26 @@ const HOME_CARDS = [
 
 function HomeCollage() {
   // The app's panel-swipe handler listens on an ancestor via native events.
-  // Stop touch/mouse bubbling here so scrolling the card strip (mobile) or
-  // pressing a card never doubles as a panel swipe. Native listeners are
-  // required — React's synthetic handlers fire too late to beat them.
+  // Stop mouse bubbling so pressing a card never doubles as a panel swipe.
+  // Touch is conditional: only swallow it when this element actually scrolls
+  // horizontally, so the mobile 2×2 grid — which doesn't — stays a live target
+  // for the panel swipe instead of becoming a dead zone in the middle of the
+  // screen. Native listeners are required; React's synthetic handlers fire too
+  // late to beat them.
   const ref = useRef(null);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     const stop = (e) => e.stopPropagation();
-    el.addEventListener('touchstart', stop, { passive: true });
-    el.addEventListener('touchmove', stop, { passive: true });
+    const stopIfScrollable = (e) => {
+      if (el.scrollWidth > el.clientWidth + 1) e.stopPropagation();
+    };
+    el.addEventListener('touchstart', stopIfScrollable, { passive: true });
+    el.addEventListener('touchmove', stopIfScrollable, { passive: true });
     el.addEventListener('mousedown', stop);
     return () => {
-      el.removeEventListener('touchstart', stop);
-      el.removeEventListener('touchmove', stop);
+      el.removeEventListener('touchstart', stopIfScrollable);
+      el.removeEventListener('touchmove', stopIfScrollable);
       el.removeEventListener('mousedown', stop);
     };
   }, []);
