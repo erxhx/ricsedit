@@ -384,7 +384,10 @@ function NextAvailableBarber() {
 // ── Home collage — the services as a fanned stack of photo cards ──────────
 // Images are placeholders from the existing galleries; swap freely.
 const HOME_CARDS = [
-  { svc: 'barber', label: 'Barbering', num: '01', img: 'assets/mid-taper-textured-fringe.webp', alt: 'Mid taper haircut with textured fringe — barbering at Edit Studio' },
+  // imgMobile: art-directed crop for the mobile tile. The full frame is a wide
+  // studio shot where the head is only ~35% of the tile width and unreadable at
+  // that size; this one is cut tight on the taper. Desktop keeps the full frame.
+  { svc: 'barber', label: 'Barbering', num: '01', img: 'assets/mid-taper-textured-fringe.webp', imgMobile: 'assets/mid-taper-textured-fringe-tile.webp', alt: 'Mid taper haircut with textured fringe — barbering at Edit Studio' },
   { svc: 'tan',    label: 'Sunless',   num: '02', img: 'assets/sunless-tan-closeup-bikini.webp', alt: 'Custom sunless spray tan — golden, streak-free glow' },
   { svc: 'wax',    label: 'Waxing',    num: '03', img: 'assets/wax-brow-shaping-studio.webp',    alt: 'Brow shaping and waxing at Edit Studio' },
   { svc: 'lashes', label: 'Lashes',    num: '04', img: 'assets/lash-hybrid-set.webp',            alt: 'Wispy hybrid lash extension set on green eyes — lash artistry at Edit Studio Oak Bay Victoria BC' }];
@@ -424,7 +427,10 @@ function HomeCollage() {
         className={`aura-card aura-card-${c.svc}`}
         onClick={() => window.dispatchEvent(new CustomEvent('edit-studio:goto-service', { detail: { service: c.svc } }))}
         aria-label={`${c.label} — view services`}>
-          <img src={c.img} alt={c.alt} loading="eager" decoding="async" />
+          <picture>
+            {c.imgMobile && <source media="(max-width: 759px)" srcSet={c.imgMobile} />}
+            <img src={c.img} alt={c.alt} loading="eager" decoding="async" />
+          </picture>
           <span className="aura-card-label">
             <span className="aura-card-num">{c.num}</span>
             {c.label}

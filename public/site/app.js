@@ -311,7 +311,10 @@
     );
   }
   const HOME_CARDS = [
-    { svc: "barber", label: "Barbering", num: "01", img: "assets/mid-taper-textured-fringe.webp", alt: "Mid taper haircut with textured fringe \u2014 barbering at Edit Studio" },
+    // imgMobile: art-directed crop for the mobile tile. The full frame is a wide
+    // studio shot where the head is only ~35% of the tile width and unreadable at
+    // that size; this one is cut tight on the taper. Desktop keeps the full frame.
+    { svc: "barber", label: "Barbering", num: "01", img: "assets/mid-taper-textured-fringe.webp", imgMobile: "assets/mid-taper-textured-fringe-tile.webp", alt: "Mid taper haircut with textured fringe \u2014 barbering at Edit Studio" },
     { svc: "tan", label: "Sunless", num: "02", img: "assets/sunless-tan-closeup-bikini.webp", alt: "Custom sunless spray tan \u2014 golden, streak-free glow" },
     { svc: "wax", label: "Waxing", num: "03", img: "assets/wax-brow-shaping-studio.webp", alt: "Brow shaping and waxing at Edit Studio" },
     { svc: "lashes", label: "Lashes", num: "04", img: "assets/lash-hybrid-set.webp", alt: "Wispy hybrid lash extension set on green eyes \u2014 lash artistry at Edit Studio Oak Bay Victoria BC" }
@@ -344,7 +347,7 @@
           onClick: () => window.dispatchEvent(new CustomEvent("edit-studio:goto-service", { detail: { service: c.svc } })),
           "aria-label": `${c.label} \u2014 view services`
         },
-        /* @__PURE__ */ React.createElement("img", { src: c.img, alt: c.alt, loading: "eager", decoding: "async" }),
+        /* @__PURE__ */ React.createElement("picture", null, c.imgMobile && /* @__PURE__ */ React.createElement("source", { media: "(max-width: 759px)", srcSet: c.imgMobile }), /* @__PURE__ */ React.createElement("img", { src: c.img, alt: c.alt, loading: "eager", decoding: "async" })),
         /* @__PURE__ */ React.createElement("span", { className: "aura-card-label" }, /* @__PURE__ */ React.createElement("span", { className: "aura-card-num" }, c.num), c.label, /* @__PURE__ */ React.createElement("span", { className: "aura-card-arr", "aria-hidden": "true" }, "\u2192"))
       )
     ));

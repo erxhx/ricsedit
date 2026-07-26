@@ -1031,6 +1031,10 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
     rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 24%,
     rgba(255,255,255,0) 76%, rgba(255,255,255,0.1) 100%);
 }
+/* <picture> wraps the img for art-directed mobile crops. `display: contents`
+   keeps it from creating a box, so the img's height:100% still resolves
+   against the card rather than an auto-height inline wrapper. */
+.aura-card picture { display: contents; }
 .aura-card img {
   width: 100%; height: 100%; object-fit: cover;
   border-radius: 9px; display: block;
@@ -1116,6 +1120,11 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
      Waxing goes the other way — its top third is empty wall, so raising the
      band added dead space and pushed the face down behind the label; dropping
      it instead fills the tile with the brow being worked on. */
+  /* Barber uses its own pre-cropped file (see imgMobile in app.jsx) which is
+     already exactly 5:4, so this anchor is inert at normal tile size and only
+     applies on the short-phone 2:1 tiles below — where centring would clip the
+     crown off the top of the head. */
+  .aura-card-barber img { object-position: 50% 28%; }
   .aura-card-tan img    { object-position: 50% 10%; }
   .aura-card-wax img    { object-position: 50% 68%; }
   .aura-card-lashes img { object-position: 50% 12%; }
