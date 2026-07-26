@@ -8,6 +8,15 @@
     lashes: { id: "lashes", label: "Lashes", num: "04", accent: "oklch(0.55 0.13 290)", hint: "Lashes \xB7 lifts \xB7 brows", ig: "lashedbyniamhh" },
     visit: { id: "visit", label: "Visit", num: "05", accent: "oklch(0.32 0.04 30)", hint: "Hours \xB7 FAQ \xB7 the shelf", ig: "editstudiospace" }
   };
+  const CHROME_TINT = {
+    home: "#f6dbdc",
+    // paper under the pink aura blob
+    barber: "#efeae0",
+    tan: "#eec793",
+    wax: "#f7e6df",
+    lashes: "#efeae0",
+    visit: "#efeae0"
+  };
   const ANIM_FOR = {
     home: "HomeAura",
     barber: "BarberCutAnim",
@@ -642,6 +651,9 @@
       if (descEl) descEl.setAttribute("content", meta.desc);
       const canonicalEl = document.querySelector('link[rel="canonical"]');
       if (canonicalEl) canonicalEl.setAttribute("href", "https://www.editstudio.space" + path);
+      const tint = CHROME_TINT[svc] || CHROME_TINT.home;
+      document.documentElement.style.setProperty("--chrome-tint", tint);
+      document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute("content", tint));
       if (typeof gtag === "function") {
         gtag("config", "G-PZ40K8QY0F", { page_path: path, page_title: meta.title });
       }

@@ -17,7 +17,10 @@
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); font-family: var(--body); overscroll-behavior: none; }
+/* --chrome-tint is rewritten per panel in app.jsx and kept in sync with the
+   theme-color meta, so the colour behind any rubber-band overscroll matches the
+   panel on screen rather than snapping to a flat beige. */
+html, body { margin: 0; padding: 0; background: var(--chrome-tint, var(--bg)); color: var(--ink); font-family: var(--body); overscroll-behavior: none; }
 body { overflow: hidden; height: 100vh; height: 100dvh; }
 
 #root { width: 100vw; height: 100vh; height: 100dvh; overflow: hidden; }

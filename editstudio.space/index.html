@@ -55,9 +55,16 @@
 <meta name="twitter:image" content="https://www.editstudio.space/assets/og-image.jpg" />
 <meta name="twitter:image:alt" content="Edit Studio — Oak Bay, Victoria BC" />
 
-<!-- Theme color (mobile browser chrome) -->
-<meta name="theme-color" content="#f6f4ef" media="(prefers-color-scheme: light)" />
-<meta name="theme-color" content="#1a1814" media="(prefers-color-scheme: dark)" />
+<!-- Theme color (mobile browser chrome). iOS Safari paints the status-bar strip
+     and the toolbar strip with this colour, so a single static value shows as
+     flat bands above and below a page whose background is a gradient — which is
+     what made the site look clipped at the top and bottom edges on iPhone. The
+     app rewrites this per panel (see CHROME_TINT in app.jsx) so the strips match
+     whichever service is on screen.
+     No prefers-color-scheme variants: the site has no dark theme (styles.css has
+     no prefers-color-scheme rules at all), so the old #1a1814 dark value painted
+     a near-black strip above an always-light page. -->
+<meta name="theme-color" content="#f6dbdc" />
 
 <!-- Google site verification (carry over from current site) -->
 <meta name="google-site-verification" content="scdrxYNl8qCewLMCPOyS4fMP-x3wnzvFIlCPzsHrimw" />

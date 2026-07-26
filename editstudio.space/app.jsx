@@ -13,6 +13,22 @@ const SERVICES_DEF = {
   visit: { id: 'visit', label: 'Visit', num: '05', accent: 'oklch(0.32 0.04 30)', hint: 'Hours · FAQ · the shelf', ig: 'editstudiospace' }
 };
 
+// Colour iOS Safari paints into the status-bar and toolbar strips, per panel.
+// Each value is the TOP edge of that panel's anim-canvas gradient (see
+// animations.jsx), because the status-bar strip sits flush against a hard edge
+// where a mismatch reads as the page being clipped; the bottom strip is a
+// floating pill over a softer area and tolerates more drift. Panels whose
+// gradient runs light-to-dark (tan, wax) therefore still differ a little at the
+// bottom — one meta tag has to serve both strips.
+const CHROME_TINT = {
+  home: '#f6dbdc',   // paper under the pink aura blob
+  barber: '#efeae0',
+  tan: '#eec793',
+  wax: '#f7e6df',
+  lashes: '#efeae0',
+  visit: '#efeae0'
+};
+
 // barber previously borrowed HomeAnim (still used by visit); before that,
 // the falling-strands BarberAnim — both remain archived in animations.jsx.
 const ANIM_FOR = {
@@ -812,6 +828,13 @@ function App() {
     if (descEl) descEl.setAttribute('content', meta.desc);
     const canonicalEl = document.querySelector('link[rel="canonical"]');
     if (canonicalEl) canonicalEl.setAttribute('href', 'https://www.editstudio.space' + path);
+    // Match the browser-chrome strips to this panel so the page reads edge to
+    // edge on iPhone instead of sitting between two flat beige bands. The CSS
+    // var backs the same colour onto html/body, which is what shows through on
+    // rubber-band overscroll and before first paint.
+    const tint = CHROME_TINT[svc] || CHROME_TINT.home;
+    document.documentElement.style.setProperty('--chrome-tint', tint);
+    document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', tint));
     if (typeof gtag === 'function') {
       gtag('config', 'G-PZ40K8QY0F', { page_path: path, page_title: meta.title });
     }

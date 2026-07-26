@@ -55,10 +55,15 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f6f4ef" },
-    { media: "(prefers-color-scheme: dark)", color: "#1a1814" },
-  ],
+  // iOS Safari paints its status-bar and toolbar strips with this colour. A
+  // single static value showed as flat beige bands above and below a page whose
+  // background is a per-service gradient, which read as the page being clipped
+  // at the top and bottom edges. The site app rewrites this meta on every panel
+  // change (CHROME_TINT in editstudio.space/app.jsx); the value here is just the
+  // first paint, so it matches the home panel.
+  // No dark variant: the site has no dark theme, and the old #1a1814 painted a
+  // near-black strip above an always-light page for dark-mode users.
+  themeColor: "#f6dbdc",
 };
 
 export default function RootLayout({
