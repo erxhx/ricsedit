@@ -35,6 +35,28 @@ const CHROME_TINT = {
   visit: '#efeae0'
 };
 
+// Hero bleed — how much taller than the layout viewport the hero must be to
+// reach the bottom of the physical screen.
+//
+// iOS Safari lays the page out in the safe area (796pt on an iPhone 17 Pro Max)
+// while the screen is 956pt and document y=0 renders at screen y=62, so roughly
+// 98pt of whatever follows a 100svh hero is always visible at rest, below the
+// toolbar. Measured from svh, not innerHeight: innerHeight grows when the
+// toolbar collapses, which would resize the hero mid-scroll. Overshooting is
+// harmless (the excess falls off-screen), so use the full screen/viewport delta.
+//
+// Applied at module scope, before React renders: BarberCutAnim is imperative and
+// does not re-render every frame, so if it read --hero-bleed before this ran it
+// would fit its artwork to the wrong canvas height for the life of the page.
+function applyHeroBleed() {
+  if (typeof window === 'undefined') return;
+  const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  const svh = (window.svhPx ? window.svhPx() : window.innerHeight) || window.innerHeight;
+  const bleed = coarse ? Math.max(0, (window.screen && window.screen.height || 0) - svh) : 0;
+  document.documentElement.style.setProperty('--hero-bleed', bleed + 'px');
+}
+applyHeroBleed();
+
 // Scroll an element into view on the document scroller, leaving it clear of the
 // browser's own top chrome. Replaces the old ".cpanel" inner-scroller maths from
 // when each panel had its own scroll container. On touch devices the page runs
@@ -553,14 +575,22 @@ function ServiceColumn({ service, animSpeed, density, headlines }) {
     </div>);
   }
 
-  // External jump to booking (announcement strip / FAB). Now a plain document
-  // scroll — there is no strip to translate and no inner scroller to hunt for.
+  // External jump to booking (announcement strip / Book Now). Now a plain
+  // document scroll — there is no strip to translate and no inner scroller to
+  // hunt for.
+  //
+  // Aligns the content SECTION, not the embed inside it. Targeting the embed
+  // left the hero's tail sitting above it as a band of hero colour, because the
+  // hero is a full screen tall (plus its bleed) and only part of it scrolled
+  // away. Landing on the section boundary puts the hero fully out of frame.
   useEffect(() => {
     const handler = () => {
-      // Wait a frame so the embed exists if the service just changed.
+      // Wait a frame so the section exists if the service just changed.
       requestAnimationFrame(() => {
-        const embed = document.querySelector('.booking-embed');
-        if (embed) window.scrollToWithChrome(embed);
+        const section = document.querySelector('.cpanel');
+        if (!section) return;
+        const top = section.getBoundingClientRect().top + window.scrollY;
+        window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
       });
     };
     window.addEventListener('edit-studio:goto-booking', handler);
@@ -813,29 +843,41 @@ function App() {
     window.scrollTo(0, 0);
   }, [idx]);
 
-  // Hero bleed — how much taller than the layout viewport the hero must be to
-  // reach the bottom of the physical screen.
-  //
-  // iOS Safari lays the page out in the safe area (796pt on an iPhone 17 Pro
-  // Max) but the screen is 956pt, and document y=0 renders at screen y=62. So
-  // roughly 98pt of whatever follows a 100svh hero is always visible at rest,
-  // below/behind the toolbar — which is why the content section showed as a
-  // band under the hero. Measured from svh, not innerHeight: innerHeight grows
-  // when the toolbar collapses, which would resize the hero mid-scroll.
-  // Overshooting is harmless (the extra sits off-screen), so use the full
-  // screen/viewport delta. .hero adds the same value to its bottom padding, so
-  // the CTA does not move — only the artwork extends.
+  // Re-measure the hero bleed on rotation (it is applied once at module scope
+  // so the imperative barber animation sees it on its very first render).
   useEffect(() => {
-    const apply = () => {
-      const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
-      const svh = (window.svhPx ? window.svhPx() : window.innerHeight) || window.innerHeight;
-      const bleed = coarse ? Math.max(0, (window.screen && window.screen.height || 0) - svh) : 0;
-      document.documentElement.style.setProperty('--hero-bleed', bleed + 'px');
-    };
-    apply();
-    window.addEventListener('orientationchange', apply);
-    return () => window.removeEventListener('orientationchange', apply);
+    window.addEventListener('orientationchange', applyHeroBleed);
+    return () => window.removeEventListener('orientationchange', applyHeroBleed);
   }, []);
+
+  // Follow the scroll with the browser-chrome tint.
+  //
+  // iOS Safari paints its status strip with the page's html background, live —
+  // verified by flipping it mid-scroll and watching the strip follow. So a tint
+  // fixed to the hero's colour left a bar of hero colour above the content once
+  // you scrolled or tapped Book Now. Track what is actually under the strip
+  // instead: the hero's colour while the hero is up there, the content
+  // section's once it isn't.
+  useEffect(() => {
+    const heroTint = CHROME_TINT[services[idx]] || CHROME_TINT.home;
+    const update = () => {
+      const hero = document.querySelector('.hero');
+      if (!hero) return;
+      const contentTint =
+        getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#efeae0';
+      // The strip sits *above* the viewport top, so switch once the hero's
+      // bottom is clear of it rather than at the viewport edge.
+      const pastHero = hero.getBoundingClientRect().bottom <= 72;
+      document.documentElement.style.setProperty('--chrome-tint', pastHero ? contentTint : heroTint);
+    };
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
+  }, [idx, services]);
 
   return (
     <div className="app" ref={appRef} data-screen-label={`Edit Studio — ${active.label}`} data-announce={t.announceText && !announceDismissed && services[idx] === t.announceTarget ? 'true' : 'false'}>

@@ -28,6 +28,19 @@ if (typeof window !== 'undefined') {
   window.svhPx = svhPx;   // app.jsx uses this for the hero bleed
 }
 
+// How far the hero (and so the anim canvas) extends past the visible viewport,
+// set by app.jsx so the hero's artwork reaches the bottom of the physical
+// screen. The SVG has to cover that whole canvas — several animations paint
+// their own background into it (the wax "deep wash", for one), so an SVG that
+// stops short leaves a hard seam where its painting ends. The fit maths
+// therefore scales against the full canvas but *places* within the visible
+// part; see the HV/placeH split below.
+function heroBleedPx() {
+  if (typeof window === 'undefined') return 0;
+  const v = getComputedStyle(document.documentElement).getPropertyValue('--hero-bleed');
+  return parseFloat(v) || 0;
+}
+
 // ── Shared hook: animation frame time accumulator ──────────────
 function useTime(speed = 1, paused = false) {
   const [t, setT] = useState(0);
@@ -421,12 +434,19 @@ function LashAnim({ progress = 0, speed = 1 }) {
   // place the diagram's bounding box inside a safe rectangle. Recomputed
   // every frame, so it also tracks live resizes and orientation changes.
   const W = typeof window !== 'undefined' ? window.innerWidth : 1200;
-  const H = typeof window !== 'undefined' ? svhPx() : 800;
+  // HV = height actually on screen. H = height of the SVG element, which is
+  // taller by the hero bleed. Scale against H (that is the box being sliced),
+  // but place against placeH, the slice of the visible band that is on screen —
+  // otherwise the artwork centres into off-screen space and drifts down into
+  // the headline.
+  const HV = typeof window !== 'undefined' ? svhPx() : 800;
+  const H = HV + (typeof window !== 'undefined' ? heroBleedPx() : 0);
   const s = Math.max(W / 1000, H / 1400);         // slice "cover" scale
   const visLeft = 500 - (W / s) / 2, visW = W / s;
   const visTop  = 700 - (H / s) / 2, visH = H / s;
-  const wide = W / H > 1.2;
-  const tall = W / H < 0.8;   // portrait phones (not near-square desktops)
+  const placeH = visH * (HV / H);
+  const wide = W / HV > 1.2;
+  const tall = W / HV < 0.8;   // portrait phones (not near-square desktops)
   // diagram bounding box (incl. labels + title) and the eye's visual centre
   const BX0 = 157, BX1 = 883, BY0 = 160, BY1 = 725, EYE_CX = 500;
   const bw = BX1 - BX0, bh = BY1 - BY0;
@@ -434,7 +454,7 @@ function LashAnim({ progress = 0, speed = 1 }) {
   // Portrait phones give the lash map ~30% more presence (taller band, more
   // width, higher scale cap). Near-square viewports have proportionally less
   // height, so they keep the tighter sizing to stay clear of the headline.
-  const botLimit = visTop + visH * (wide ? 0.60 : tall ? 0.58 : 0.50);  // above the headline
+  const botLimit = visTop + placeH * (wide ? 0.60 : tall ? 0.58 : 0.50);  // above the headline
   const availH = Math.max(40, botLimit - topLimit);
   const availW = visW * (wide ? 0.52 : tall ? 0.98 : 0.94);
   const k = Math.max(0.14, Math.min(wide ? 0.5 : tall ? 0.66 : 0.5, availH / bh, availW / bw));
@@ -674,19 +694,23 @@ function BarberCutAnim({ progress = 0, speed = 1 }) {
   // Same viewport-fit approach as LashAnim: recover the slice-cropped
   // visible band, then place the content between nav pills and headline.
   const W = typeof window !== 'undefined' ? window.innerWidth : 1200;
-  const H = typeof window !== 'undefined' ? svhPx() : 800;
+  // HV = on-screen height, H = SVG element height (taller by the hero bleed).
+  // Scale against H, place against placeH — see LashAnim for the reasoning.
+  const HV = typeof window !== 'undefined' ? svhPx() : 800;
+  const H = HV + (typeof window !== 'undefined' ? heroBleedPx() : 0);
   const s = Math.max(W / 1000, H / 1400);
   const visLeft = 500 - (W / s) / 2, visW = W / s;
   const visTop  = 700 - (H / s) / 2, visH = H / s;
-  const wide = W / H > 1.2;
-  const tall = W / H < 0.8;
+  const placeH = visH * (HV / H);
+  const wide = W / HV > 1.2;
+  const tall = W / HV < 0.8;
   const BX0 = 260, BX1 = 740, BY0 = 160, BY1 = 880, CX = 500;
   const bw = BX1 - BX0, bh = BY1 - BY0;
   // The barber hero has no headline now, so the photo claims the band that
   // used to sit above it: it reaches further down the panel (botLimit) and
   // is allowed to scale up more (the k caps) before the sub/CTA block.
   const topLimit = visTop + (wide || tall ? 150 : 200) / s + 12;
-  const botLimit = visTop + visH * (wide ? 0.76 : tall ? 0.70 : 0.64);
+  const botLimit = visTop + placeH * (wide ? 0.76 : tall ? 0.70 : 0.64);
   const availH = Math.max(40, botLimit - topLimit);
   const availW = visW * (wide ? 0.62 : tall ? 0.98 : 0.94);
   const k = Math.max(0.14, Math.min(wide ? 0.72 : tall ? 0.92 : 0.72, availH / bh, availW / bw));

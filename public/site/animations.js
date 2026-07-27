@@ -21,6 +21,11 @@
     });
     window.svhPx = svhPx;
   }
+  function heroBleedPx() {
+    if (typeof window === "undefined") return 0;
+    const v = getComputedStyle(document.documentElement).getPropertyValue("--hero-bleed");
+    return parseFloat(v) || 0;
+  }
   function useTime(speed = 1, paused = false) {
     const [t, setT] = useState(0);
     const last = useRef(performance.now());
@@ -353,16 +358,18 @@
     const sway = Math.sin(t / 2600) * 1.4;
     const glow = 0.42 + Math.sin(t / 1900) * 0.14;
     const W = typeof window !== "undefined" ? window.innerWidth : 1200;
-    const H = typeof window !== "undefined" ? svhPx() : 800;
+    const HV = typeof window !== "undefined" ? svhPx() : 800;
+    const H = HV + (typeof window !== "undefined" ? heroBleedPx() : 0);
     const s = Math.max(W / 1e3, H / 1400);
     const visLeft = 500 - W / s / 2, visW = W / s;
     const visTop = 700 - H / s / 2, visH = H / s;
-    const wide = W / H > 1.2;
-    const tall = W / H < 0.8;
+    const placeH = visH * (HV / H);
+    const wide = W / HV > 1.2;
+    const tall = W / HV < 0.8;
     const BX0 = 157, BX1 = 883, BY0 = 160, BY1 = 725, EYE_CX = 500;
     const bw = BX1 - BX0, bh = BY1 - BY0;
     const topLimit = visTop + 200 / s + 12;
-    const botLimit = visTop + visH * (wide ? 0.6 : tall ? 0.58 : 0.5);
+    const botLimit = visTop + placeH * (wide ? 0.6 : tall ? 0.58 : 0.5);
     const availH = Math.max(40, botLimit - topLimit);
     const availW = visW * (wide ? 0.52 : tall ? 0.98 : 0.94);
     const k = Math.max(0.14, Math.min(wide ? 0.5 : tall ? 0.66 : 0.5, availH / bh, availW / bw));
@@ -622,16 +629,18 @@
     }, [speed]);
     const C0 = CUT_STYLES[0];
     const W = typeof window !== "undefined" ? window.innerWidth : 1200;
-    const H = typeof window !== "undefined" ? svhPx() : 800;
+    const HV = typeof window !== "undefined" ? svhPx() : 800;
+    const H = HV + (typeof window !== "undefined" ? heroBleedPx() : 0);
     const s = Math.max(W / 1e3, H / 1400);
     const visLeft = 500 - W / s / 2, visW = W / s;
     const visTop = 700 - H / s / 2, visH = H / s;
-    const wide = W / H > 1.2;
-    const tall = W / H < 0.8;
+    const placeH = visH * (HV / H);
+    const wide = W / HV > 1.2;
+    const tall = W / HV < 0.8;
     const BX0 = 260, BX1 = 740, BY0 = 160, BY1 = 880, CX = 500;
     const bw = BX1 - BX0, bh = BY1 - BY0;
     const topLimit = visTop + (wide || tall ? 150 : 200) / s + 12;
-    const botLimit = visTop + visH * (wide ? 0.76 : tall ? 0.7 : 0.64);
+    const botLimit = visTop + placeH * (wide ? 0.76 : tall ? 0.7 : 0.64);
     const availH = Math.max(40, botLimit - topLimit);
     const availW = visW * (wide ? 0.62 : tall ? 0.98 : 0.94);
     const k = Math.max(0.14, Math.min(wide ? 0.72 : tall ? 0.92 : 0.72, availH / bh, availW / bw));

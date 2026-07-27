@@ -568,17 +568,11 @@ body { min-height: 100svh; }
   pointer-events: none;
   z-index: 0;
 }
-/* The div stretches to the hero's full height so its gradient covers the bleed
-   at the bottom of the screen, but the SVG must stay exactly 100svh: the fit
-   maths inside each animation computes the visible viewBox band from svhPx(),
-   so an SVG viewport of any other height puts the artwork in the wrong place —
-   which is what pushed the barber and lash images down into the headline.
-   Pinning the unit here rather than using a percentage keeps it correct even
-   when a hero grows past its min-height because its content is tall. */
-.anim-canvas > svg {
-  height: 100vh !important;
-  height: 100svh !important;
-}
+/* The SVG fills the whole canvas, bleed included — several animations paint
+   their own background into it (WaxAnim's "deep wash bottom" rect, for one), so
+   an SVG that stopped at 100svh left a hard seam where its painting ended. The
+   artwork is kept on screen by the HV/placeH split in animations.jsx, not by
+   shrinking the viewport. */
 .hero > * { position: relative; z-index: 1; }
 
 /* ── Content panels (swipe down) ────────────────────────── */

@@ -17,6 +17,14 @@
     lashes: "#efeae0",
     visit: "#efeae0"
   };
+  function applyHeroBleed() {
+    if (typeof window === "undefined") return;
+    const coarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+    const svh = (window.svhPx ? window.svhPx() : window.innerHeight) || window.innerHeight;
+    const bleed = coarse ? Math.max(0, (window.screen && window.screen.height || 0) - svh) : 0;
+    document.documentElement.style.setProperty("--hero-bleed", bleed + "px");
+  }
+  applyHeroBleed();
   window.scrollToWithChrome = function(el, extra) {
     if (!el) return;
     const coarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
@@ -404,8 +412,10 @@
     useEffect(() => {
       const handler = () => {
         requestAnimationFrame(() => {
-          const embed = document.querySelector(".booking-embed");
-          if (embed) window.scrollToWithChrome(embed);
+          const section = document.querySelector(".cpanel");
+          if (!section) return;
+          const top = section.getBoundingClientRect().top + window.scrollY;
+          window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
         });
       };
       window.addEventListener("edit-studio:goto-booking", handler);
@@ -616,16 +626,26 @@
       window.scrollTo(0, 0);
     }, [idx]);
     useEffect(() => {
-      const apply = () => {
-        const coarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
-        const svh = (window.svhPx ? window.svhPx() : window.innerHeight) || window.innerHeight;
-        const bleed = coarse ? Math.max(0, (window.screen && window.screen.height || 0) - svh) : 0;
-        document.documentElement.style.setProperty("--hero-bleed", bleed + "px");
-      };
-      apply();
-      window.addEventListener("orientationchange", apply);
-      return () => window.removeEventListener("orientationchange", apply);
+      window.addEventListener("orientationchange", applyHeroBleed);
+      return () => window.removeEventListener("orientationchange", applyHeroBleed);
     }, []);
+    useEffect(() => {
+      const heroTint = CHROME_TINT[services[idx]] || CHROME_TINT.home;
+      const update = () => {
+        const hero = document.querySelector(".hero");
+        if (!hero) return;
+        const contentTint = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim() || "#efeae0";
+        const pastHero = hero.getBoundingClientRect().bottom <= 72;
+        document.documentElement.style.setProperty("--chrome-tint", pastHero ? contentTint : heroTint);
+      };
+      update();
+      window.addEventListener("scroll", update, { passive: true });
+      window.addEventListener("resize", update);
+      return () => {
+        window.removeEventListener("scroll", update);
+        window.removeEventListener("resize", update);
+      };
+    }, [idx, services]);
     return /* @__PURE__ */ React.createElement("div", { className: "app", ref: appRef, "data-screen-label": `Edit Studio \u2014 ${active.label}`, "data-announce": t.announceText && !announceDismissed && services[idx] === t.announceTarget ? "true" : "false" }, /* @__PURE__ */ React.createElement(
       AnnouncementStrip,
       {
