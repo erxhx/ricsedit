@@ -813,6 +813,30 @@ function App() {
     window.scrollTo(0, 0);
   }, [idx]);
 
+  // Hero bleed — how much taller than the layout viewport the hero must be to
+  // reach the bottom of the physical screen.
+  //
+  // iOS Safari lays the page out in the safe area (796pt on an iPhone 17 Pro
+  // Max) but the screen is 956pt, and document y=0 renders at screen y=62. So
+  // roughly 98pt of whatever follows a 100svh hero is always visible at rest,
+  // below/behind the toolbar — which is why the content section showed as a
+  // band under the hero. Measured from svh, not innerHeight: innerHeight grows
+  // when the toolbar collapses, which would resize the hero mid-scroll.
+  // Overshooting is harmless (the extra sits off-screen), so use the full
+  // screen/viewport delta. .hero adds the same value to its bottom padding, so
+  // the CTA does not move — only the artwork extends.
+  useEffect(() => {
+    const apply = () => {
+      const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+      const svh = (window.svhPx ? window.svhPx() : window.innerHeight) || window.innerHeight;
+      const bleed = coarse ? Math.max(0, (window.screen && window.screen.height || 0) - svh) : 0;
+      document.documentElement.style.setProperty('--hero-bleed', bleed + 'px');
+    };
+    apply();
+    window.addEventListener('orientationchange', apply);
+    return () => window.removeEventListener('orientationchange', apply);
+  }, []);
+
   return (
     <div className="app" ref={appRef} data-screen-label={`Edit Studio — ${active.label}`} data-announce={t.announceText && !announceDismissed && services[idx] === t.announceTarget ? 'true' : 'false'}>
       <AnnouncementStrip

@@ -615,6 +615,17 @@
     useEffect(() => {
       window.scrollTo(0, 0);
     }, [idx]);
+    useEffect(() => {
+      const apply = () => {
+        const coarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+        const svh = (window.svhPx ? window.svhPx() : window.innerHeight) || window.innerHeight;
+        const bleed = coarse ? Math.max(0, (window.screen && window.screen.height || 0) - svh) : 0;
+        document.documentElement.style.setProperty("--hero-bleed", bleed + "px");
+      };
+      apply();
+      window.addEventListener("orientationchange", apply);
+      return () => window.removeEventListener("orientationchange", apply);
+    }, []);
     return /* @__PURE__ */ React.createElement("div", { className: "app", ref: appRef, "data-screen-label": `Edit Studio \u2014 ${active.label}`, "data-announce": t.announceText && !announceDismissed && services[idx] === t.announceTarget ? "true" : "false" }, /* @__PURE__ */ React.createElement(
       AnnouncementStrip,
       {

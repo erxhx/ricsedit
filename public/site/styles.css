@@ -325,23 +325,29 @@ body { min-height: 100svh; }
    --chrome-clear is measured from .chrome-nav's top plus the pill height. It is
    !important because .hero carries an inline `padding` shorthand from the
    design tool, which would otherwise reset padding-top to 0. */
-:root { --chrome-clear: 131px; }
+:root { --chrome-clear: 131px; --hero-pad-bottom: 110px; --hero-bleed: 0px; }
 @media (min-width: 760px) { :root { --chrome-clear: 146px; } }
 .hero {
   position: relative; width: 100%;
   min-height: 100vh;
-  min-height: 100svh;
+  /* --hero-bleed (set in app.jsx) extends the hero past the layout viewport so
+     its artwork reaches the bottom of the physical screen; without it the next
+     section shows as a band under the hero at rest. The same value is added to
+     padding-bottom, so the bottom-anchored content lands in exactly the same
+     place as before — only the background grows. */
+  min-height: calc(100svh + var(--hero-bleed));
   display: flex; flex-direction: column;
   justify-content: flex-end;
   padding: 0 24px 96px;
   padding-top: calc(var(--chrome-clear) + var(--announce-h)) !important;
+  padding-bottom: calc(var(--hero-pad-bottom) + var(--hero-bleed)) !important;
 }
 /* Mobile: sit the (bottom-anchored) hero content lower by trimming the bottom
    padding (110px → 50px, ~60px lower) and nudge it 5px left (80px → 75px).
    Overrides the inline padding on .hero. */
 @media (max-width: 759px) {
+  :root { --hero-pad-bottom: 50px; }
   .hero {
-    padding-bottom: 50px !important;
     padding-left: 75px !important;
   }
   /* Centre the full-width pills on screen despite the asymmetric hero padding

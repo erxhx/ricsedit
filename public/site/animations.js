@@ -19,6 +19,7 @@
     window.addEventListener("orientationchange", () => {
       __svhCache = null;
     });
+    window.svhPx = svhPx;
   }
   function useTime(speed = 1, paused = false) {
     const [t, setT] = useState(0);

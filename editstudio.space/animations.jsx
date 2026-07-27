@@ -25,6 +25,7 @@ function svhPx() {
 if (typeof window !== 'undefined') {
   window.addEventListener('resize', () => { __svhCache = null; });
   window.addEventListener('orientationchange', () => { __svhCache = null; });
+  window.svhPx = svhPx;   // app.jsx uses this for the hero bleed
 }
 
 // ── Shared hook: animation frame time accumulator ──────────────
