@@ -4,6 +4,29 @@
 
 const { useEffect, useRef, useState, useMemo } = React;
 
+// Height the hero panels are actually laid out at: 100svh, the *small* viewport.
+// Not window.innerHeight — that is the dynamic viewport, which on iOS Safari
+// grows the moment the toolbar collapses during a scroll (measured 796 -> 836 on
+// an iPhone 17 Pro Max). Fitting a diagram to innerHeight while its container is
+// sized in svh makes the artwork jump on the first scroll. Measured once and
+// cached; re-measured on resize/orientation change.
+let __svhCache = null;
+function svhPx() {
+  if (typeof window === 'undefined') return 800;
+  if (__svhCache !== null) return __svhCache;
+  const probe = document.createElement('div');
+  probe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;height:100svh';
+  document.body.appendChild(probe);
+  const h = probe.getBoundingClientRect().height;
+  probe.remove();
+  __svhCache = h || window.innerHeight;
+  return __svhCache;
+}
+if (typeof window !== 'undefined') {
+  window.addEventListener('resize', () => { __svhCache = null; });
+  window.addEventListener('orientationchange', () => { __svhCache = null; });
+}
+
 // ── Shared hook: animation frame time accumulator ──────────────
 function useTime(speed = 1, paused = false) {
   const [t, setT] = useState(0);
@@ -397,7 +420,7 @@ function LashAnim({ progress = 0, speed = 1 }) {
   // place the diagram's bounding box inside a safe rectangle. Recomputed
   // every frame, so it also tracks live resizes and orientation changes.
   const W = typeof window !== 'undefined' ? window.innerWidth : 1200;
-  const H = typeof window !== 'undefined' ? window.innerHeight : 800;
+  const H = typeof window !== 'undefined' ? svhPx() : 800;
   const s = Math.max(W / 1000, H / 1400);         // slice "cover" scale
   const visLeft = 500 - (W / s) / 2, visW = W / s;
   const visTop  = 700 - (H / s) / 2, visH = H / s;
@@ -650,7 +673,7 @@ function BarberCutAnim({ progress = 0, speed = 1 }) {
   // Same viewport-fit approach as LashAnim: recover the slice-cropped
   // visible band, then place the content between nav pills and headline.
   const W = typeof window !== 'undefined' ? window.innerWidth : 1200;
-  const H = typeof window !== 'undefined' ? window.innerHeight : 800;
+  const H = typeof window !== 'undefined' ? svhPx() : 800;
   const s = Math.max(W / 1000, H / 1400);
   const visLeft = 500 - (W / s) / 2, visW = W / s;
   const visTop  = 700 - (H / s) / 2, visH = H / s;

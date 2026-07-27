@@ -1,5 +1,25 @@
 (() => {
   const { useEffect, useRef, useState, useMemo } = React;
+  let __svhCache = null;
+  function svhPx() {
+    if (typeof window === "undefined") return 800;
+    if (__svhCache !== null) return __svhCache;
+    const probe = document.createElement("div");
+    probe.style.cssText = "position:fixed;visibility:hidden;pointer-events:none;height:100svh";
+    document.body.appendChild(probe);
+    const h = probe.getBoundingClientRect().height;
+    probe.remove();
+    __svhCache = h || window.innerHeight;
+    return __svhCache;
+  }
+  if (typeof window !== "undefined") {
+    window.addEventListener("resize", () => {
+      __svhCache = null;
+    });
+    window.addEventListener("orientationchange", () => {
+      __svhCache = null;
+    });
+  }
   function useTime(speed = 1, paused = false) {
     const [t, setT] = useState(0);
     const last = useRef(performance.now());
@@ -332,7 +352,7 @@
     const sway = Math.sin(t / 2600) * 1.4;
     const glow = 0.42 + Math.sin(t / 1900) * 0.14;
     const W = typeof window !== "undefined" ? window.innerWidth : 1200;
-    const H = typeof window !== "undefined" ? window.innerHeight : 800;
+    const H = typeof window !== "undefined" ? svhPx() : 800;
     const s = Math.max(W / 1e3, H / 1400);
     const visLeft = 500 - W / s / 2, visW = W / s;
     const visTop = 700 - H / s / 2, visH = H / s;
@@ -601,7 +621,7 @@
     }, [speed]);
     const C0 = CUT_STYLES[0];
     const W = typeof window !== "undefined" ? window.innerWidth : 1200;
-    const H = typeof window !== "undefined" ? window.innerHeight : 800;
+    const H = typeof window !== "undefined" ? svhPx() : 800;
     const s = Math.max(W / 1e3, H / 1400);
     const visLeft = 500 - W / s / 2, visW = W / s;
     const visTop = 700 - H / s / 2, visH = H / s;

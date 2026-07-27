@@ -27,22 +27,24 @@
    the leftover 62pt status strip and ~98pt toolbar strip by extending the page's
    background colour. It samples that colour at first paint, before the per-panel
    JS has run, so a fallback to --bg is what painted those strips flat beige. */
-html, body { margin: 0; padding: 0; background: var(--chrome-tint); color: var(--ink); font-family: var(--body); overscroll-behavior: none; }
-body { overflow: hidden; height: 100vh; height: 100dvh; }
+html, body { margin: 0; padding: 0; background: var(--chrome-tint); color: var(--ink); font-family: var(--body); }
+/* The document is the scroller. It used to be overflow:hidden at a fixed
+   100dvh, with all movement faked by transforms — which is why iOS never
+   collapsed its toolbar (no root scroll to react to) and why content could
+   never reach the status/toolbar strips. Nothing here may reintroduce a fixed
+   height or overflow:hidden on html/body without bringing both back. */
+body { min-height: 100svh; }
 
-#root { width: 100vw; height: 100vh; height: 100dvh; overflow: hidden; }
+#root { width: 100%; }
 
 /* ── App shell ─────────────────────────────────────────────── */
 .app {
-  position: fixed; inset: 0;
-  /* Match the shell to the panel too, so whichever layer Safari samples for its
-     edge strips reads the same colour as the content. */
+  position: relative;
   background: var(--chrome-tint, var(--bg));
   color: var(--ink);
-  /* overflow: clip instead of hidden — clip does not create a scroll container,
-     so scrollIntoView() inside an off-screen panel can never set app.scrollLeft
-     and shift the visible panel out of view. */
-  overflow: clip;
+  /* Only the horizontal axis is clipped — clipping vertically would turn this
+     back into a scroll container and undo the whole point. */
+  overflow-x: clip;
   isolation: isolate;
 }
 
@@ -178,11 +180,16 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
   .announce-arr { display: none; }
 }
 
-/* Top chrome */
+/* Top chrome. Sits at the top of the document and scrolls away with the hero.
+   The safe-area inset is 0 in normal iOS Safari (measured), but non-zero when
+   the site is launched standalone from the home screen — there is a
+   manifest.json, so that is a real case — and there the page really does start
+   under the status bar. env() with a 0px fallback covers both. */
 .chrome-top {
   position: absolute; top: 0; left: 0; right: 0;
   display: flex; align-items: center; justify-content: space-between;
   padding: 18px 20px;
+  padding-top: calc(18px + env(safe-area-inset-top, 0px));
   z-index: 50;
   pointer-events: none;
   color: var(--ink);
@@ -291,33 +298,43 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
   .chrome-nav-track { gap: 5px; padding: 2px 10px; }
   .navpill { font-size: 10px; padding: 6px 9px; letter-spacing: 0.04em; }
 }
-/* Hide once the user scrolls past the hero into a service's content */
-.app:not([data-vidx="0"]) .chrome-nav {
-  opacity: 0;
-  pointer-events: none;
-}
+/* The nav used to be hidden by JS state once you left the hero
+   (.app:not([data-vidx="0"])). It now simply scrolls away with the hero, so
+   there is no state to track and no rule needed. */
 
-/* ── Service strip (vertical scroll panels per service) ─── */
-.strip {
-  position: absolute; inset: 0;
-  display: flex; flex-direction: column;
-  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: transform;
-}
-.strip.dragging { transition: none; }
+/* ── Panels ──────────────────────────────────────────────────
+   Stacked sections in normal flow. Formerly a .strip translated by transform.
+   svh, not dvh: dvh is the *dynamic* viewport, which grows the moment iOS
+   collapses its toolbar (measured 796 -> 836 on an iPhone 17 Pro Max), so a
+   dvh-sized hero visibly lurches mid-scroll. svh is the small viewport and
+   stays put. min-height, not height, so a panel whose content outgrows the
+   screen simply gets taller instead of overflowing — this is what removes the
+   whole class of "content creeps up into the nav" bugs. */
 .panel {
   position: relative;
-  width: 100%; height: 100vh; height: 100dvh;
-  flex: 0 0 100%;
-  overflow: hidden;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100svh;
 }
 
-/* Hero panel */
+/* Hero panel.
+   min-height rather than height: the hero is bottom-anchored, so when content
+   grew taller than the screen it used to push upward into the nav pills (the
+   eyebrow/nav collision). Now the hero just gets taller and the page scrolls.
+   padding-top reserves the chrome band so content cannot start underneath it;
+   --chrome-clear is measured from .chrome-nav's top plus the pill height. It is
+   !important because .hero carries an inline `padding` shorthand from the
+   design tool, which would otherwise reset padding-top to 0. */
+:root { --chrome-clear: 131px; }
+@media (min-width: 760px) { :root { --chrome-clear: 146px; } }
 .hero {
-  position: relative; width: 100%; height: 100%;
+  position: relative; width: 100%;
+  min-height: 100vh;
+  min-height: 100svh;
   display: flex; flex-direction: column;
   justify-content: flex-end;
   padding: 0 24px 96px;
+  padding-top: calc(var(--chrome-clear) + var(--announce-h)) !important;
 }
 /* Mobile: sit the (bottom-anchored) hero content lower by trimming the bottom
    padding (110px → 50px, ~60px lower) and nudge it 5px left (80px → 75px).
@@ -548,17 +565,16 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
 .hero > * { position: relative; z-index: 1; }
 
 /* ── Content panels (swipe down) ────────────────────────── */
+/* Content section. No longer its own scroll container — it flows in the
+   document, which is what lets one continuous scroll carry you from the hero
+   through the menu and into booking. The old overflow-y/overscroll/height:100%
+   made this a nested scroller that swallowed the page scroll. */
 .cpanel {
-  width: 100%; height: 100%;
-  padding: calc(104px + var(--announce-h)) 24px 96px;
-  overflow-y: auto;
-  scrollbar-width: none;
-  transition: padding-top 0.3s ease;
-  /* Keep scrollIntoView({ block:'end' }) clear of the chrome-bot overlay (~52px)
-     plus breathing room. scroll-padding-bottom is honoured by scrollIntoView. */
-  scroll-padding-bottom: 80px;
-  /* Prevent iOS elastic rubber-band bounce at top/bottom of scroll container */
-  overscroll-behavior: none;
+  width: 100%;
+  padding: 56px 24px 96px;
+  /* Clear the home indicator / collapsed toolbar at the very bottom of the
+     document (0px in Safari, non-zero standalone). */
+  padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
   background: var(--bg);
 }
 .cpanel::-webkit-scrollbar { display: none; }

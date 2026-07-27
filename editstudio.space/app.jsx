@@ -1,4 +1,10 @@
-// app.jsx — main shell. Horizontal swipe = service. Vertical swipe = info.
+// app.jsx — main shell. One service at a time as an ordinary scrolling page:
+// hero, then that service's content. Services are chosen from the nav pills,
+// the home tiles, arrow keys or the URL. The old model (fixed 100dvh shell,
+// horizontal swipe between services, vertical swipe between hero and content,
+// all driven by transforms) is gone — it kept the document from ever scrolling,
+// which is what stopped iOS collapsing its toolbar and stopped the page from
+// reaching the status/toolbar strips.
 
 const { useState, useEffect, useRef, useCallback } = React;
 
@@ -29,6 +35,19 @@ const CHROME_TINT = {
   visit: '#efeae0'
 };
 
+// Scroll an element into view on the document scroller, leaving it clear of the
+// browser's own top chrome. Replaces the old ".cpanel" inner-scroller maths from
+// when each panel had its own scroll container. On touch devices the page runs
+// under iOS Safari's ~62pt status strip once scrolled, so leave extra room or a
+// programmatic scroll parks the target underneath it.
+window.scrollToWithChrome = function (el, extra) {
+  if (!el) return;
+  const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  const gap = 24 + (coarse ? 56 : 0) + (extra || 0);
+  const top = el.getBoundingClientRect().top + window.scrollY - gap;
+  window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+};
+
 // barber previously borrowed HomeAnim (still used by visit); before that,
 // the falling-strands BarberAnim — both remain archived in animations.jsx.
 const ANIM_FOR = {
@@ -44,32 +63,32 @@ const HERO_FOR = {
   home: {
     h1: <>You<br />Found <em className="it">Us</em>.</>,
     sub: '',
-    cta: 'Tap a service · pull down for details'
+    cta: 'Tap a service · scroll for details'
   },
   barber: {
     h1: <>Refined.<br />Intentional.<br /><em className="it">Crisp</em>.</>,
     sub: 'Precision cuts, down to every last detail. Late night availability.',
-    cta: 'Pull down for menu'
+    cta: 'Scroll for menu'
   },
   tan: {
     h1: <>Golden hour, <em className="it">on demand</em>.</>,
     sub: "Skip the skin damage of UV tans and find out why luxury airbrush spray tans are everyone's new obsession.",
-    cta: 'Pull down for menu'
+    cta: 'Scroll for menu'
   },
   wax: {
     h1: <>Smooth, <em className="it">sorted</em>.</>,
     sub: 'Specializing in Brazilians, brows and full body waxing with a gentle yet thorough technique.',
-    cta: 'Pull down for menu'
+    cta: 'Scroll for menu'
   },
   lashes: {
     h1: <>Eyes, <em className="it">elevated</em>.</>,
     sub: 'Lash extensions, lifts and brow services — tailored to your eye shape with a careful, gentle hand.',
-    cta: 'Pull down for menu'
+    cta: 'Scroll for menu'
   },
   visit: {
     h1: <>Come <em className="it">visit</em>.</>,
     sub: 'Oak Bay Avenue. We made the room we wanted to spend time in. Walk in if we have it; book ahead if you can.',
-    cta: 'Pull down for hours · FAQ'
+    cta: 'Scroll for hours · FAQ'
   }
 };
 
@@ -143,9 +162,9 @@ function ChromeTop({ active, total, idx, logoSrc }) {
 
 }
 
-// Sticky top pill nav — labelled, tappable chips so every page is one tap away
-// and the current page is always clear. Only shown on the hero (hidden once the
-// user scrolls into a service's content, mirroring the bottom chrome).
+// Top pill nav — labelled, tappable chips so every page is one tap away and the
+// current page is always clear. Sits at the top of the document and scrolls away
+// with the hero (it used to be hidden by JS once vIdx left 0).
 function ChromeNav({ services, idx, onSelect }) {
   return (
     <nav className="chrome-nav" aria-label="Services">
@@ -495,10 +514,11 @@ function Hero({ data, animComp, progress, speed, service }) {
 
 }
 
-function ServiceColumn({ service, isActive, hProgress, animSpeed, density, headlines, onVIdxChange }) {
-  const stripRef = useRef(null);
-  const [vIdx, setVIdx] = useState(0);
-  const dragRef = useRef({ y: 0, dy: 0, dragging: false, t: 0 });
+// One service = hero followed by its content, both in normal document flow.
+// The hand-rolled vertical strip (translateY + vIdx + drag/wheel handlers, and
+// a .cpanel inner scroller) is gone: the document itself scrolls, which is what
+// lets iOS collapse its toolbar and lets content run under the status bar.
+function ServiceColumn({ service, animSpeed, density, headlines }) {
   const data = SERVICES_DEF[service];
   const heroData = { ...HERO_FOR[service], num: data.num };
   if (headlines && headlines[service]) {
@@ -517,8 +537,10 @@ function ServiceColumn({ service, isActive, hProgress, animSpeed, density, headl
   service === 'visit' ? window.VisitContent :
   null;
 
+  // progress=0: with the horizontal carousel gone there is only ever one column
+  // on screen, so every animation is at its resting position.
   const panels = [
-  <Hero key="hero" data={heroData} animComp={ANIM_FOR[service]} progress={hProgress} speed={animSpeed} service={service} />];
+  <Hero key="hero" data={heroData} animComp={ANIM_FOR[service]} progress={0} speed={animSpeed} service={service} />];
 
   if (ContentComp) {
     panels.push(<div key="content" className="panel" style={{ background: 'var(--bg)' }}>
@@ -531,171 +553,21 @@ function ServiceColumn({ service, isActive, hProgress, animSpeed, density, headl
     </div>);
   }
 
-  // Vertical drag
+  // External jump to booking (announcement strip / FAB). Now a plain document
+  // scroll — there is no strip to translate and no inner scroller to hunt for.
   useEffect(() => {
-    if (!isActive) return;
-    const el = stripRef.current;
-    if (!el) return;
-
-    // Helper: get the cpanel scroller for the current vertical panel (if any).
-    const getCpanel = () => {
-      const activePanel = el.children[vIdx];
-      return activePanel ? activePanel.querySelector('.cpanel') : null;
-    };
-
-    const start = (y) => {
-      // Snapshot the inner-panel scroll position at the moment the gesture starts.
-      // Used by move/end to distinguish "scroll inside content" from "switch panel".
-      const scroller = getCpanel();
-      dragRef.current = {
-        y, dy: 0, dragging: true, t: performance.now(),
-        startScrollTop: scroller ? scroller.scrollTop : 0,
-      };
-      el.classList.add('dragging');
-    };
-    const move = (y) => {
-      if (!dragRef.current.dragging) return;
-      const dy = y - dragRef.current.y;
-      dragRef.current.dy = dy;
-      // Swiping downward (dy > 0) while the content panel wasn't already at its
-      // top means the user is scrolling inside the content, not switching panels.
-      // Skip the strip translate so native scroll can work unobstructed.
-      if (dy > 0 && vIdx > 0 && dragRef.current.startScrollTop > 2) return;
-      const offset = -vIdx * el.clientHeight + dy;
-      el.style.transform = `translateY(${offset}px)`;
-    };
-    const end = () => {
-      if (!dragRef.current.dragging) return;
-      dragRef.current.dragging = false;
-      el.classList.remove('dragging');
-      // Force a style recalculation so the browser commits the transition
-      // re-enable BEFORE seeing the new transform value. Without this, both
-      // changes land in the same batch and the transition doesn't fire.
-      void el.offsetHeight;
-      const dy = dragRef.current.dy;
-      const dt = Math.max(50, performance.now() - dragRef.current.t);
-      const v = dy / dt; // px/ms
-      const threshold = el.clientHeight * 0.18;
-      let next = vIdx;
-      if ((dy < -threshold || v < -0.45) && vIdx < panels.length - 1) next = vIdx + 1;
-      else if ((dy > threshold || v > 0.45) && vIdx > 0) {
-        // Mirror the wheel-handler guard: only switch back to the hero if the
-        // content was already at the top when the gesture began. A fast upward
-        // scroll inside the content has high velocity but non-zero startScrollTop.
-        if (dragRef.current.startScrollTop <= 2) next = vIdx - 1;
-      }
-      setVIdx(next);
-      el.style.transform = `translateY(${-next * el.clientHeight}px)`;
-    };
-
-    const onTS = (e) => start(e.touches[0].clientY);
-    const onTM = (e) => {
-      // only intercept if mostly vertical
-      move(e.touches[0].clientY);
-    };
-    const onTE = () => end();
-
-    let mouseDown = false;
-    const onMD = (e) => {mouseDown = true;start(e.clientY);};
-    const onMM = (e) => {if (mouseDown) move(e.clientY);};
-    const onMU = () => {mouseDown = false;end();};
-
-    // wheel-to-vertical
-    let wheelLock = 0;
-    const onW = (e) => {
-      if (Math.abs(e.deltaY) < 30) return;
-
-      // Respect inner-panel scrolling: if the active panel has its own
-      // scrollable content (the .cpanel on the content slide), only switch
-      // panels when that scroller is already at the relevant edge.
-      const activePanel = el.children[vIdx];
-      const scroller = activePanel && activePanel.querySelector('.cpanel');
-      if (scroller && scroller.scrollHeight - scroller.clientHeight > 2) {
-        const atTop = scroller.scrollTop <= 0;
-        const atBottom = scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 1;
-        if (e.deltaY < 0 && !atTop) return;   // still room to scroll up inside
-        if (e.deltaY > 0 && !atBottom) return; // still room to scroll down inside
-      }
-
-      const now = performance.now();
-      if (now < wheelLock) return;
-      wheelLock = now + 700;
-      let next = vIdx;
-      if (e.deltaY > 0 && vIdx < panels.length - 1) next = vIdx + 1;else
-      if (e.deltaY < 0 && vIdx > 0) next = vIdx - 1;
-      if (next === vIdx) return;
-      setVIdx(next);
-      el.style.transform = `translateY(${-next * el.clientHeight}px)`;
-      // After a panel switch, drop the inner scroller back to its top so the
-      // user lands at the start of the new section, not mid-way.
-      if (next === 0) {
-        const incomingScroller = el.children[next] && el.children[next].querySelector('.cpanel');
-        if (incomingScroller) incomingScroller.scrollTop = 0;
-      }
-    };
-
-    el.addEventListener('touchstart', onTS, { passive: true });
-    el.addEventListener('touchmove', onTM, { passive: true });
-    el.addEventListener('touchend', onTE);
-    el.addEventListener('mousedown', onMD);
-    window.addEventListener('mousemove', onMM);
-    window.addEventListener('mouseup', onMU);
-    el.addEventListener('wheel', onW, { passive: true });
-
-    return () => {
-      el.removeEventListener('touchstart', onTS);
-      el.removeEventListener('touchmove', onTM);
-      el.removeEventListener('touchend', onTE);
-      el.removeEventListener('mousedown', onMD);
-      window.removeEventListener('mousemove', onMM);
-      window.removeEventListener('mouseup', onMU);
-      el.removeEventListener('wheel', onW);
-    };
-  }, [isActive, vIdx, panels.length]);
-
-  // reset transform when active changes
-  useEffect(() => {
-    if (stripRef.current) {
-      stripRef.current.style.transform = `translateY(${-vIdx * stripRef.current.clientHeight}px)`;
-    }
-  }, [vIdx, isActive]);
-
-  // Report active vIdx + panel count to App (for chrome state)
-  useEffect(() => {
-    if (isActive && onVIdxChange) onVIdxChange(vIdx, panels.length);
-  }, [isActive, vIdx, panels.length, onVIdxChange]);
-
-  // External jump to booking (FAB)
-  useEffect(() => {
-    if (!isActive) return;
     const handler = () => {
-      const targetIdx = panels.length > 1 ? 1 : 0;
-      setVIdx(targetIdx);
-      const el = stripRef.current;
-      if (!el) return;
-      el.style.transform = `translateY(${-targetIdx * el.clientHeight}px)`;
-      // After the strip transition, scroll the cpanel down to the embed.
-      setTimeout(() => {
-        const embed = el.querySelector('.booking-embed');
-        const scroller = embed && embed.closest('.cpanel');
-        if (embed && scroller) {
-          // Offset by the chrome-top's actual bottom so the embed lands
-          // clear of the logo/header overlay, plus a small breathing gap.
-          const chromeEl = document.querySelector('.chrome-top');
-          const clearance = chromeEl ? chromeEl.getBoundingClientRect().bottom + 16 : 120;
-          const top = embed.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop - clearance;
-          scroller.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
-        }
-      }, 720);
+      // Wait a frame so the embed exists if the service just changed.
+      requestAnimationFrame(() => {
+        const embed = document.querySelector('.booking-embed');
+        if (embed) window.scrollToWithChrome(embed);
+      });
     };
     window.addEventListener('edit-studio:goto-booking', handler);
     return () => window.removeEventListener('edit-studio:goto-booking', handler);
-  }, [isActive, panels.length]);
+  }, []);
 
-  return (
-    <div className="strip" ref={stripRef} data-vidx={vIdx}>
-      {panels}
-    </div>);
+  return <React.Fragment>{panels}</React.Fragment>;
 
 }
 
@@ -790,14 +662,7 @@ function App() {
     const svcs = (TWEAK_DEFAULTS.serviceOrder || 'home,barber,tan,wax,lashes').split(',').map(s => s.trim());
     return getIdxFromPath(svcs);
   });
-  const [hOffset, setHOffset] = useState(0); // px during drag
-  const [dragging, setDragging] = useState(false);
-  const [snapping, setSnapping] = useState(false); // true during the instant index/offset swap
-  const [activeVIdx, setActiveVIdx] = useState(0);
-  const [activeVCount, setActiveVCount] = useState(2);
   const appRef = useRef(null);
-  const dragRef = useRef({ x: 0, dx: 0, dragging: false, t: 0, axis: null, y: 0 });
-  const snapTimerRef = useRef(null);
 
   // Announcement dismissal — keyed by the message so editing it via Tweaks re-shows.
   const announceKey = 'edit-studio-announce:' + (t.announceText || '').slice(0, 96);
@@ -930,109 +795,26 @@ function App() {
     document.documentElement.style.setProperty('--density', map[t.density] || 1);
   }, [t.density]);
 
-  // horizontal swipe
+  // Left/right arrows still step between services on desktop. The touch swipe
+  // that used to do this is gone — the page scrolls natively instead, and the
+  // nav pills, home tiles and URL routing already cover every destination.
   useEffect(() => {
-    const el = appRef.current;
-    if (!el) return;
-
-    const start = (x, y) => {
-      if (snapTimerRef.current) {
-        clearTimeout(snapTimerRef.current);
-        snapTimerRef.current = null;
-        setSnapping(false);
-      }
-      dragRef.current = { x, y, dx: 0, dragging: true, t: performance.now(), axis: null };
-      setDragging(true);
-    };
-    const move = (x, y) => {
-      if (!dragRef.current.dragging) return;
-      const dx = x - dragRef.current.x;
-      const dy = y - dragRef.current.y;
-      // determine axis
-      if (!dragRef.current.axis && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
-        dragRef.current.axis = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
-      }
-      if (dragRef.current.axis !== 'h') return;
-      // infinite — no edge resistance
-      dragRef.current.dx = dx;
-      setHOffset(dx);
-    };
-    const end = () => {
-      if (!dragRef.current.dragging) return;
-      const wasH = dragRef.current.axis === 'h';
-      dragRef.current.dragging = false;
-      setDragging(false);
-      if (!wasH) { setHOffset(0); return; }
-      const dx = dragRef.current.dx;
-      const dt = Math.max(50, performance.now() - dragRef.current.t);
-      const v = dx / dt;
-      const w = el.clientWidth;
-      const threshold = w * 0.20;
-      let next = idx;
-      if (dx < -threshold || v < -0.5) next = (idx + 1) % total;
-      else if (dx > threshold || v > 0.5) next = (idx - 1 + total) % total;
-      if (next === idx) { setHOffset(0); return; }
-      // Phase 1: animate the swiped panel the rest of the way off-screen.
-      // The CSS transition is still active here (dragging = false), so this plays smoothly.
-      const target = (dx < 0 || v < -0.5) ? -w : w;
-      setHOffset(target);
-      // Phase 2: once the animation lands, silently teleport to the new index with no transition.
-      snapTimerRef.current = setTimeout(() => {
-        snapTimerRef.current = null;
-        setSnapping(true);   // disable transition
-        setIdx(next);
-        setHOffset(0);       // both updates batch into one render — instant, invisible
-        requestAnimationFrame(() => requestAnimationFrame(() => setSnapping(false)));
-      }, 360); // matches the 0.35s transition + small buffer
-    };
-
-    const onTS = (e) => start(e.touches[0].clientX, e.touches[0].clientY);
-    const onTM = (e) => move(e.touches[0].clientX, e.touches[0].clientY);
-    const onTE = () => end();
-
-    let md = false;
-    const onMD = (e) => {md = true;start(e.clientX, e.clientY);};
-    const onMM = (e) => {if (md) move(e.clientX, e.clientY);};
-    const onMU = () => {md = false;end();};
-
     const onKey = (e) => {
+      if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
       if (e.key === 'ArrowRight') setIdx((idx + 1) % total);else
       if (e.key === 'ArrowLeft') setIdx((idx - 1 + total) % total);
     };
-
-    el.addEventListener('touchstart', onTS, { passive: true });
-    el.addEventListener('touchmove', onTM, { passive: true });
-    el.addEventListener('touchend', onTE);
-    el.addEventListener('mousedown', onMD);
-    window.addEventListener('mousemove', onMM);
-    window.addEventListener('mouseup', onMU);
     window.addEventListener('keydown', onKey);
-
-    return () => {
-      el.removeEventListener('touchstart', onTS);
-      el.removeEventListener('touchmove', onTM);
-      el.removeEventListener('touchend', onTE);
-      el.removeEventListener('mousedown', onMD);
-      window.removeEventListener('mousemove', onMM);
-      window.removeEventListener('mouseup', onMU);
-      window.removeEventListener('keydown', onKey);
-    };
+    return () => window.removeEventListener('keydown', onKey);
   }, [idx, total]);
 
-  // 3-column window: prev / active / next, infinitely repositioned
-  const w = typeof window !== 'undefined' ? window.innerWidth : 800;
-  const hProgress = -hOffset / w;
-  const wrap = (n) => (n % total + total) % total;
-  const visibleSlots = [
-  { slotIdx: -1, service: services[wrap(idx - 1)] },
-  { slotIdx: 0, service: services[idx] },
-  { slotIdx: 1, service: services[wrap(idx + 1)] }];
-
-  // container starts at -1 vw (slot -1), so active sits centered.
-  const xOffsetPx = -w + hOffset;
+  // Land at the top of each service rather than wherever the last one was left.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [idx]);
 
   return (
-    <div className="app" ref={appRef} data-screen-label={`Edit Studio — ${active.label}`} data-vidx={activeVIdx} data-announce={t.announceText && !announceDismissed && services[idx] === t.announceTarget ? 'true' : 'false'}>
+    <div className="app" ref={appRef} data-screen-label={`Edit Studio — ${active.label}`} data-announce={t.announceText && !announceDismissed && services[idx] === t.announceTarget ? 'true' : 'false'}>
       <AnnouncementStrip
         message={services[idx] === t.announceTarget ? t.announceText : ''}
         styleVariant={t.announceStyle || 'lime'}
@@ -1050,31 +832,16 @@ function App() {
       <ChromeTop active={active} total={total} idx={idx} logoSrc={t.palette === 'noir' ? 'assets/logo-white.png' : 'assets/logo-black.png'} />
       <ChromeNav services={services.map((s) => SERVICES_DEF[s])} idx={idx} onSelect={(i) => setIdx(i)} />
 
-      <div style={{
-        position: 'absolute', inset: 0,
-        display: 'flex', flexDirection: 'row',
-        width: `300vw`,
-        transform: `translateX(${xOffsetPx}px)`,
-        transition: (dragging || snapping) ? 'none' : 'transform 0.35s cubic-bezier(0.65, 0, 0.35, 1)',
-        willChange: 'transform'
-      }}>
-        {visibleSlots.map(({ slotIdx, service }) => {
-          const localProgress = slotIdx + hProgress;
-          return (
-            <div key={service} style={{ flex: '0 0 100vw', position: 'relative', overflow: 'hidden' }}>
-              <ServiceColumn
-                service={service}
-                isActive={slotIdx === 0}
-                hProgress={localProgress}
-                animSpeed={t.animSpeed}
-                density={t.density}
-                headlines={headlines}
-                onVIdxChange={slotIdx === 0 ? (v, c) => { setActiveVIdx(v); setActiveVCount(c); } : undefined} />
-              
-            </div>);
-
-        })}
-      </div>
+      {/* One service at a time, in normal flow. The prev/next columns of the old
+          carousel existed only so a swipe had something to drag in from; with
+          the swipe gone they were pure cost — three animation trees mounted to
+          show one. Keyed so React remounts (and animations restart) on change. */}
+      <ServiceColumn
+        key={services[idx]}
+        service={services[idx]}
+        animSpeed={t.animSpeed}
+        density={t.density}
+        headlines={headlines} />
 
       <window.TweaksPanel title="Edit Studio · Tweaks">
         <window.TweakSection label="Palette" />

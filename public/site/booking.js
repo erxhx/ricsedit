@@ -408,14 +408,8 @@
         if (category === "wax") return;
         if (selected.length > 0 && ctaRef.current) {
           var embed = ctaRef.current.closest(".booking-embed");
-          var scroller = embed && embed.closest(".cpanel");
           setTimeout(function() {
-            if (embed && scroller) {
-              var chromeEl = document.querySelector(".chrome-top");
-              var clearance = chromeEl ? chromeEl.getBoundingClientRect().bottom + 16 : 120;
-              var top = embed.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop - clearance;
-              scroller.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
-            }
+            if (embed) window.scrollToWithChrome(embed);
           }, 60);
         }
       }, [selected.length]);
