@@ -7,6 +7,15 @@ import type { NextConfig } from "next";
 // the Square SDK — so CSP here is origin-allowlisting + anti-framing defence
 // in depth, layered on top of the app's own HTML escaping, not the primary
 // XSS control.
+// Two of these headers force HTTPS and must not be sent by the dev server,
+// which serves plain HTTP: `upgrade-insecure-requests` rewrites navigations to
+// https://, and HSTS makes the browser do the same for two years after a single
+// visit. Sent from `next dev`, they make the app unreachable on a phone or
+// simulator ("Safari can't open the page because it couldn't establish a secure
+// connection"), and because HSTS is cached per host, the breakage outlives the
+// server. Production keeps both.
+const isProd = process.env.NODE_ENV === 'production';
+
 const csp = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.squarecdn.com https://www.googletagmanager.com https://www.google-analytics.com https://googleads.g.doubleclick.net https://www.google.com",
@@ -19,12 +28,14 @@ const csp = [
   "base-uri 'self'",
   "form-action 'self'",
   "object-src 'none'",
-  "upgrade-insecure-requests",
+  ...(isProd ? ["upgrade-insecure-requests"] : []),
 ].join('; ');
 
 const securityHeaders = [
   { key: 'Content-Security-Policy', value: csp },
-  { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+  ...(isProd
+    ? [{ key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' }]
+    : []),
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
