@@ -42,6 +42,9 @@ type DragRef = {
   aptId: string;
   color: string;
   startTouchY: number;
+  /** Needed to spot a sideways scroll: the grid pans horizontally, and blocks
+      no longer set touch-action: pan-y, so a lateral swipe can start on one. */
+  startTouchX: number;
   origTopPx: number;
   durationPx: number;
   currentTopPx: number;
@@ -249,10 +252,15 @@ export default function DaySchedule({
       const drag = dragRef.current;
       if (!drag) return;
       const dy = e.touches[0].clientY - drag.startTouchY;
+      const dx = e.touches[0].clientX - drag.startTouchX;
 
       // Long press not yet ready — watch for scroll intent
       if (!drag.longPressReady) {
-        if (Math.abs(dy) > 12) {
+        // Either axis counts. Vertical alone was enough while blocks carried
+        // touch-action: pan-y, because the browser refused to pan them
+        // sideways; now that they scroll horizontally too, a lateral swipe
+        // would otherwise let the long-press arm mid-scroll and hijack it.
+        if (Math.abs(dy) > 12 || Math.abs(dx) > 12) {
           // User is scrolling; cancel the long-press timer
           if (drag.longPressTimer) {
             clearTimeout(drag.longPressTimer);
@@ -362,6 +370,7 @@ export default function DaySchedule({
       aptId: apt.id,
       color: col,
       startTouchY: e.touches[0].clientY,
+      startTouchX: e.touches[0].clientX,
       origTopPx,
       durationPx: apt.durationMinutes * PPM,
       currentTopPx: origTopPx,
@@ -439,7 +448,7 @@ export default function DaySchedule({
 
     dragRef.current = {
       aptId: apt.id, color: col,
-      startTouchY: e.clientY, origTopPx,
+      startTouchY: e.clientY, startTouchX: e.clientX, origTopPx,
       durationPx: apt.durationMinutes * PPM,
       currentTopPx: origTopPx,
       hasMoved: false, longPressReady: true, // no long-press delay for mouse
@@ -673,7 +682,8 @@ export default function DaySchedule({
         <div
           ref={headerScrollRef}
           onScroll={() => syncScroll('header')}
-          style={{ flex: 1, overflowX: 'auto', overscrollBehaviorX: 'contain', scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}
+          // overflowY: 'hidden' is load-bearing — see the body track below.
+          style={{ flex: 1, overflowX: 'auto', overflowY: 'hidden', overscrollBehaviorX: 'contain', scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}
         >
           <div style={{ display: 'flex' }}>
             {ROSTER.map((m) => (
@@ -712,6 +722,17 @@ export default function DaySchedule({
           onScroll={() => syncScroll('body')}
           style={{
             flex: 1, overflowX: 'auto', position: 'relative',
+            // overflowY MUST stay explicit. `overflow-x: auto` alone promotes
+            // overflow-y from `visible` to `auto`, which made this a two-axis
+            // scroll container — and its vertical extent is zero, because the
+            // wrapper is unconstrained and the grid inside is exactly TOTAL_PX
+            // tall. iOS direction-locks a gesture to one axis at touch-down, so
+            // a slightly diagonal swipe could lock to a vertical scroller with
+            // nowhere to go: the gesture was swallowed instead of scrolling the
+            // page. That is the "only scrolls if you swipe perfectly straight"
+            // bug. Hiding it costs nothing (there is no vertical overflow) and
+            // hands vertical gestures back to the document.
+            overflowY: 'hidden',
             // Contain edge overscroll so a fling doesn't chain into page
             // rubber-banding. No scroll-snap here: snapping fights diagonal
             // pans on a 2-axis grid (feels like it bounces back).
@@ -839,7 +860,14 @@ export default function DaySchedule({
                       border: `1px solid ${blocked ? 'var(--admin-blocked-border)' : completed ? `${col}40` : `${col}60`}`,
                       borderLeft: `2.5px solid ${blocked ? 'var(--admin-blocked-border)' : completed ? `${col}70` : col}`,
                       borderRadius: 5, padding: '3px 6px',
-                      cursor: 'grab', touchAction: 'pan-y', zIndex: 2,
+                      // touchAction was 'pan-y', which told the browser this
+                      // element never pans horizontally — so a sideways swipe
+                      // starting on a booking could not scroll the grid, and on
+                      // a busy day bookings cover most of it. Reserving the axis
+                      // is unnecessary: the drag is armed by the long-press
+                      // timer in onAptTouchStart and aborted by scrollCancelled,
+                      // so the JS already distinguishes a drag from a scroll.
+                      cursor: 'grab', touchAction: 'auto', zIndex: 2,
                       overflow: 'hidden', userSelect: 'none',
                       opacity: completed ? 0.65 : 1,
                     }}
