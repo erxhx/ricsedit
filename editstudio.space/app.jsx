@@ -860,6 +860,10 @@ function App() {
   // section's once it isn't.
   useEffect(() => {
     const heroTint = CHROME_TINT[services[idx]] || CHROME_TINT.home;
+    // Fixed per service, unlike --chrome-tint which flips as you scroll. The
+    // top-of-hero fade (.anim-canvas::after) blends into this, so it must not
+    // change colour underfoot when the chrome tint switches to the content bg.
+    document.documentElement.style.setProperty('--hero-tint', heroTint);
     const update = () => {
       const hero = document.querySelector('.hero');
       if (!hero) return;

@@ -568,6 +568,26 @@ body { min-height: 100svh; }
   pointer-events: none;
   z-index: 0;
 }
+/* Fade the very top of the artwork into the flat colour iOS Safari paints in
+   its status strip, so the two meet without a seam.
+   Only the canvas background can reach that strip — no element can, verified:
+   at scroll 0 a `position: fixed; top: 0` probe landed at 61pt, and an html
+   background of #00ff00 rendered the strip as pure lime with no content in it.
+   So the strip is necessarily one flat colour, and the mismatch shows wherever
+   the artwork varies across its top edge (home's drifting aura, sunless's
+   radial). Fading the top ~150px to that same colour hides the join.
+   Sits above the SVG but below the hero text, which is z-index 1. */
+.anim-canvas::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  height: var(--hero-fade, 150px);
+  background: linear-gradient(180deg,
+    var(--hero-tint, var(--bg)) 0%,
+    color-mix(in srgb, var(--hero-tint, var(--bg)) 55%, transparent) 45%,
+    color-mix(in srgb, var(--hero-tint, var(--bg)) 0%, transparent) 100%);
+  pointer-events: none;
+}
 /* The SVG fills the whole canvas, bleed included — several animations paint
    their own background into it (WaxAnim's "deep wash bottom" rect, for one), so
    an SVG that stopped at 100svh left a hard seam where its painting ended. The

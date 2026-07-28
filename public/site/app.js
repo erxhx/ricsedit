@@ -631,6 +631,7 @@
     }, []);
     useEffect(() => {
       const heroTint = CHROME_TINT[services[idx]] || CHROME_TINT.home;
+      document.documentElement.style.setProperty("--hero-tint", heroTint);
       const update = () => {
         const hero = document.querySelector(".hero");
         if (!hero) return;
