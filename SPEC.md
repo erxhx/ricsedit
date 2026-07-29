@@ -262,9 +262,10 @@ Admin PWA (reviewed on an iPhone 17 Pro Max simulator, installed to home screen)
   scrolling moves controls out from under them — but the FAB is a persistent
   dead zone over the right side (it covers a permissions toggle on Settings and
   staff figures on Reports).
-- **Day view's third staff column is clipped** at 440pt. With three staff you
-  pan constantly; panning then clips the first. Consider a staff filter so the
-  phone shows one person full-width.
+- **Day view's third staff column is clipped** at 440pt. Partly addressed: the
+  signed-in person's column now sorts first, so your own day never needs a pan.
+  Seeing anyone else's still does, and the last column is still cut off. A staff
+  filter (one person full-width on a phone) remains the fuller fix.
 - **Appointment cards don't show their time** — only client + service. The hour
   gutter is pinned far left and is often off-screen when panned.
 - **Type scale skews small**: ~129 `fontSize` declarations at 10–11px, ~153 at
