@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ settings, square });
 }
 
-/** POST — save payment settings. Owner only. */
+/** POST — save payment settings. Admins only. */
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
