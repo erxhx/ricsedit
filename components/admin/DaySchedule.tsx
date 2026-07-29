@@ -1,9 +1,10 @@
 'use client';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Appointment } from '@/lib/admin-mock';
 import { getAppointmentColor } from '@/lib/appointment-colors';
-import { STAFF as ROSTER, STAFF_IDS, staffName, staffColor } from '@/lib/staff';
+import { STAFF_IDS, staffName, staffColor, staffOrderedFor } from '@/lib/staff';
+import { useRevenueAccess } from './RevenueAccess';
 import useScrollLock from './useScrollLock';
 
 // ── layout constants ──────────────────────────────────────────────────────────
@@ -131,6 +132,14 @@ export default function DaySchedule({
   barberThuClose?: number;
 }) {
   const router = useRouter();
+
+  // Column order is per-viewer: the signed-in staff member goes first. Three
+  // columns overflow a phone screen, so anything past the first needs a pan to
+  // reach — the person looking should never have to pan to find themselves.
+  // Falls back to plain roster order when no session is in context.
+  const { viewerStaff } = useRevenueAccess();
+  const roster = useMemo(() => staffOrderedFor(viewerStaff), [viewerStaff]);
+
   const gridRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<DragRef | null>(null);
   const ghostRef = useRef<HTMLDivElement | null>(null);
@@ -172,7 +181,7 @@ export default function DaySchedule({
     if (!el) return;
     const measure = () => {
       // Columns fill the track when it's wide enough, else fixed COL_W + h-scroll
-      setColW(Math.max(COL_W, Math.floor(el.clientWidth / ROSTER.length)));
+      setColW(Math.max(COL_W, Math.floor(el.clientWidth / STAFF_IDS.length)));
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -686,12 +695,18 @@ export default function DaySchedule({
           style={{ flex: 1, overflowX: 'auto', overflowY: 'hidden', overscrollBehaviorX: 'contain', scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}
         >
           <div style={{ display: 'flex' }}>
-            {ROSTER.map((m) => (
+            {roster.map((m) => (
               <div key={m.id} style={{ width: colW, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6, padding: '9px 12px', borderLeft: '1px solid var(--admin-border-sub)' }}>
                 <span style={{ width: 7, height: 7, borderRadius: '50%', background: staffColor(m.id), flexShrink: 0, display: 'inline-block' }} />
                 <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-text)' }}>
                   {m.name}
                 </span>
+                {/* Names alone don't explain why this column moved — say so. */}
+                {m.id === viewerStaff && (
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                    you
+                  </span>
+                )}
               </div>
             ))}
           </div>
@@ -754,7 +769,7 @@ export default function DaySchedule({
             )}
 
             {/* staff columns */}
-            {ROSTER.map((m) => {
+            {roster.map((m) => {
           const staff = m.id;
           const staffApts = visible.filter((a) => a.staff === staff);
 

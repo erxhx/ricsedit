@@ -97,6 +97,21 @@ export function staffColor(id: string): string {
   return STAFF_BY_ID.get(id)?.color ?? '#ece9e2';
 }
 
+/**
+ * The roster ordered for a particular viewer: that person first, everyone else
+ * in roster order. The day grid is wider than a phone screen, so the leftmost
+ * column is the only one guaranteed to be visible without panning — it should
+ * belong to whoever is signed in.
+ *
+ * An empty or unknown id (no session, or a staff member who has left the
+ * roster) returns the roster untouched.
+ */
+export function staffOrderedFor(viewerId: string | null | undefined): StaffMember[] {
+  const viewer = viewerId ? STAFF_BY_ID.get(viewerId) : undefined;
+  if (!viewer) return STAFF;
+  return [viewer, ...STAFF.filter(m => m.id !== viewer.id)];
+}
+
 /** The staff member who performs a given service category, if any. */
 export function staffForCategory(cat: ServiceCategory): string | undefined {
   return STAFF.find(m => m.categories.includes(cat))?.id;

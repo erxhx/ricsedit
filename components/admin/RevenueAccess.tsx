@@ -4,7 +4,10 @@ import { createContext, useContext } from 'react';
 export interface RevenueAccess {
   /** Whether the current viewer may see studio-wide revenue. */
   canSeeAllRevenue: boolean;
-  /** The viewer's staff id — used to scope revenue to their own when restricted. */
+  /**
+   * The viewer's staff id. Scopes revenue to their own when restricted, and
+   * also orders the day grid so their column comes first.
+   */
   viewerStaff: string;
 }
 

@@ -7,6 +7,7 @@ import { getAvailabilityConfig } from '@/lib/availability-store';
 import { getStaffPermissions, canViewAllRevenue, redactRevenue } from '@/lib/staff-permissions';
 import AdminHeader from '@/components/admin/AdminHeader';
 import DaySchedule from '@/components/admin/DaySchedule';
+import { RevenueAccessProvider } from '@/components/admin/RevenueAccess';
 
 function fmtDate(dateStr: string): string {
   const [y, mo, d] = dateStr.split('-').map(Number);
@@ -81,7 +82,11 @@ export default async function DayPage({ params }: { params: Promise<{ date: stri
         {/* Right spacer to keep date centred */}
         <div style={{ width: 60 }} />
       </div>
-      <DaySchedule appointments={visibleAppointments} date={date} hoursByDay={availability.days} staffHoursByDay={Object.fromEntries(Object.entries(availability.staff).map(([id, s]) => [id, s.days]))} barberThuClose={availability.barberThuClose} />
+      {/* Mounted for the same reason as on /admin: the grid reads viewerStaff
+          from here to put the signed-in person's column first. */}
+      <RevenueAccessProvider value={{ canSeeAllRevenue, viewerStaff: session.sub }}>
+        <DaySchedule appointments={visibleAppointments} date={date} hoursByDay={availability.days} staffHoursByDay={Object.fromEntries(Object.entries(availability.staff).map(([id, s]) => [id, s.days]))} barberThuClose={availability.barberThuClose} />
+      </RevenueAccessProvider>
     </>
   );
 }
