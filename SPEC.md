@@ -189,6 +189,9 @@ each API route applies the same check itself.
 
 #### Payout vs. gross
 
+The UI calls this **"money earned"**; `payout` is the internal name for the
+same thing (`lib/payout.ts`, `commissionRate`).
+
 An admin sees what the studio takes in. Anyone restricted sees what they are
 paid: a percentage of the service plus **all** of their tips. Niamh is 50%.
 The rate is a roster default (`StaffMember.commissionRate`) that the owner can

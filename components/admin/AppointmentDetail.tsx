@@ -271,7 +271,7 @@ export default function AppointmentDetail({
               needs to know what to charge. The payout is the separate question
               of what they keep, so it gets its own row rather than replacing it. */}
           {!canSeeAllRevenue && apt.staff === viewerStaff && (
-            <Row label="Your payout">
+            <Row label="Money earned">
               <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)' }}>
                 {fmtMoney(payoutOf(apt, commissionRate))}
                 <span style={{ color: 'var(--admin-muted)', marginLeft: 6, fontSize: 12 }}>

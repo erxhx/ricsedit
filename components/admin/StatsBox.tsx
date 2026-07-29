@@ -87,7 +87,7 @@ export default function StatsBox({ appointments, hoursByDay, startDate, endDate 
       boxShadow: '0 1px 6px rgba(0,0,0,0.08)',
     }}>
       <Stat
-        label={canSeeAllRevenue ? 'Total' : 'Your payout'}
+        label={canSeeAllRevenue ? 'Total' : 'Money earned'}
         value={total > 0 ? fmtMoney(total) : '—'}
         sub={total > 0 ? totalSub : undefined}
       />

@@ -218,7 +218,7 @@ export default function ReportsView({ appointments: initialAppointments }: { app
 
       {!canSeeAllRevenue && (
         <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)', margin: '-8px 0 16px', lineHeight: 1.5 }}>
-          Showing your payout — {Math.round(commissionRate * 100)}% of the service plus your tips.
+          Showing money you earned — {Math.round(commissionRate * 100)}% of the service plus your tips.
           {payoutSplit.total > 0 && (
             <>
               {' '}This period: {fmtMoney(payoutSplit.service)} service + {fmtMoney(payoutSplit.tips)} tips.
@@ -269,7 +269,7 @@ export default function ReportsView({ appointments: initialAppointments }: { app
           {/* ── Period-over-period (month / 3months only) ─────────────────── */}
           {showWoW && (
             <>
-              <SectionTitle>{canSeeAllRevenue ? 'Revenue' : 'Your payout'} — {RANGE_LABELS[range]} vs {compLabel}</SectionTitle>
+              <SectionTitle>{canSeeAllRevenue ? 'Revenue' : 'Money earned'} — {RANGE_LABELS[range]} vs {compLabel}</SectionTitle>
               <Card style={{ marginBottom: 20 }}>
                 <div style={{ display: 'flex', gap: 0 }}>
                   <div style={{ flex: 1 }}>
@@ -296,7 +296,7 @@ export default function ReportsView({ appointments: initialAppointments }: { app
           {/* ── Total revenue (today / week only) ─────────────────────────── */}
           {!showWoW && (
             <>
-              <SectionTitle>{canSeeAllRevenue ? 'Revenue' : 'Your payout'} — {RANGE_LABELS[range]}</SectionTitle>
+              <SectionTitle>{canSeeAllRevenue ? 'Revenue' : 'Money earned'} — {RANGE_LABELS[range]}</SectionTitle>
               <Card style={{ marginBottom: 20 }}>
                 <div style={{ fontFamily: 'var(--font-body)', fontSize: 36, fontWeight: 500, color: 'var(--admin-text)', letterSpacing: '-0.02em' }}>
                   {fmtMoney(totalRevenue)}
@@ -309,7 +309,7 @@ export default function ReportsView({ appointments: initialAppointments }: { app
           )}
 
           {/* ── Revenue by day of week ────────────────────────────────────── */}
-          <SectionTitle>{canSeeAllRevenue ? 'Revenue' : 'Payout'} by Day of Week</SectionTitle>
+          <SectionTitle>{canSeeAllRevenue ? 'Revenue' : 'Money earned'} by Day of Week</SectionTitle>
           <Card style={{ marginBottom: 20 }}>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 80 }}>
               {DAY_LABELS.map((label, dow) => {
@@ -346,7 +346,7 @@ export default function ReportsView({ appointments: initialAppointments }: { app
                     <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 500, color: 'var(--admin-text)' }}>{label}</span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <StatRow label={canSeeAllRevenue ? 'Revenue' : 'Payout'} value={fmtMoney(revenue)} />
+                    <StatRow label={canSeeAllRevenue ? 'Revenue' : 'Money earned'} value={fmtMoney(revenue)} />
                     <StatRow label="Appointments" value={String(apts)} />
                     <StatRow label="Working days" value={String(days)} />
                     <StatRow label="Apts / day"   value={aptsPerDay} />

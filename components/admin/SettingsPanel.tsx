@@ -279,7 +279,7 @@ export default function SettingsPanel({
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontFamily: 'var(--font-body)', fontSize: 15, color: 'var(--admin-text)' }}>{m.name}</div>
                     <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)' }}>
-                      {isOwner ? 'Admin — always sees all revenue' : (on ? 'Can see all studio revenue' : 'Sees only their own payout')}
+                      {isOwner ? 'Admin — always sees all revenue' : (on ? 'Can see all studio revenue' : 'Sees only money they earned')}
                     </div>
                     {/* Payout rate — only meaningful for someone who sees a
                         payout rather than the studio's gross takings. */}
@@ -338,8 +338,8 @@ export default function SettingsPanel({
           </div>
           <div style={{ marginTop: 10, fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)', lineHeight: 1.5 }}>
             Controls whether each person sees studio-wide revenue (Reports, day &amp; week totals) or only their own
-            payout. A payout is their percentage of the service plus all of their tips — so Reports shows what they
-            earn, not what the studio takes in. Tips can only be counted from online payments.
+            money earned. That is their percentage of the service plus all of their tips — so Reports shows what
+            they earn, not what the studio takes in. Tips can only be counted from online payments.
           </div>
         </>
       )}

@@ -405,7 +405,7 @@ export default function DayView({
             return (
               <>
                 <Stat
-                  label={canSeeAllRevenue ? 'Total' : 'Your payout'}
+                  label={canSeeAllRevenue ? 'Total' : 'Money earned'}
                   value={total > 0 ? fmtMoney(total) : '—'}
                   sub={total > 0 ? totalSub : undefined}
                 />
