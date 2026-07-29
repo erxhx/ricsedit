@@ -53,16 +53,12 @@ export default function AdminThemeProvider({
           vars,
         ) as React.CSSProperties}
       >
-        {/* Status-bar strip (installed PWA only): with black-translucent the
-            page extends under the iOS status bar; this ink strip backs the
-            white system text (time/battery) so it's readable and on-brand in
-            both themes. Height is the safe-area inset — 0 in a browser tab. */}
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0,
-          height: 'env(safe-area-inset-top, 0px)',
-          background: '#141210',
-          zIndex: 100, pointerEvents: 'none',
-        }} />
+        {/* No status-bar strip here on purpose. It used to paint a fixed
+            #141210 band over the safe-area inset to back the white text that
+            'black-translucent' forces. With statusBarStyle 'default' iOS owns
+            that zone and colours it from theme-color (pinned to the admin
+            theme in layout.tsx), so the bar matches the page and a hardcoded
+            ink band would just put the black bar back. */}
         {/* Ambient colour pools so the Liquid Glass chrome has light to bend —
             warm at the top, a faint cool pool low where the tab bar floats. */}
         <div style={{

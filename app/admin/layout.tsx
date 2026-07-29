@@ -10,11 +10,18 @@ export const metadata: Metadata = {
   manifest: '/admin-manifest.json',
   appleWebApp: {
     capable: true,
-    // Page extends under the status bar; the theme provider paints that zone
-    // with an ink strip so the white system text is always readable — with
-    // 'default', iOS colours the bar from the SYSTEM theme (grey slab over
-    // the beige app when the phone is in dark mode).
-    statusBarStyle: 'black-translucent',
+    // 'default' gives dark status text, so the bar can sit on the app's own
+    // (usually light) colour and read as part of the page.
+    //
+    // This was briefly 'black-translucent' plus a hardcoded #141210 strip,
+    // to stop iOS painting a grey slab from the SYSTEM theme when the phone
+    // was dark and the app light. That fixed the slab but made the strip
+    // permanently black over a beige app — worse in the common case, and it
+    // had only been checked against a simulated composition, never a real
+    // installed PWA. black-translucent also forces WHITE status text, so it
+    // can never sit on a light strip; 'default' is the only way to get the
+    // seamless look. The slab is addressed in generateViewport instead.
+    statusBarStyle: 'default',
     title: 'ES Admin',
   },
 };
@@ -29,7 +36,15 @@ export async function generateViewport() {
     // Users can still pinch-zoom — iOS ignores the cap for user gestures.
     maximumScale: 1,
     viewportFit: 'cover',
-    themeColor: theme === 'dark' ? '#0d0c0a' : '#efeae0',
+    // Pinned to the ADMIN theme for both colour schemes, deliberately ignoring
+    // prefers-color-scheme. A single unqualified theme-color let iOS fall back
+    // to its own system-theme treatment — a grey slab over the beige app when
+    // the phone was in dark mode. Declaring the same colour for both media
+    // cases leaves it nothing to choose.
+    themeColor: [
+      { media: '(prefers-color-scheme: light)', color: theme === 'dark' ? '#0d0c0a' : '#efeae0' },
+      { media: '(prefers-color-scheme: dark)', color: theme === 'dark' ? '#0d0c0a' : '#efeae0' },
+    ],
   };
 }
 
