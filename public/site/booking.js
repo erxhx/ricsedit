@@ -403,20 +403,10 @@
       })));
     }
     function StepService(props) {
-      var { useState, useRef, useEffect } = React;
+      var { useState } = React;
       var category = props.category;
       var [selected, setSelected] = useState([]);
       var [addons, setAddons] = useState([]);
-      var ctaRef = useRef(null);
-      useEffect(function() {
-        if (category === "wax") return;
-        if (selected.length > 0 && ctaRef.current) {
-          var embed = ctaRef.current.closest(".booking-embed");
-          setTimeout(function() {
-            if (embed) window.scrollToWithChrome(embed);
-          }, 60);
-        }
-      }, [selected.length]);
       var isMulti = category === "wax";
       function toggleMain(item) {
         if (isMulti) {
@@ -510,7 +500,7 @@
             toggleMain(s);
           } });
         })));
-      }), selected.length > 0 && /* @__PURE__ */ React.createElement("div", { ref: ctaRef, style: { marginTop: 24 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "12px 0", borderTop: "1px solid var(--rule)", marginBottom: 12 } }, /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--mono)", fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-faint)" } }, all.length, " service", all.length !== 1 ? "s" : "", " \xB7 ", dur, " min"), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--mono)", fontSize: 15 } }, bkFmtPrice(total))), /* @__PURE__ */ React.createElement(BkBtn, { onClick: function() {
+      }), selected.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 24 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "12px 0", borderTop: "1px solid var(--rule)", marginBottom: 12 } }, /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--mono)", fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-faint)" } }, all.length, " service", all.length !== 1 ? "s" : "", " \xB7 ", dur, " min"), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "var(--mono)", fontSize: 15 } }, bkFmtPrice(total))), /* @__PURE__ */ React.createElement(BkBtn, { onClick: function() {
         props.onNext(selected, addons);
       } }, "Continue to date & time")));
     }

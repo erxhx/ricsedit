@@ -463,26 +463,21 @@
   // ── Step: Service ──────────────────────────────────────────────────────────
 
   function StepService(props) {
-    var { useState, useRef, useEffect } = React;
+    var { useState } = React;
     var category = props.category;
     var [selected, setSelected]     = useState([]);
     var [addons,   setAddons]       = useState([]);
-    var ctaRef = useRef(null);
 
-    useEffect(function() {
-      // For multi-select (wax), don't scroll on every selection — the user is
-      // building a list and needs to stay where they are in the service groups.
-      if (category === 'wax') return;
-      if (selected.length > 0 && ctaRef.current) {
-        // Bring the whole embed (service list + CTA) into view. The page is now
-        // one document scroller, so this goes through the shared helper rather
-        // than the old .cpanel inner scroller, which no longer scrolls.
-        var embed = ctaRef.current.closest('.booking-embed');
-        setTimeout(function() {
-          if (embed) window.scrollToWithChrome(embed);
-        }, 60);
-      }
-    }, [selected.length]);
+    // Picking a service deliberately does not scroll. There used to be an
+    // effect here that scrolled to the top of the embed on the first selection,
+    // exempting wax because multi-select needs you to stay put. But it fired
+    // wherever you were in the list, so choosing something near the bottom of a
+    // long menu — a lash set, say — yanked you back up to the top of the menu.
+    //
+    // It could not have helped even in principle: it aimed at the *top* of the
+    // embed, while the thing worth revealing after a selection is the CTA at
+    // the bottom. Every category now behaves the way wax already did — the page
+    // stays where you left it, and the summary and CTA are waiting below.
 
     var isMulti = category === 'wax';
 
@@ -612,7 +607,7 @@
 
         {/* Footer / totals / CTA */}
         {selected.length > 0 && (
-          <div ref={ctaRef} style={{ marginTop: 24 }}>
+          <div style={{ marginTop: 24 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '12px 0', borderTop: '1px solid var(--rule)', marginBottom: 12 }}>
               <span style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-faint)' }}>
                 {all.length} service{all.length !== 1 ? 's' : ''} · {dur} min
