@@ -25,12 +25,12 @@
     document.documentElement.style.setProperty("--hero-bleed", bleed + "px");
   }
   applyHeroBleed();
-  window.scrollToWithChrome = function(el, extra) {
+  window.scrollToWithChrome = function(el, extra, behavior) {
     if (!el) return;
     const coarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
     const gap = 24 + (coarse ? 56 : 0) + (extra || 0);
     const top = el.getBoundingClientRect().top + window.scrollY - gap;
-    window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+    window.scrollTo({ top: Math.max(0, top), behavior: behavior || "smooth" });
   };
   const ANIM_FOR = {
     home: "HomeAura",

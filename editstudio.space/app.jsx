@@ -62,12 +62,14 @@ applyHeroBleed();
 // when each panel had its own scroll container. On touch devices the page runs
 // under iOS Safari's ~62pt status strip once scrolled, so leave extra room or a
 // programmatic scroll parks the target underneath it.
-window.scrollToWithChrome = function (el, extra) {
+// `behavior` defaults to 'smooth' for nudges within a step; pass 'instant' for
+// a step change, where a smooth scroll just shows the old content sliding away.
+window.scrollToWithChrome = function (el, extra, behavior) {
   if (!el) return;
   const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
   const gap = 24 + (coarse ? 56 : 0) + (extra || 0);
   const top = el.getBoundingClientRect().top + window.scrollY - gap;
-  window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+  window.scrollTo({ top: Math.max(0, top), behavior: behavior || 'smooth' });
 };
 
 // barber previously borrowed HomeAnim (still used by visit); before that,

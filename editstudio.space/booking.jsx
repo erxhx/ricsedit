@@ -701,17 +701,10 @@
     useEffect(function() {
       if (!timeKey || !ctaRef.current) return;
       var embed = ctaRef.current.closest('.booking-embed');
-      var scroller = embed && embed.closest('.cpanel');
+      // Smooth here, unlike the step change — this is a nudge within the step
+      // the user is already looking at, so the motion tells them why it moved.
       setTimeout(function() {
-        if (embed && scroller) {
-          var chromeEl  = document.querySelector('.chrome-top');
-          var clearance = chromeEl ? chromeEl.getBoundingClientRect().bottom + 16 : 120;
-          var top = embed.getBoundingClientRect().top
-                    - scroller.getBoundingClientRect().top
-                    + scroller.scrollTop
-                    - clearance;
-          scroller.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
-        }
+        if (embed) window.scrollToWithChrome(embed);
       }, 60);
     }, [timeKey]);
 
@@ -1696,7 +1689,7 @@
   // ── Main component ─────────────────────────────────────────────────────────
 
   function BookingEmbed(props) {
-    var { useState, useRef, useEffect } = React;
+    var { useState, useRef, useEffect, useLayoutEffect } = React;
     var categoryProp = props.category || null;
 
     var [step,         setStep]         = useState(categoryProp ? 'service' : 'category');
@@ -1791,25 +1784,19 @@
       return function() { window.removeEventListener('edit-studio:goto-booking', onGoto); };
     }, [categoryProp]);
 
-    // On step change: instantly snap the cpanel so the top of the booking embed
-    // is visible with chrome-top clearance. Using 'instant' avoids the smooth-scroll
-    // stutter that shows old content sliding up before the new step appears.
-    useEffect(function() {
+    // On step change: snap the top of the booking embed into view. Without this
+    // a long service menu leaves you scrolled far down the page, and the much
+    // shorter date picker that replaces it renders above the viewport.
+    //
+    // useLayoutEffect, not useEffect: this runs before paint, so the new step is
+    // drawn already in position instead of flashing at the old scroll offset.
+    // 'instant' for the same reason — a smooth scroll here just animates the
+    // gap where the old content used to be.
+    useLayoutEffect(function() {
       if (!mountedRef.current) { mountedRef.current = true; return; }
       var el = embedRef.current;
       if (!el) return;
-      var scroller = el.closest('.cpanel');
-      var chromeEl  = document.querySelector('.chrome-top');
-      var clearance = chromeEl ? chromeEl.getBoundingClientRect().bottom + 12 : 110;
-      if (scroller) {
-        var top = el.getBoundingClientRect().top
-                  - scroller.getBoundingClientRect().top
-                  + scroller.scrollTop
-                  - clearance;
-        scroller.scrollTo({ top: Math.max(0, top), behavior: 'instant' });
-      } else {
-        el.scrollIntoView({ behavior: 'instant', block: 'start' });
-      }
+      window.scrollToWithChrome(el, 0, 'instant');
     }, [step]);
 
     return (

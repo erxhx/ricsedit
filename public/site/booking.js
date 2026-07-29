@@ -583,14 +583,8 @@
       useEffect(function() {
         if (!timeKey || !ctaRef.current) return;
         var embed = ctaRef.current.closest(".booking-embed");
-        var scroller = embed && embed.closest(".cpanel");
         setTimeout(function() {
-          if (embed && scroller) {
-            var chromeEl = document.querySelector(".chrome-top");
-            var clearance = chromeEl ? chromeEl.getBoundingClientRect().bottom + 16 : 120;
-            var top = embed.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop - clearance;
-            scroller.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
-          }
+          if (embed) window.scrollToWithChrome(embed);
         }, 60);
       }, [timeKey]);
       var DAY_HDRS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -1399,7 +1393,7 @@
       ));
     }
     function BookingEmbed(props) {
-      var { useState, useRef, useEffect } = React;
+      var { useState, useRef, useEffect, useLayoutEffect } = React;
       var categoryProp = props.category || null;
       var [step, setStep] = useState(categoryProp ? "service" : "category");
       var [category, setCategory] = useState(categoryProp);
@@ -1488,22 +1482,14 @@
           window.removeEventListener("edit-studio:goto-booking", onGoto);
         };
       }, [categoryProp]);
-      useEffect(function() {
+      useLayoutEffect(function() {
         if (!mountedRef.current) {
           mountedRef.current = true;
           return;
         }
         var el = embedRef.current;
         if (!el) return;
-        var scroller = el.closest(".cpanel");
-        var chromeEl = document.querySelector(".chrome-top");
-        var clearance = chromeEl ? chromeEl.getBoundingClientRect().bottom + 12 : 110;
-        if (scroller) {
-          var top = el.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop - clearance;
-          scroller.scrollTo({ top: Math.max(0, top), behavior: "instant" });
-        } else {
-          el.scrollIntoView({ behavior: "instant", block: "start" });
-        }
+        window.scrollToWithChrome(el, 0, "instant");
       }, [step]);
       return /* @__PURE__ */ React.createElement("div", { ref: embedRef, className: "booking-embed" }, step !== "category" && step !== "done" && /* @__PURE__ */ React.createElement("div", { className: "booking-head" }, /* @__PURE__ */ React.createElement("span", { className: "booking-eyebrow" }, catLabel), /* @__PURE__ */ React.createElement("div", { className: "booking-progress" }, /* @__PURE__ */ React.createElement("div", { className: "booking-progress-fill", style: { width: progress * 100 + "%" } }))), /* @__PURE__ */ React.createElement("div", { className: "booking-body" }, step === "category" && /* @__PURE__ */ React.createElement(StepCategory, { onSelect: function(cat) {
         setCategory(cat);
