@@ -463,25 +463,14 @@
     useEffect(function() {
       // For multi-select (wax), don't scroll on every selection — the user is
       // building a list and needs to stay where they are in the service groups.
-      // The CTA appears at the bottom of the list; cpanel's 96px bottom padding
-      // keeps it clear of the chrome-bot when they scroll there naturally.
       if (category === 'wax') return;
       if (selected.length > 0 && ctaRef.current) {
-        // Scroll the whole booking-embed to the top of the cpanel (same technique
-        // as the goto-booking FAB) so the full service list + CTA is in view.
-        // block:'end' on ctaRef was pushing the button under the chrome-bot overlay.
+        // Bring the whole embed (service list + CTA) into view. The page is now
+        // one document scroller, so this goes through the shared helper rather
+        // than the old .cpanel inner scroller, which no longer scrolls.
         var embed = ctaRef.current.closest('.booking-embed');
-        var scroller = embed && embed.closest('.cpanel');
         setTimeout(function() {
-          if (embed && scroller) {
-            var chromeEl  = document.querySelector('.chrome-top');
-            var clearance = chromeEl ? chromeEl.getBoundingClientRect().bottom + 16 : 120;
-            var top = embed.getBoundingClientRect().top
-                      - scroller.getBoundingClientRect().top
-                      + scroller.scrollTop
-                      - clearance;
-            scroller.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
-          }
+          if (embed) window.scrollToWithChrome(embed);
         }, 60);
       }
     }, [selected.length]);

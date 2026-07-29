@@ -17,6 +17,21 @@
     lashes: "#efeae0",
     visit: "#efeae0"
   };
+  function applyHeroBleed() {
+    if (typeof window === "undefined") return;
+    const coarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+    const svh = (window.svhPx ? window.svhPx() : window.innerHeight) || window.innerHeight;
+    const bleed = coarse ? Math.max(0, (window.screen && window.screen.height || 0) - svh) : 0;
+    document.documentElement.style.setProperty("--hero-bleed", bleed + "px");
+  }
+  applyHeroBleed();
+  window.scrollToWithChrome = function(el, extra) {
+    if (!el) return;
+    const coarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+    const gap = 24 + (coarse ? 56 : 0) + (extra || 0);
+    const top = el.getBoundingClientRect().top + window.scrollY - gap;
+    window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+  };
   const ANIM_FOR = {
     home: "HomeAura",
     barber: "BarberCutAnim",
@@ -29,32 +44,32 @@
     home: {
       h1: /* @__PURE__ */ React.createElement(React.Fragment, null, "You", /* @__PURE__ */ React.createElement("br", null), "Found ", /* @__PURE__ */ React.createElement("em", { className: "it" }, "Us"), "."),
       sub: "",
-      cta: "Tap a service \xB7 pull down for details"
+      cta: "Tap a service \xB7 scroll for details"
     },
     barber: {
       h1: /* @__PURE__ */ React.createElement(React.Fragment, null, "Refined.", /* @__PURE__ */ React.createElement("br", null), "Intentional.", /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement("em", { className: "it" }, "Crisp"), "."),
       sub: "Precision cuts, down to every last detail. Late night availability.",
-      cta: "Pull down for menu"
+      cta: "Scroll for menu"
     },
     tan: {
       h1: /* @__PURE__ */ React.createElement(React.Fragment, null, "Golden hour, ", /* @__PURE__ */ React.createElement("em", { className: "it" }, "on demand"), "."),
       sub: "Skip the skin damage of UV tans and find out why luxury airbrush spray tans are everyone's new obsession.",
-      cta: "Pull down for menu"
+      cta: "Scroll for menu"
     },
     wax: {
       h1: /* @__PURE__ */ React.createElement(React.Fragment, null, "Smooth, ", /* @__PURE__ */ React.createElement("em", { className: "it" }, "sorted"), "."),
       sub: "Specializing in Brazilians, brows and full body waxing with a gentle yet thorough technique.",
-      cta: "Pull down for menu"
+      cta: "Scroll for menu"
     },
     lashes: {
       h1: /* @__PURE__ */ React.createElement(React.Fragment, null, "Eyes, ", /* @__PURE__ */ React.createElement("em", { className: "it" }, "elevated"), "."),
       sub: "Lash extensions, lifts and brow services \u2014 tailored to your eye shape with a careful, gentle hand.",
-      cta: "Pull down for menu"
+      cta: "Scroll for menu"
     },
     visit: {
       h1: /* @__PURE__ */ React.createElement(React.Fragment, null, "Come ", /* @__PURE__ */ React.createElement("em", { className: "it" }, "visit"), "."),
       sub: "Oak Bay Avenue. We made the room we wanted to spend time in. Walk in if we have it; book ahead if you can.",
-      cta: "Pull down for hours \xB7 FAQ"
+      cta: "Scroll for hours \xB7 FAQ"
     }
   };
   function AnnouncementStrip({ message, targetLabel, dismissed, styleVariant, onJump, onDismiss }) {
@@ -378,10 +393,7 @@
       /* @__PURE__ */ React.createElement("span", { className: "arr", style: { fontStyle: "normal", fontFamily: "var(--mono)", fontSize: "12px" } }, "\u2193")
     ), service === "barber" && /* @__PURE__ */ React.createElement(NextAvailableBarber, null), service === "home" && /* @__PURE__ */ React.createElement("div", { className: "hero-contact", "aria-label": "Contact the studio" }, /* @__PURE__ */ React.createElement(OpenStatus, null), /* @__PURE__ */ React.createElement("a", { className: "hero-contact-link", href: "tel:+17785353348" }, "778 535 3348"), /* @__PURE__ */ React.createElement("span", { className: "hero-contact-sep", "aria-hidden": "true" }, "\xB7"), /* @__PURE__ */ React.createElement("a", { className: "hero-contact-link sms", href: "sms:+17785353348" }, "Send a text \u2192"))));
   }
-  function ServiceColumn({ service, isActive, hProgress, animSpeed, density, headlines, onVIdxChange }) {
-    const stripRef = useRef(null);
-    const [vIdx, setVIdx] = useState(0);
-    const dragRef = useRef({ y: 0, dy: 0, dragging: false, t: 0 });
+  function ServiceColumn({ service, animSpeed, density, headlines }) {
     const data = SERVICES_DEF[service];
     const heroData = { ...HERO_FOR[service], num: data.num };
     if (headlines && headlines[service]) {
@@ -390,7 +402,7 @@
     if (service === "barber") heroData.h1 = null;
     const ContentComp = service === "barber" ? window.BarberingContent : service === "tan" ? window.TanContent : service === "wax" ? window.WaxContent : service === "lashes" ? window.LashesContent : service === "visit" ? window.VisitContent : null;
     const panels = [
-      /* @__PURE__ */ React.createElement(Hero, { key: "hero", data: heroData, animComp: ANIM_FOR[service], progress: hProgress, speed: animSpeed, service })
+      /* @__PURE__ */ React.createElement(Hero, { key: "hero", data: heroData, animComp: ANIM_FOR[service], progress: 0, speed: animSpeed, service })
     ];
     if (ContentComp) {
       panels.push(/* @__PURE__ */ React.createElement("div", { key: "content", className: "panel", style: { background: "var(--bg)" } }, /* @__PURE__ */ React.createElement(ContentComp, { headline: null })));
@@ -398,139 +410,18 @@
       panels.push(/* @__PURE__ */ React.createElement("div", { key: "content", className: "panel", style: { background: "var(--bg)" } }, /* @__PURE__ */ React.createElement(window.VisitContent, null)));
     }
     useEffect(() => {
-      if (!isActive) return;
-      const el = stripRef.current;
-      if (!el) return;
-      const getCpanel = () => {
-        const activePanel = el.children[vIdx];
-        return activePanel ? activePanel.querySelector(".cpanel") : null;
-      };
-      const start = (y) => {
-        const scroller = getCpanel();
-        dragRef.current = {
-          y,
-          dy: 0,
-          dragging: true,
-          t: performance.now(),
-          startScrollTop: scroller ? scroller.scrollTop : 0
-        };
-        el.classList.add("dragging");
-      };
-      const move = (y) => {
-        if (!dragRef.current.dragging) return;
-        const dy = y - dragRef.current.y;
-        dragRef.current.dy = dy;
-        if (dy > 0 && vIdx > 0 && dragRef.current.startScrollTop > 2) return;
-        const offset = -vIdx * el.clientHeight + dy;
-        el.style.transform = `translateY(${offset}px)`;
-      };
-      const end = () => {
-        if (!dragRef.current.dragging) return;
-        dragRef.current.dragging = false;
-        el.classList.remove("dragging");
-        void el.offsetHeight;
-        const dy = dragRef.current.dy;
-        const dt = Math.max(50, performance.now() - dragRef.current.t);
-        const v = dy / dt;
-        const threshold = el.clientHeight * 0.18;
-        let next = vIdx;
-        if ((dy < -threshold || v < -0.45) && vIdx < panels.length - 1) next = vIdx + 1;
-        else if ((dy > threshold || v > 0.45) && vIdx > 0) {
-          if (dragRef.current.startScrollTop <= 2) next = vIdx - 1;
-        }
-        setVIdx(next);
-        el.style.transform = `translateY(${-next * el.clientHeight}px)`;
-      };
-      const onTS = (e) => start(e.touches[0].clientY);
-      const onTM = (e) => {
-        move(e.touches[0].clientY);
-      };
-      const onTE = () => end();
-      let mouseDown = false;
-      const onMD = (e) => {
-        mouseDown = true;
-        start(e.clientY);
-      };
-      const onMM = (e) => {
-        if (mouseDown) move(e.clientY);
-      };
-      const onMU = () => {
-        mouseDown = false;
-        end();
-      };
-      let wheelLock = 0;
-      const onW = (e) => {
-        if (Math.abs(e.deltaY) < 30) return;
-        const activePanel = el.children[vIdx];
-        const scroller = activePanel && activePanel.querySelector(".cpanel");
-        if (scroller && scroller.scrollHeight - scroller.clientHeight > 2) {
-          const atTop = scroller.scrollTop <= 0;
-          const atBottom = scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 1;
-          if (e.deltaY < 0 && !atTop) return;
-          if (e.deltaY > 0 && !atBottom) return;
-        }
-        const now = performance.now();
-        if (now < wheelLock) return;
-        wheelLock = now + 700;
-        let next = vIdx;
-        if (e.deltaY > 0 && vIdx < panels.length - 1) next = vIdx + 1;
-        else if (e.deltaY < 0 && vIdx > 0) next = vIdx - 1;
-        if (next === vIdx) return;
-        setVIdx(next);
-        el.style.transform = `translateY(${-next * el.clientHeight}px)`;
-        if (next === 0) {
-          const incomingScroller = el.children[next] && el.children[next].querySelector(".cpanel");
-          if (incomingScroller) incomingScroller.scrollTop = 0;
-        }
-      };
-      el.addEventListener("touchstart", onTS, { passive: true });
-      el.addEventListener("touchmove", onTM, { passive: true });
-      el.addEventListener("touchend", onTE);
-      el.addEventListener("mousedown", onMD);
-      window.addEventListener("mousemove", onMM);
-      window.addEventListener("mouseup", onMU);
-      el.addEventListener("wheel", onW, { passive: true });
-      return () => {
-        el.removeEventListener("touchstart", onTS);
-        el.removeEventListener("touchmove", onTM);
-        el.removeEventListener("touchend", onTE);
-        el.removeEventListener("mousedown", onMD);
-        window.removeEventListener("mousemove", onMM);
-        window.removeEventListener("mouseup", onMU);
-        el.removeEventListener("wheel", onW);
-      };
-    }, [isActive, vIdx, panels.length]);
-    useEffect(() => {
-      if (stripRef.current) {
-        stripRef.current.style.transform = `translateY(${-vIdx * stripRef.current.clientHeight}px)`;
-      }
-    }, [vIdx, isActive]);
-    useEffect(() => {
-      if (isActive && onVIdxChange) onVIdxChange(vIdx, panels.length);
-    }, [isActive, vIdx, panels.length, onVIdxChange]);
-    useEffect(() => {
-      if (!isActive) return;
       const handler = () => {
-        const targetIdx = panels.length > 1 ? 1 : 0;
-        setVIdx(targetIdx);
-        const el = stripRef.current;
-        if (!el) return;
-        el.style.transform = `translateY(${-targetIdx * el.clientHeight}px)`;
-        setTimeout(() => {
-          const embed = el.querySelector(".booking-embed");
-          const scroller = embed && embed.closest(".cpanel");
-          if (embed && scroller) {
-            const chromeEl = document.querySelector(".chrome-top");
-            const clearance = chromeEl ? chromeEl.getBoundingClientRect().bottom + 16 : 120;
-            const top = embed.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop - clearance;
-            scroller.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
-          }
-        }, 720);
+        requestAnimationFrame(() => {
+          const section = document.querySelector(".cpanel");
+          if (!section) return;
+          const top = section.getBoundingClientRect().top + window.scrollY;
+          window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+        });
       };
       window.addEventListener("edit-studio:goto-booking", handler);
       return () => window.removeEventListener("edit-studio:goto-booking", handler);
-    }, [isActive, panels.length]);
-    return /* @__PURE__ */ React.createElement("div", { className: "strip", ref: stripRef, "data-vidx": vIdx }, panels);
+    }, []);
+    return /* @__PURE__ */ React.createElement(React.Fragment, null, panels);
   }
   function App() {
     const TWEAK_DEFAULTS = (
@@ -612,14 +503,7 @@
       const svcs = (TWEAK_DEFAULTS.serviceOrder || "home,barber,tan,wax,lashes").split(",").map((s) => s.trim());
       return getIdxFromPath(svcs);
     });
-    const [hOffset, setHOffset] = useState(0);
-    const [dragging, setDragging] = useState(false);
-    const [snapping, setSnapping] = useState(false);
-    const [activeVIdx, setActiveVIdx] = useState(0);
-    const [activeVCount, setActiveVCount] = useState(2);
     const appRef = useRef(null);
-    const dragRef = useRef({ x: 0, dx: 0, dragging: false, t: 0, axis: null, y: 0 });
-    const snapTimerRef = useRef(null);
     const announceKey = "edit-studio-announce:" + (t.announceText || "").slice(0, 96);
     const [announceDismissed, setAnnounceDismissed] = useState(() => {
       try {
@@ -730,105 +614,40 @@
       document.documentElement.style.setProperty("--density", map[t.density] || 1);
     }, [t.density]);
     useEffect(() => {
-      const el = appRef.current;
-      if (!el) return;
-      const start = (x, y) => {
-        if (snapTimerRef.current) {
-          clearTimeout(snapTimerRef.current);
-          snapTimerRef.current = null;
-          setSnapping(false);
-        }
-        dragRef.current = { x, y, dx: 0, dragging: true, t: performance.now(), axis: null };
-        setDragging(true);
-      };
-      const move = (x, y) => {
-        if (!dragRef.current.dragging) return;
-        const dx = x - dragRef.current.x;
-        const dy = y - dragRef.current.y;
-        if (!dragRef.current.axis && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
-          dragRef.current.axis = Math.abs(dx) > Math.abs(dy) ? "h" : "v";
-        }
-        if (dragRef.current.axis !== "h") return;
-        dragRef.current.dx = dx;
-        setHOffset(dx);
-      };
-      const end = () => {
-        if (!dragRef.current.dragging) return;
-        const wasH = dragRef.current.axis === "h";
-        dragRef.current.dragging = false;
-        setDragging(false);
-        if (!wasH) {
-          setHOffset(0);
-          return;
-        }
-        const dx = dragRef.current.dx;
-        const dt = Math.max(50, performance.now() - dragRef.current.t);
-        const v = dx / dt;
-        const w2 = el.clientWidth;
-        const threshold = w2 * 0.2;
-        let next = idx;
-        if (dx < -threshold || v < -0.5) next = (idx + 1) % total;
-        else if (dx > threshold || v > 0.5) next = (idx - 1 + total) % total;
-        if (next === idx) {
-          setHOffset(0);
-          return;
-        }
-        const target = dx < 0 || v < -0.5 ? -w2 : w2;
-        setHOffset(target);
-        snapTimerRef.current = setTimeout(() => {
-          snapTimerRef.current = null;
-          setSnapping(true);
-          setIdx(next);
-          setHOffset(0);
-          requestAnimationFrame(() => requestAnimationFrame(() => setSnapping(false)));
-        }, 360);
-      };
-      const onTS = (e) => start(e.touches[0].clientX, e.touches[0].clientY);
-      const onTM = (e) => move(e.touches[0].clientX, e.touches[0].clientY);
-      const onTE = () => end();
-      let md = false;
-      const onMD = (e) => {
-        md = true;
-        start(e.clientX, e.clientY);
-      };
-      const onMM = (e) => {
-        if (md) move(e.clientX, e.clientY);
-      };
-      const onMU = () => {
-        md = false;
-        end();
-      };
       const onKey = (e) => {
+        if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
         if (e.key === "ArrowRight") setIdx((idx + 1) % total);
         else if (e.key === "ArrowLeft") setIdx((idx - 1 + total) % total);
       };
-      el.addEventListener("touchstart", onTS, { passive: true });
-      el.addEventListener("touchmove", onTM, { passive: true });
-      el.addEventListener("touchend", onTE);
-      el.addEventListener("mousedown", onMD);
-      window.addEventListener("mousemove", onMM);
-      window.addEventListener("mouseup", onMU);
       window.addEventListener("keydown", onKey);
-      return () => {
-        el.removeEventListener("touchstart", onTS);
-        el.removeEventListener("touchmove", onTM);
-        el.removeEventListener("touchend", onTE);
-        el.removeEventListener("mousedown", onMD);
-        window.removeEventListener("mousemove", onMM);
-        window.removeEventListener("mouseup", onMU);
-        window.removeEventListener("keydown", onKey);
-      };
+      return () => window.removeEventListener("keydown", onKey);
     }, [idx, total]);
-    const w = typeof window !== "undefined" ? window.innerWidth : 800;
-    const hProgress = -hOffset / w;
-    const wrap = (n) => (n % total + total) % total;
-    const visibleSlots = [
-      { slotIdx: -1, service: services[wrap(idx - 1)] },
-      { slotIdx: 0, service: services[idx] },
-      { slotIdx: 1, service: services[wrap(idx + 1)] }
-    ];
-    const xOffsetPx = -w + hOffset;
-    return /* @__PURE__ */ React.createElement("div", { className: "app", ref: appRef, "data-screen-label": `Edit Studio \u2014 ${active.label}`, "data-vidx": activeVIdx, "data-announce": t.announceText && !announceDismissed && services[idx] === t.announceTarget ? "true" : "false" }, /* @__PURE__ */ React.createElement(
+    useEffect(() => {
+      window.scrollTo(0, 0);
+    }, [idx]);
+    useEffect(() => {
+      window.addEventListener("orientationchange", applyHeroBleed);
+      return () => window.removeEventListener("orientationchange", applyHeroBleed);
+    }, []);
+    useEffect(() => {
+      const heroTint = CHROME_TINT[services[idx]] || CHROME_TINT.home;
+      document.documentElement.style.setProperty("--hero-tint", heroTint);
+      const update = () => {
+        const hero = document.querySelector(".hero");
+        if (!hero) return;
+        const contentTint = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim() || "#efeae0";
+        const pastHero = hero.getBoundingClientRect().bottom <= 72;
+        document.documentElement.style.setProperty("--chrome-tint", pastHero ? contentTint : heroTint);
+      };
+      update();
+      window.addEventListener("scroll", update, { passive: true });
+      window.addEventListener("resize", update);
+      return () => {
+        window.removeEventListener("scroll", update);
+        window.removeEventListener("resize", update);
+      };
+    }, [idx, services]);
+    return /* @__PURE__ */ React.createElement("div", { className: "app", ref: appRef, "data-screen-label": `Edit Studio \u2014 ${active.label}`, "data-announce": t.announceText && !announceDismissed && services[idx] === t.announceTarget ? "true" : "false" }, /* @__PURE__ */ React.createElement(
       AnnouncementStrip,
       {
         message: services[idx] === t.announceTarget ? t.announceText : "",
@@ -846,33 +665,16 @@
           }
         }
       }
-    ), /* @__PURE__ */ React.createElement(ChromeTop, { active, total, idx, logoSrc: t.palette === "noir" ? "assets/logo-white.png" : "assets/logo-black.png" }), /* @__PURE__ */ React.createElement(ChromeNav, { services: services.map((s) => SERVICES_DEF[s]), idx, onSelect: (i) => setIdx(i) }), /* @__PURE__ */ React.createElement("div", { style: {
-      position: "absolute",
-      inset: 0,
-      display: "flex",
-      flexDirection: "row",
-      width: `300vw`,
-      transform: `translateX(${xOffsetPx}px)`,
-      transition: dragging || snapping ? "none" : "transform 0.35s cubic-bezier(0.65, 0, 0.35, 1)",
-      willChange: "transform"
-    } }, visibleSlots.map(({ slotIdx, service }) => {
-      const localProgress = slotIdx + hProgress;
-      return /* @__PURE__ */ React.createElement("div", { key: service, style: { flex: "0 0 100vw", position: "relative", overflow: "hidden" } }, /* @__PURE__ */ React.createElement(
-        ServiceColumn,
-        {
-          service,
-          isActive: slotIdx === 0,
-          hProgress: localProgress,
-          animSpeed: t.animSpeed,
-          density: t.density,
-          headlines,
-          onVIdxChange: slotIdx === 0 ? (v, c) => {
-            setActiveVIdx(v);
-            setActiveVCount(c);
-          } : void 0
-        }
-      ));
-    })), /* @__PURE__ */ React.createElement(window.TweaksPanel, { title: "Edit Studio \xB7 Tweaks" }, /* @__PURE__ */ React.createElement(window.TweakSection, { label: "Palette" }), /* @__PURE__ */ React.createElement(
+    ), /* @__PURE__ */ React.createElement(ChromeTop, { active, total, idx, logoSrc: t.palette === "noir" ? "assets/logo-white.png" : "assets/logo-black.png" }), /* @__PURE__ */ React.createElement(ChromeNav, { services: services.map((s) => SERVICES_DEF[s]), idx, onSelect: (i) => setIdx(i) }), /* @__PURE__ */ React.createElement(
+      ServiceColumn,
+      {
+        key: services[idx],
+        service: services[idx],
+        animSpeed: t.animSpeed,
+        density: t.density,
+        headlines
+      }
+    ), /* @__PURE__ */ React.createElement(window.TweaksPanel, { title: "Edit Studio \xB7 Tweaks" }, /* @__PURE__ */ React.createElement(window.TweakSection, { label: "Palette" }), /* @__PURE__ */ React.createElement(
       window.TweakRadio,
       {
         label: "Theme",
