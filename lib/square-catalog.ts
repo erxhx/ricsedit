@@ -149,7 +149,7 @@ export async function syncCatalogPrices(): Promise<SyncReport> {
       ...store.barberServices,
       ...store.tanServices, ...store.tanAddons,
       ...store.waxGroups.flatMap((g) => g.services),
-      ...store.lashServices,
+      ...store.lashServices, ...(store.lashAddons ?? []),
     ];
     for (const svc of all) {
       if (SYNC_EXCLUDE.has(svc.id)) continue;

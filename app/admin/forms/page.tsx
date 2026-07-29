@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { verifySession, SESSION_COOKIE } from '@/lib/admin-auth';
 import AdminHeader from '@/components/admin/AdminHeader';
 import IntakeFormEditor from '@/components/admin/IntakeFormEditor';
+import { allowedCategories } from '@/lib/staff';
 
 export default async function FormsPage() {
   const cookieStore = await cookies();
@@ -13,7 +14,7 @@ export default async function FormsPage() {
   return (
     <>
       <AdminHeader name={session.name} />
-      <IntakeFormEditor />
+      <IntakeFormEditor allowed={allowedCategories(session.sub)} />
     </>
   );
 }

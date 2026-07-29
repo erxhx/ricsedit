@@ -3,7 +3,7 @@ import { useState } from 'react';
 import useScrollLock from './useScrollLock';
 import type { ServicesData } from '@/lib/services-store';
 import type { AddTarget } from '@/lib/services-store';
-import type { Service, ServiceGroup } from '@/lib/services';
+import type { Service, ServiceGroup, ServiceCategory } from '@/lib/services';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -25,10 +25,11 @@ type SheetState = {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function addToData(d: ServicesData, svc: Service, target: AddTarget): ServicesData {
-  if (target.kind === 'barber')   return { ...d, barberServices: [...d.barberServices, svc] };
-  if (target.kind === 'tan')      return { ...d, tanServices:    [...d.tanServices, svc] };
-  if (target.kind === 'tanAddon') return { ...d, tanAddons:      [...d.tanAddons, svc] };
-  if (target.kind === 'lashes')   return { ...d, lashServices:   [...d.lashServices, svc] };
+  if (target.kind === 'barber')    return { ...d, barberServices: [...d.barberServices, svc] };
+  if (target.kind === 'tan')       return { ...d, tanServices:    [...d.tanServices, svc] };
+  if (target.kind === 'tanAddon')  return { ...d, tanAddons:      [...d.tanAddons, svc] };
+  if (target.kind === 'lashes')    return { ...d, lashServices:   [...d.lashServices, svc] };
+  if (target.kind === 'lashAddon') return { ...d, lashAddons:     [...d.lashAddons, svc] };
   return {
     ...d,
     waxGroups: d.waxGroups.map((g) =>
@@ -44,6 +45,7 @@ function updateInData(d: ServicesData, svc: Service): ServicesData {
     tanServices:    upd(d.tanServices),
     tanAddons:      upd(d.tanAddons),
     lashServices:   upd(d.lashServices),
+    lashAddons:     upd(d.lashAddons),
     waxGroups:      d.waxGroups.map((g) => ({ ...g, services: upd(g.services) })),
   };
 }
@@ -55,6 +57,7 @@ function removeFromData(d: ServicesData, id: string): ServicesData {
     tanServices:    rm(d.tanServices),
     tanAddons:      rm(d.tanAddons),
     lashServices:   rm(d.lashServices),
+    lashAddons:     rm(d.lashAddons),
     waxGroups:      d.waxGroups.map((g) => ({ ...g, services: rm(g.services) })),
   };
 }
@@ -71,7 +74,19 @@ const inputStyle: React.CSSProperties = {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export default function ServicesEditor({ initial }: { initial: ServicesData }) {
+export default function ServicesEditor({
+  initial,
+  allowed,
+}: {
+  initial: ServicesData;
+  /**
+   * Categories this viewer may see and edit. Admins get all four; restricted
+   * staff get only the ones they perform, and the sections they don't own
+   * aren't rendered. The API enforces the same rule on every write.
+   */
+  allowed: ServiceCategory[];
+}) {
+  const can = (c: ServiceCategory) => allowed.includes(c);
   const [data, setData]     = useState(initial);
   const [sheet, setSheet]   = useState<SheetState>(null);
   const [saving, setSaving] = useState(false);
@@ -99,7 +114,7 @@ export default function ServicesEditor({ initial }: { initial: ServicesData }) {
 
   // Open sheet to add a new service to a given section
   function openAdd(target: AddTarget, sectionLabel: string) {
-    const isAddon  = target.kind === 'tanAddon';
+    const isAddon  = target.kind === 'tanAddon' || target.kind === 'lashAddon';
     const waiverByDefault = target.kind === 'wax' || target.kind === 'lashes';
     setSheet({
       id:              '',
@@ -190,32 +205,43 @@ export default function ServicesEditor({ initial }: { initial: ServicesData }) {
   return (
     <div style={{ paddingBottom: 48 }}>
       {/* ── Barbering ── */}
-      <SectionHeader label="Barbering" staff="Eric" />
-      <ServiceList services={data.barberServices} onEdit={openEdit} />
-      <AddRow onClick={() => openAdd({ kind: 'barber' }, 'Barbering')} />
+      {can('barber') && (<>
+        <SectionHeader label="Barbering" staff="Eric" />
+        <ServiceList services={data.barberServices} onEdit={openEdit} />
+        <AddRow onClick={() => openAdd({ kind: 'barber' }, 'Barbering')} />
+      </>)}
 
       {/* ── Sunless Tan ── */}
-      <SectionHeader label="Sunless Tan" staff="Livi" />
-      <ServiceList services={data.tanServices} onEdit={openEdit} />
-      <AddRow onClick={() => openAdd({ kind: 'tan' }, 'Sunless Tan')} />
-      <GroupLabel label="Add-ons" />
-      <ServiceList services={data.tanAddons} onEdit={openEdit} />
-      <AddRow onClick={() => openAdd({ kind: 'tanAddon' }, 'Tan Add-ons')} />
+      {can('tan') && (<>
+        <SectionHeader label="Sunless Tan" staff="Livi" />
+        <ServiceList services={data.tanServices} onEdit={openEdit} />
+        <AddRow onClick={() => openAdd({ kind: 'tan' }, 'Sunless Tan')} />
+        <GroupLabel label="Add-ons" />
+        <ServiceList services={data.tanAddons} onEdit={openEdit} />
+        <AddRow onClick={() => openAdd({ kind: 'tanAddon' }, 'Tan Add-ons')} />
+      </>)}
 
       {/* ── Waxing ── */}
-      <SectionHeader label="Waxing" staff="Livi" />
-      {data.waxGroups.map((group) => (
-        <div key={group.name}>
-          <GroupLabel label={group.name} note={group.note} />
-          <ServiceList services={group.services} onEdit={openEdit} />
-          <AddRow onClick={() => openAdd({ kind: 'wax', groupName: group.name }, `Waxing — ${group.name}`)} />
-        </div>
-      ))}
+      {can('wax') && (<>
+        <SectionHeader label="Waxing" staff="Livi" />
+        {data.waxGroups.map((group) => (
+          <div key={group.name}>
+            <GroupLabel label={group.name} note={group.note} />
+            <ServiceList services={group.services} onEdit={openEdit} />
+            <AddRow onClick={() => openAdd({ kind: 'wax', groupName: group.name }, `Waxing — ${group.name}`)} />
+          </div>
+        ))}
+      </>)}
 
       {/* ── Lashes ── */}
-      <SectionHeader label="Lashes" staff="Niamh" />
-      <ServiceList services={data.lashServices} onEdit={openEdit} />
-      <AddRow onClick={() => openAdd({ kind: 'lashes' }, 'Lashes')} />
+      {can('lashes') && (<>
+        <SectionHeader label="Lashes" staff="Niamh" />
+        <ServiceList services={data.lashServices} onEdit={openEdit} />
+        <AddRow onClick={() => openAdd({ kind: 'lashes' }, 'Lashes')} />
+        <GroupLabel label="Add-ons" />
+        <ServiceList services={data.lashAddons} onEdit={openEdit} />
+        <AddRow onClick={() => openAdd({ kind: 'lashAddon' }, 'Lash Add-ons')} />
+      </>)}
 
       {/* ── Bottom sheet ── */}
       {sheet && (

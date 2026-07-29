@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { verifySession, SESSION_COOKIE } from '@/lib/admin-auth';
 import { getServicesStoreAsync } from '@/lib/services-store';
+import { allowedCategories } from '@/lib/staff';
 import AdminHeader from '@/components/admin/AdminHeader';
 import ServicesEditor from '@/components/admin/ServicesEditor';
 import Link from 'next/link';
@@ -30,7 +31,7 @@ export default async function ServicesPage() {
         </span>
       </div>
 
-      <ServicesEditor initial={servicesData} />
+      <ServicesEditor initial={servicesData} allowed={allowedCategories(session.sub)} />
     </>
   );
 }

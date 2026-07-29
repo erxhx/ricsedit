@@ -8,7 +8,7 @@
  */
 
 import { db } from './supabase';
-import { STAFF } from './staff';
+import { STAFF, isAdmin } from './staff';
 import type { Appointment } from './admin-mock';
 
 export interface StaffPermissions {
@@ -53,15 +53,20 @@ export async function saveStaffPermissions(perms: Record<string, StaffPermission
 }
 
 /**
- * Whether a viewer may see studio-wide revenue. Owners always can;
+ * Whether a viewer may see studio-wide revenue. Admins always can — that is
+ * what "full access" means, and it can't be toggled off from under them;
  * everyone else is governed by their `canSeeAllRevenue` permission.
+ *
+ * `role` is kept for call-site compatibility but no longer decides anything:
+ * it comes from the session JWT, which can be up to 90 days stale, whereas
+ * the roster is current.
  */
 export function canViewAllRevenue(
   staffId: string,
   role: string,
   perms: Record<string, StaffPermissions>,
 ): boolean {
-  if (role === 'owner') return true;
+  if (isAdmin(staffId)) return true;
   return perms[staffId]?.canSeeAllRevenue ?? false;
 }
 

@@ -4,9 +4,10 @@ import { verifySession, SESSION_COOKIE } from '@/lib/admin-auth';
 import {
   getAvailabilityConfig,
   saveAvailabilityConfig,
-  DEFAULT_AVAILABILITY,
   type DayHours,
+  type StaffSchedule,
 } from '@/lib/availability-store';
+import { STAFF, isAdmin, canEditStaffSchedule } from '@/lib/staff';
 
 async function requireAuth() {
   const store = await cookies();
@@ -36,7 +37,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  if (!(await requireAuth())) {
+  const session = await requireAuth();
+  if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -52,24 +54,47 @@ export async function POST(req: NextRequest) {
   }
 
   const raw = body as Record<string, unknown>;
+  const admin = isAdmin(session.sub);
 
-  if (!raw.days) {
-    return NextResponse.json({ error: 'Missing days' }, { status: 400 });
+  // This is a partial update, not a replace. Start from what's saved and lay
+  // only the permitted fields on top — a restricted staff member POSTs just
+  // their own schedule, and everything they didn't send has to survive.
+  const current = await getAvailabilityConfig();
+
+  // Store hours and the barber Thursday late close are studio-wide.
+  if (!admin && (raw.days !== undefined || raw.barberThuClose !== undefined)) {
+    return NextResponse.json(
+      { error: 'You can only change your own schedule' },
+      { status: 403 },
+    );
   }
 
-  const days = parseDays(raw.days as Record<string, unknown>);
+  const days = raw.days ? parseDays(raw.days as Record<string, unknown>) : current.days;
 
   const barberThuClose =
-    typeof raw.barberThuClose === 'number'
-      ? raw.barberThuClose
-      : DEFAULT_AVAILABILITY.barberThuClose;
+    typeof raw.barberThuClose === 'number' ? raw.barberThuClose : current.barberThuClose;
 
-  // Per-staff schedules (optional — fall back to store hours if not provided)
-  const rawStaff = (raw.staff ?? {}) as Record<string, Record<string, unknown>>;
-  const staff = {
-    eric: { days: rawStaff.eric?.days ? parseDays(rawStaff.eric.days as Record<string, unknown>) : { ...days } },
-    livi: { days: rawStaff.livi?.days ? parseDays(rawStaff.livi.days as Record<string, unknown>) : { ...days } },
-  };
+  // Per-staff schedules. Iterating the roster is load-bearing: this used to
+  // build a hardcoded { eric, livi } pair, which silently dropped the schedule
+  // of every staff member added after those two on each save.
+  const rawStaff = (raw.staff ?? {}) as Record<string, Record<string, unknown> | undefined>;
+
+  for (const id of Object.keys(rawStaff)) {
+    if (!canEditStaffSchedule(session.sub, id)) {
+      return NextResponse.json(
+        { error: 'You can only change your own schedule' },
+        { status: 403 },
+      );
+    }
+  }
+
+  const staff: Record<string, StaffSchedule> = {};
+  for (const member of STAFF) {
+    const incoming = rawStaff[member.id]?.days;
+    staff[member.id] = incoming
+      ? { days: parseDays(incoming as Record<string, unknown>) }
+      : { days: current.staff[member.id]?.days ?? { ...days } };
+  }
 
   const persisted = await saveAvailabilityConfig({ days, barberThuClose, staff });
   return NextResponse.json({ ok: true, persisted });

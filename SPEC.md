@@ -141,15 +141,32 @@ The system consists of:
 - Both staff can view and edit each other's appointments
 
 ### Permissions
-| Action | Owner | Esthetician |
-|--------|-------|-------------|
+
+Two access levels, set by the `admin` flag on each roster entry in
+`lib/staff.ts`. **Admins** (Eric, Livi) have full access. **Restricted staff**
+(Niamh, and anyone added later — the flag defaults to off) are scoped to
+themselves: their own working schedule, and only the service menu and intake
+forms for the categories they perform.
+
+| Action | Admin | Restricted staff |
+|--------|-------|------------------|
 | View own calendar | ✅ | ✅ |
 | View other's calendar | ✅ | ✅ |
 | Book/edit own appointments | ✅ | ✅ |
 | Book/edit other's appointments | ✅ | ✅ |
 | View all client profiles | ✅ | ✅ |
 | Admin-only notes | ✅ | ✅ |
-| System settings | ✅ | ❌ |
+| Edit own working schedule | ✅ | ✅ |
+| Edit store hours / others' schedules | ✅ | ❌ |
+| Edit services & pricing | all categories | own categories only |
+| Edit intake forms | all categories | own categories only |
+| System settings (payments, permissions) | ✅ | ❌ |
+| See studio-wide revenue | ✅ | per-person toggle |
+
+Every check resolves against the roster by staff id, never against the `role`
+claim in the session JWT — sessions last 90 days, so a token can carry a claim
+that predates a permission change. Hiding a control in the UI is a courtesy;
+each API route applies the same check itself.
 
 ### Calendar Views
 - Day view (default on mobile)

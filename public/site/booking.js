@@ -18,6 +18,7 @@
       { id: "undies", name: "Disposable Undies + Bra", desc: "Undies, bandeau bra, or both.", price: 5, duration: 0 },
       { id: "prep-lock", name: "Prep + Lock", desc: "Two-step longevity treatment \u2014 pH-balance prep + post-tan barrier lock. Extends your glow.", price: 20, duration: 20 }
     ];
+    var BK_LASH_ADDONS = [];
     var BK_WAX_GROUPS = [
       {
         label: "Brows + Face",
@@ -99,6 +100,9 @@
         }
         if (Array.isArray(d.lashServices) && d.lashServices.length) {
           BK_LASHES = d.lashServices.map(mapSvc);
+        }
+        if (Array.isArray(d.lashAddons)) {
+          BK_LASH_ADDONS = d.lashAddons.map(mapSvc);
         }
       }).catch(function() {
       });
@@ -486,13 +490,19 @@
         }), onClick: function() {
           toggleAddon(s);
         }, prefix: "+" });
-      })))), category === "lashes" && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 1, background: "var(--rule)" } }, BK_LASHES.map(function(s) {
+      })))), category === "lashes" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 1, background: "var(--rule)", marginBottom: BK_LASH_ADDONS.length ? 24 : 0 } }, BK_LASHES.map(function(s) {
         return /* @__PURE__ */ React.createElement(BkServiceRow, { key: s.id, service: s, active: !!selected.find(function(x) {
           return x.id === s.id;
         }), onClick: function() {
           toggleMain(s);
         } });
-      })), category === "wax" && BK_WAX_GROUPS.map(function(group) {
+      })), selected.length > 0 && BK_LASH_ADDONS.length > 0 && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(BkEyebrow, { left: "Add-ons", right: "Optional" }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 1, background: "var(--rule)" } }, BK_LASH_ADDONS.map(function(s) {
+        return /* @__PURE__ */ React.createElement(BkServiceRow, { key: s.id, service: s, active: !!addons.find(function(x) {
+          return x.id === s.id;
+        }), onClick: function() {
+          toggleAddon(s);
+        }, prefix: "+" });
+      })))), category === "wax" && BK_WAX_GROUPS.map(function(group) {
         return /* @__PURE__ */ React.createElement("div", { key: group.label, style: { marginBottom: 4 } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-faint)", padding: "10px 0 4px", borderTop: "1px solid var(--rule)" } }, group.label, group.note && /* @__PURE__ */ React.createElement("span", { style: { opacity: 0.55, fontStyle: "italic", textTransform: "none", letterSpacing: "0.09em", marginLeft: 8 } }, "\xB7 ", group.note)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 1, background: "var(--rule)" } }, group.items.map(function(s) {
           return /* @__PURE__ */ React.createElement(BkServiceRow, { key: s.id, service: s, active: !!selected.find(function(x) {
             return x.id === s.id;

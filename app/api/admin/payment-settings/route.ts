@@ -4,6 +4,7 @@ import { verifySession, SESSION_COOKIE } from '@/lib/admin-auth';
 import { getPaymentSettings, savePaymentSettings } from '@/lib/payment-settings';
 import type { PaymentSettings } from '@/lib/payment-settings';
 import { squareConfigured, squareClient, squarePublicConfig } from '@/lib/square';
+import { isAdmin } from '@/lib/staff';
 
 async function auth() {
   const cookieStore = await cookies();
@@ -40,7 +41,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (session.role !== 'owner') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!isAdmin(session.sub)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const body = await req.json().catch(() => null) as PaymentSettings | null;
   if (!body || typeof body !== 'object') {

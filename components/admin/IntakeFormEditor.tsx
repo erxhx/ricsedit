@@ -225,8 +225,16 @@ function FieldEditor({
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export default function IntakeFormEditor() {
-  const [category, setCategory]     = useState<FormCategory>('tan');
+export default function IntakeFormEditor({ allowed }: {
+  /**
+   * Form categories this viewer may open. Admins get all four; restricted
+   * staff get only the categories they perform. The API applies the same
+   * check to GET, POST and DELETE.
+   */
+  allowed: FormCategory[];
+}) {
+  const cats = CATEGORIES.filter(c => allowed.includes(c.value));
+  const [category, setCategory]     = useState<FormCategory>(cats[0]?.value ?? 'tan');
   const [config,   setConfig]       = useState<IntakeFormConfig | null>(null);
   const [loading,  setLoading]      = useState(false);
   const [saving,   setSaving]       = useState(false);
@@ -321,9 +329,9 @@ export default function IntakeFormEditor() {
         {saved && <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: '#4a9b6f' }}>✓ Saved</span>}
       </div>
 
-      {/* Category tabs */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 24 }}>
-        {CATEGORIES.map(c => (
+      {/* Category tabs — hidden when there's only one form to edit */}
+      <div style={{ display: cats.length > 1 ? 'flex' : 'none', gap: 6, marginBottom: 24 }}>
+        {cats.map(c => (
           <button
             key={c.value}
             onClick={() => setCategory(c.value)}

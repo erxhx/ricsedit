@@ -12,7 +12,7 @@
 
 import type { ServiceCategory } from './services';
 import {
-  BARBER_SERVICES, TAN_SERVICES, TAN_ADDONS, WAX_GROUPS,
+  BARBER_SERVICES, TAN_SERVICES, TAN_ADDONS, WAX_GROUPS, LASH_SERVICES, LASH_ADDONS,
 } from './services';
 
 export type StaffRole = 'owner' | 'esti';
@@ -39,6 +39,17 @@ export interface StaffMember {
    * the value here is the default. (Owners always effectively see all.)
    */
   canSeeAllRevenue: boolean;
+  /**
+   * Full administrative access: store hours, every staff member's schedule,
+   * the whole service menu, every intake form, and Settings.
+   *
+   * Non-admins are scoped to themselves — their own working schedule, and only
+   * the service menu and intake forms for the categories they perform.
+   *
+   * New staff must be promoted deliberately: anyone added to this roster
+   * without `admin: true` is restricted.
+   */
+  admin: boolean;
 }
 
 // ── Canonical colours ───────────────────────────────────────────────────────────
@@ -58,6 +69,7 @@ export const STAFF: StaffMember[] = [
     color: STAFF_COLORS.ericBarber,
     categories: ['barber'],
     canSeeAllRevenue: true,
+    admin: true,
   },
   {
     id: 'livi',
@@ -67,6 +79,7 @@ export const STAFF: StaffMember[] = [
     categories: ['wax', 'tan'],
     categoryColors: { wax: STAFF_COLORS.liviWax, tan: STAFF_COLORS.liviTan },
     canSeeAllRevenue: true,
+    admin: true,
   },
   {
     id: 'niamh',
@@ -75,6 +88,7 @@ export const STAFF: StaffMember[] = [
     color: STAFF_COLORS.niamhLash,
     categories: ['lashes'],
     canSeeAllRevenue: false,
+    admin: false,
     // Login: set ADMIN_PASSWORD_NIAMH in the environment to enable her sign-in.
   },
 ];
@@ -95,6 +109,65 @@ export function staffName(id: string): string {
 /** Primary accent colour for a staff id (used for dots, legends, etc.). */
 export function staffColor(id: string): string {
   return STAFF_BY_ID.get(id)?.color ?? '#ece9e2';
+}
+
+// ── Access control ───────────────────────────────────────────────────────────
+//
+// Every check below resolves against the ROSTER, keyed by staff id — never
+// against the `role` claim carried in the session JWT. Sessions last 90 days,
+// so a token minted before a permission change still carries the old claim;
+// the roster is the live source of truth and a stale cookie can't outvote it.
+//
+// These are pure predicates. They decide what a person MAY do; they don't
+// enforce anything on their own. Every API route that mutates a scoped
+// resource has to call them itself — hiding a control in the UI is a courtesy,
+// not a boundary.
+
+/** All service categories that exist, in menu order. */
+export const ALL_CATEGORIES: ServiceCategory[] = ['barber', 'tan', 'wax', 'lashes'];
+
+/** Full administrative access. Unknown ids are treated as restricted. */
+export function isAdmin(staffId: string | null | undefined): boolean {
+  return staffId ? STAFF_BY_ID.get(staffId)?.admin === true : false;
+}
+
+/**
+ * Which service categories this person may view and edit — the menu sections
+ * and intake forms they own. Admins get everything; everyone else gets only
+ * the categories they actually perform. Unknown ids get nothing.
+ */
+export function allowedCategories(staffId: string | null | undefined): ServiceCategory[] {
+  if (isAdmin(staffId)) return [...ALL_CATEGORIES];
+  const member = staffId ? STAFF_BY_ID.get(staffId) : undefined;
+  return member ? [...member.categories] : [];
+}
+
+/** Whether this person may edit the menu or intake form for a category. */
+export function canEditCategory(
+  staffId: string | null | undefined,
+  category: ServiceCategory,
+): boolean {
+  return allowedCategories(staffId).includes(category);
+}
+
+/**
+ * Whether `viewerId` may edit `targetId`'s working schedule. Admins may edit
+ * anyone's; everyone else only their own.
+ */
+export function canEditStaffSchedule(
+  viewerId: string | null | undefined,
+  targetId: string,
+): boolean {
+  if (isAdmin(viewerId)) return true;
+  return !!viewerId && viewerId === targetId;
+}
+
+/**
+ * Whether this person may edit studio-wide settings — store hours, the barber
+ * Thursday late close, payments, and other people's permissions.
+ */
+export function canEditStudioSettings(staffId: string | null | undefined): boolean {
+  return isAdmin(staffId);
 }
 
 /**
@@ -122,7 +195,7 @@ export function staffForCategory(cat: ServiceCategory): string | undefined {
 // name → category lookup from the static service catalogue. Used to colour an
 // appointment by the staff member's per-category override.
 const CATEGORY_BY_SERVICE_NAME = new Map<string, ServiceCategory>();
-for (const svc of [...BARBER_SERVICES, ...TAN_SERVICES, ...TAN_ADDONS]) {
+for (const svc of [...BARBER_SERVICES, ...TAN_SERVICES, ...TAN_ADDONS, ...LASH_SERVICES, ...LASH_ADDONS]) {
   CATEGORY_BY_SERVICE_NAME.set(svc.name, svc.category);
 }
 for (const group of WAX_GROUPS) {

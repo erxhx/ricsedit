@@ -115,15 +115,27 @@ function WeekGrid({
 
 // ── Main editor ───────────────────────────────────────────────────────────────
 
-export default function AvailabilityEditor({ initial }: { initial: AvailabilityConfig }) {
+export default function AvailabilityEditor({
+  initial,
+  viewer,
+}: {
+  initial: AvailabilityConfig;
+  /** Who is signed in, and whether they may edit studio-wide settings. */
+  viewer: { id: string; isAdmin: boolean };
+}) {
+  // Restricted staff manage exactly one schedule — their own. Store hours and
+  // the barber late close are studio-wide and stay hidden from them; the
+  // server rejects those fields from a non-admin regardless.
+  const editable = viewer.isAdmin ? ROSTER : ROSTER.filter(m => m.id === viewer.id);
+
   const [storeDays, setStoreDays]         = useState<Record<number, DayHours>>({ ...initial.days });
   const [barberThuClose, setBarberThuClose] = useState(initial.barberThuClose);
   const [staffDays, setStaffDays] = useState<Record<string, Record<number, DayHours>>>(
     () => Object.fromEntries(
-      ROSTER.map(m => [m.id, { ...(initial.staff[m.id]?.days ?? initial.days) }]),
+      editable.map(m => [m.id, { ...(initial.staff[m.id]?.days ?? initial.days) }]),
     ),
   );
-  const [activeStaff, setActiveStaff]     = useState<string>(ROSTER[0].id);
+  const [activeStaff, setActiveStaff]     = useState<string>(editable[0]?.id ?? '');
 
   const [saving, setSaving]   = useState(false);
   const [saved,  setSaved]    = useState(false);
@@ -145,10 +157,11 @@ export default function AvailabilityEditor({ initial }: { initial: AvailabilityC
       const res = await fetch('/api/admin/availability', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        // Send only what this person may change. Omitted fields are left as
+        // they are server-side rather than overwritten with defaults.
         body: JSON.stringify({
-          days: storeDays,
-          barberThuClose,
-          staff: Object.fromEntries(ROSTER.map(m => [m.id, { days: staffDays[m.id] }])),
+          ...(viewer.isAdmin ? { days: storeDays, barberThuClose } : {}),
+          staff: Object.fromEntries(editable.map(m => [m.id, { days: staffDays[m.id] }])),
         }),
       });
       if (!res.ok) throw new Error('Save failed');
@@ -190,7 +203,8 @@ export default function AvailabilityEditor({ initial }: { initial: AvailabilityC
         Availability
       </h1>
 
-      {/* ── Store hours ──────────────────────────────────────── */}
+      {/* ── Store hours (studio-wide — admins only) ──────────── */}
+      {viewer.isAdmin && (<>
       <SectionLabel>Store Hours</SectionLabel>
       <WeekGrid days={storeDays} onChange={updateStoreDays} />
       <p style={{ marginTop: 8, fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)', lineHeight: 1.5 }}>
@@ -230,39 +244,52 @@ export default function AvailabilityEditor({ initial }: { initial: AvailabilityC
           Enable Thursday in Store Hours above to use this setting.
         </p>
       )}
+      </>)}
 
       {/* ── Staff schedules ───────────────────────────────────── */}
-      <SectionLabel style={{ marginTop: 28 }}>Staff Schedules</SectionLabel>
+      <SectionLabel style={viewer.isAdmin ? { marginTop: 28 } : undefined}>
+        {viewer.isAdmin ? 'Staff Schedules' : 'Your Schedule'}
+      </SectionLabel>
       <p style={{ marginTop: -6, marginBottom: 12, fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)', lineHeight: 1.5 }}>
-        Controls which days each person is actually bookable — independent of store hours.
+        {viewer.isAdmin
+          ? 'Controls which days each person is actually bookable — independent of store hours.'
+          : 'Controls which days you are bookable — independent of store hours.'}
       </p>
 
-      {/* Staff tabs */}
-      <div style={{
-        display: 'flex',
-        background: 'var(--admin-card)',
-        border: '1px solid var(--admin-border)',
-        borderRadius: '12px 12px 0 0',
-        borderBottom: 'none',
-        overflow: 'hidden',
-      }}>
-        {ROSTER.map((m, i) => (
-          <span key={m.id} style={{ display: 'flex', flex: 1 }}>
-            {i > 0 && <div style={{ width: 1, background: 'var(--admin-border)' }} />}
-            <button style={tabStyle(activeStaff === m.id)} onClick={() => setActiveStaff(m.id)}>
-              {m.name}
-            </button>
-          </span>
-        ))}
-      </div>
+      {/* Staff tabs — only worth showing when there's more than one to pick */}
+      {editable.length > 1 && (
+        <div style={{
+          display: 'flex',
+          background: 'var(--admin-card)',
+          border: '1px solid var(--admin-border)',
+          borderRadius: '12px 12px 0 0',
+          borderBottom: 'none',
+          overflow: 'hidden',
+        }}>
+          {editable.map((m, i) => (
+            <span key={m.id} style={{ display: 'flex', flex: 1 }}>
+              {i > 0 && <div style={{ width: 1, background: 'var(--admin-border)' }} />}
+              <button style={tabStyle(activeStaff === m.id)} onClick={() => setActiveStaff(m.id)}>
+                {m.name}
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* Staff days grid — shares styling with store hours grid but rounded top removed */}
-      <div style={{ borderRadius: '0 0 12px 12px', overflow: 'hidden', border: '1px solid var(--admin-border)' }}>
+      <div style={{
+        borderRadius: editable.length > 1 ? '0 0 12px 12px' : 12,
+        overflow: 'hidden',
+        border: '1px solid var(--admin-border)',
+      }}>
         <WeekGrid days={activeStaffDays} onChange={updateActiveStaff} />
       </div>
 
       <p style={{ marginTop: 8, fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)', lineHeight: 1.5 }}>
-        {`Bookings only show on days ${ROSTER.find(m => m.id === activeStaff)?.name ?? 'this person'} is on.`}
+        {viewer.isAdmin
+          ? `Bookings only show on days ${ROSTER.find(m => m.id === activeStaff)?.name ?? 'this person'} is on.`
+          : 'Bookings only show on days you are on.'}
       </p>
 
       {/* ── Save ─────────────────────────────────────────────── */}

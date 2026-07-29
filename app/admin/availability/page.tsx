@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { verifySession, SESSION_COOKIE } from '@/lib/admin-auth';
 import { getAvailabilityConfig } from '@/lib/availability-store';
+import { isAdmin } from '@/lib/staff';
 import AdminHeader from '@/components/admin/AdminHeader';
 import AvailabilityEditor from '@/components/admin/AvailabilityEditor';
 
@@ -26,7 +27,7 @@ export default async function AvailabilityPage() {
           Availability
         </span>
       </div>
-      <AvailabilityEditor initial={config} />
+      <AvailabilityEditor initial={config} viewer={{ id: session.sub, isAdmin: isAdmin(session.sub) }} />
     </>
   );
 }

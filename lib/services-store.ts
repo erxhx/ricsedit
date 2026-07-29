@@ -1,6 +1,6 @@
 import { db } from './supabase';
 import type { Service, ServiceGroup, ServiceCategory } from './services';
-import { BARBER_SERVICES, TAN_SERVICES, TAN_ADDONS, WAX_GROUPS, LASH_SERVICES } from './services';
+import { BARBER_SERVICES, TAN_SERVICES, TAN_ADDONS, WAX_GROUPS, LASH_SERVICES, LASH_ADDONS } from './services';
 
 export interface ServicesData {
   barberServices: Service[];
@@ -8,6 +8,7 @@ export interface ServicesData {
   tanAddons: Service[];
   waxGroups: ServiceGroup[];
   lashServices: Service[];
+  lashAddons: Service[];
   /** Bumped when the seeded lash menu changes so persisted stores re-adopt it. */
   lashMenuVersion?: number;
 }
@@ -27,7 +28,21 @@ function seed(): ServicesData {
     tanAddons:      TAN_ADDONS,
     waxGroups:      WAX_GROUPS,
     lashServices:   LASH_SERVICES,
+    lashAddons:     LASH_ADDONS,
   }));
+}
+
+/**
+ * Fills in arrays a persisted store predates, so callers can push/filter
+ * without null-checking every list. Stores saved before lash add-ons existed
+ * have no `lashAddons` key at all.
+ */
+function ensureShape(store: ServicesData): boolean {
+  if (!Array.isArray(store.lashAddons)) {
+    store.lashAddons = [];
+    return true;
+  }
+  return false;
 }
 
 /** Ensures persisted stores adopt the current seeded lash menu. */
@@ -173,11 +188,12 @@ export async function getServicesStoreAsync(): Promise<ServicesData> {
       .single();
     if (!error && data?.value) {
       global.__servicesStore = data.value as ServicesData;
+      const m0 = ensureShape(global.__servicesStore);
       const m1 = applyWaiverMigration(global.__servicesStore);
       const m2 = applyDurationMigration(global.__servicesStore);
       const m3 = applyCategoryMigration(global.__servicesStore);
       const m4 = applyMenuMigrationJul2026(global.__servicesStore);
-      if (m1 || m2 || m3 || m4) saveServicesStore().catch(() => {});
+      if (m0 || m1 || m2 || m3 || m4) saveServicesStore().catch(() => {});
       return global.__servicesStore;
     }
   } catch {
@@ -211,6 +227,7 @@ export function getAllServices(): Service[] {
     ...s.tanAddons,
     ...s.waxGroups.flatMap((g) => g.services),
     ...s.lashServices,
+    ...(s.lashAddons ?? []),
   ];
 }
 
@@ -245,14 +262,27 @@ export type AddTarget =
   | { kind: 'tan' }
   | { kind: 'tanAddon' }
   | { kind: 'lashes' }
+  | { kind: 'lashAddon' }
   | { kind: 'wax'; groupName: string };
+
+/** The service category each add-target belongs to — drives permission checks. */
+export function categoryForTarget(target: AddTarget): ServiceCategory {
+  switch (target.kind) {
+    case 'barber':                    return 'barber';
+    case 'tan': case 'tanAddon':      return 'tan';
+    case 'lashes': case 'lashAddon':  return 'lashes';
+    default:                          return 'wax';
+  }
+}
 
 export function addServiceToStore(service: Service, target: AddTarget): void {
   const store = getServicesStore();
+  ensureShape(store);
   if (target.kind === 'barber')   store.barberServices.push(service);
   else if (target.kind === 'tan') store.tanServices.push(service);
   else if (target.kind === 'tanAddon') store.tanAddons.push(service);
   else if (target.kind === 'lashes') store.lashServices.push(service);
+  else if (target.kind === 'lashAddon') store.lashAddons.push(service);
   else {
     const group = store.waxGroups.find((g) => g.name === target.groupName);
     if (group) group.services.push(service);
@@ -261,11 +291,13 @@ export function addServiceToStore(service: Service, target: AddTarget): void {
 
 export function removeServiceFromStore(id: string): boolean {
   const store = getServicesStore();
+  ensureShape(store);
   let found = false;
   store.barberServices = store.barberServices.filter((s) => { if (s.id === id) { found = true; return false; } return true; });
   store.tanServices    = store.tanServices.filter((s)    => { if (s.id === id) { found = true; return false; } return true; });
   store.tanAddons      = store.tanAddons.filter((s)      => { if (s.id === id) { found = true; return false; } return true; });
   store.lashServices   = store.lashServices.filter((s)   => { if (s.id === id) { found = true; return false; } return true; });
+  store.lashAddons     = store.lashAddons.filter((s)     => { if (s.id === id) { found = true; return false; } return true; });
   store.waxGroups      = store.waxGroups.map((g) => ({
     ...g,
     services: g.services.filter((s) => { if (s.id === id) { found = true; return false; } return true; }),

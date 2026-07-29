@@ -28,6 +28,10 @@
     { id: 'prep-lock', name: 'Prep + Lock',        desc: 'Two-step longevity treatment — pH-balance prep + post-tan barrier lock. Extends your glow.', price: 20, duration: 20 },
   ];
 
+  // No hardcoded fallback: the lash add-on menu is built entirely in the admin,
+  // so an empty list here is a legitimate state, not a missing default.
+  var BK_LASH_ADDONS = [];
+
   var BK_WAX_GROUPS = [
     {
       label: 'Brows + Face',
@@ -116,6 +120,11 @@
         }
         if (Array.isArray(d.lashServices) && d.lashServices.length) {
           BK_LASHES = d.lashServices.map(mapSvc);
+        }
+        // Not gated on length — unlike the lists above there is nothing to fall
+        // back to, so an empty array from the admin must clear the menu.
+        if (Array.isArray(d.lashAddons)) {
+          BK_LASH_ADDONS = d.lashAddons.map(mapSvc);
         }
       })
       .catch(function () {});
@@ -568,13 +577,21 @@
         </>)}
 
         {/* Lashes */}
-        {category === 'lashes' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 1, background: 'var(--rule)' }}>
+        {category === 'lashes' && (<>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 1, background: 'var(--rule)', marginBottom: BK_LASH_ADDONS.length ? 24 : 0 }}>
             {BK_LASHES.map(function(s) {
               return <BkServiceRow key={s.id} service={s} active={!!selected.find(function(x) { return x.id === s.id; })} onClick={function() { toggleMain(s); }} />;
             })}
           </div>
-        )}
+          {selected.length > 0 && BK_LASH_ADDONS.length > 0 && (<>
+            <BkEyebrow left="Add-ons" right="Optional" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 1, background: 'var(--rule)' }}>
+              {BK_LASH_ADDONS.map(function(s) {
+                return <BkServiceRow key={s.id} service={s} active={!!addons.find(function(x) { return x.id === s.id; })} onClick={function() { toggleAddon(s); }} prefix="+" />;
+              })}
+            </div>
+          </>)}
+        </>)}
 
         {/* Wax */}
         {category === 'wax' && BK_WAX_GROUPS.map(function(group) {

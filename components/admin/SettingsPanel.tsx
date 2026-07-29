@@ -47,15 +47,20 @@ function fmtTime(t: string): string {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function SettingsPanel({
-  viewerRole,
+  viewerIsAdmin = false,
   initialPermissions = {},
 }: {
-  viewerRole?: 'owner' | 'esti';
+  /**
+   * Studio-wide settings — other people's permissions and payments — are for
+   * admins (Eric and Livi). This replaced a check on the session's `role`
+   * claim, which only ever admitted the single 'owner'.
+   */
+  viewerIsAdmin?: boolean;
   initialPermissions?: Record<string, StaffPermissions>;
 } = {}) {
   const { theme, toggle } = useAdminTheme();
 
-  // ── Staff permissions (owner only) ──────────────────────────────────────────
+  // ── Staff permissions (admins only) ─────────────────────────────────────────
   const [perms, setPerms]       = useState<Record<string, StaffPermissions>>(initialPermissions);
   const [permSaving, setPermSaving] = useState<string | null>(null);
 
@@ -215,7 +220,7 @@ export default function SettingsPanel({
       </div>
 
       {/* ── Staff permissions (owner only) ─────────────────────────────── */}
-      {viewerRole === 'owner' && (
+      {viewerIsAdmin && (
         <>
           <div style={{
             fontFamily: 'var(--font-body)', fontSize: 10, letterSpacing: '0.12em',
@@ -231,7 +236,7 @@ export default function SettingsPanel({
           }}>
             {ROSTER.map((m, i) => {
               const on = perms[m.id]?.canSeeAllRevenue ?? false;
-              const isOwner = m.role === 'owner';
+              const isOwner = m.admin;
               return (
                 <div key={m.id} style={{
                   display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px',
@@ -241,7 +246,7 @@ export default function SettingsPanel({
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontFamily: 'var(--font-body)', fontSize: 15, color: 'var(--admin-text)' }}>{m.name}</div>
                     <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)' }}>
-                      {isOwner ? 'Owner — always sees all revenue' : (on ? 'Can see all studio revenue' : 'Sees only their own revenue')}
+                      {isOwner ? 'Admin — always sees all revenue' : (on ? 'Can see all studio revenue' : 'Sees only their own revenue')}
                     </div>
                   </div>
                   {/* Toggle — owners are locked on */}
@@ -273,7 +278,7 @@ export default function SettingsPanel({
       )}
 
       {/* ── Payments (owner only) ──────────────────────────────────────── */}
-      {viewerRole === 'owner' && (
+      {viewerIsAdmin && (
         <>
           <div style={{
             fontFamily: 'var(--font-body)', fontSize: 10, letterSpacing: '0.12em',

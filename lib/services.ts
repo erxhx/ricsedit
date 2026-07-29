@@ -123,6 +123,13 @@ export const TAN_ADDONS: Service[] = [
 
 // Niamh's lash & brow menu. Prices are exact; DURATIONS ARE ESTIMATES —
 // adjust them (and add/remove services) in the admin Services editor.
+/**
+ * Lash add-ons — optional extras attached to a lash booking, the same way
+ * TAN_ADDONS attach to a tan. Seeded empty: the menu is Niamh's to build from
+ * the admin, and seeding placeholders here would push them to the live site.
+ */
+export const LASH_ADDONS: Service[] = [];
+
 export const LASH_SERVICES: Service[] = [
   { id: 'lash-classic-set',  name: 'Classic Full Set',  category: 'lashes', durationMinutes: 120, price: 150, description: 'One extension per natural lash — a natural, mascara-like finish.', requiresWaiver: true },
   { id: 'lash-classic-fill', name: 'Classic Fill',      category: 'lashes', durationMinutes: 60,  price: 80,  description: 'Must have minimum 50% retention.',                                requiresWaiver: true },
