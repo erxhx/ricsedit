@@ -88,6 +88,39 @@ export default function SettingsPanel({
     }
   }
 
+  // Commission rate, entered as a percentage. Held as draft text while typing
+  // and committed on blur or Enter — saving per keystroke would fire a request
+  // for "5" on the way to "50", and briefly store a 5% payout.
+  const [rateDraft, setRateDraft] = useState<Record<string, string>>({});
+
+  async function saveRate(staffId: string) {
+    const text = rateDraft[staffId];
+    if (text === undefined) return;
+    const pct = parseFloat(text);
+    const current = perms[staffId]?.commissionRate ?? 0;
+    // Nonsense or unchanged: drop the draft so the field snaps back to what is
+    // actually stored, rather than leaving a number on screen that isn't saved.
+    if (!Number.isFinite(pct) || pct < 0 || pct > 100 || Math.round(pct) / 100 === current) {
+      setRateDraft(({ [staffId]: _drop, ...rest }) => rest);
+      return;
+    }
+    const rate = Math.round(pct * 100) / 10000;
+    setPermSaving(staffId);
+    try {
+      const res = await fetch('/api/admin/staff-permissions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [staffId]: { commissionRate: rate } }),
+      });
+      if (res.ok) setPerms(await res.json() as Record<string, StaffPermissions>);
+    } catch {
+      /* leave perms as they were — the field resets from them below */
+    } finally {
+      setRateDraft(({ [staffId]: _drop, ...rest }) => rest);
+      setPermSaving(null);
+    }
+  }
+
   const [migState,  setMigState]  = useState<MigState>('idle');
   const [migData,   setMigData]   = useState<MigData | null>(null);
   const [sentCount, setSentCount] = useState(0);
@@ -242,12 +275,41 @@ export default function SettingsPanel({
                   display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px',
                   borderBottom: i < ROSTER.length - 1 ? '1px solid var(--admin-border-sub)' : 'none',
                 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: staffColor(m.id), flexShrink: 0 }} />
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: staffColor(m.id), flexShrink: 0, alignSelf: 'flex-start', marginTop: 6 }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontFamily: 'var(--font-body)', fontSize: 15, color: 'var(--admin-text)' }}>{m.name}</div>
                     <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)' }}>
-                      {isOwner ? 'Admin — always sees all revenue' : (on ? 'Can see all studio revenue' : 'Sees only their own revenue')}
+                      {isOwner ? 'Admin — always sees all revenue' : (on ? 'Can see all studio revenue' : 'Sees only their own payout')}
                     </div>
+                    {/* Payout rate — only meaningful for someone who sees a
+                        payout rather than the studio's gross takings. */}
+                    {!isOwner && !on && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8 }}>
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          min={0}
+                          max={100}
+                          step={1}
+                          value={rateDraft[m.id] ?? String(Math.round((perms[m.id]?.commissionRate ?? 0) * 100))}
+                          onChange={(e) => setRateDraft(d => ({ ...d, [m.id]: e.target.value }))}
+                          onBlur={() => saveRate(m.id)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                          disabled={permSaving === m.id}
+                          aria-label={`Commission percentage for ${m.name}`}
+                          style={{
+                            width: 58, padding: '5px 7px', borderRadius: 7,
+                            border: '1px solid var(--admin-border)',
+                            background: 'var(--admin-bg)', color: 'var(--admin-text)',
+                            fontFamily: 'var(--font-body)', fontSize: 13,
+                            opacity: permSaving === m.id ? 0.6 : 1,
+                          }}
+                        />
+                        <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)' }}>
+                          % of service, plus all tips
+                        </span>
+                      </div>
+                    )}
                   </div>
                   {/* Toggle — owners are locked on */}
                   <button
@@ -263,6 +325,9 @@ export default function SettingsPanel({
                       opacity: permSaving === m.id ? 0.6 : 1,
                       transition: 'background 0.2s', flexShrink: 0,
                       WebkitTapHighlightColor: 'transparent',
+                      // Pin to the name line so it stays level with the staff
+                      // dot when the payout field makes the row two lines tall.
+                      alignSelf: 'flex-start',
                     }}
                   >
                     <span style={{ width: 20, height: 20, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
@@ -272,7 +337,9 @@ export default function SettingsPanel({
             })}
           </div>
           <div style={{ marginTop: 10, fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)', lineHeight: 1.5 }}>
-            Controls whether each person sees studio-wide revenue (Reports, day &amp; week totals) or only their own.
+            Controls whether each person sees studio-wide revenue (Reports, day &amp; week totals) or only their own
+            payout. A payout is their percentage of the service plus all of their tips — so Reports shows what they
+            earn, not what the studio takes in. Tips can only be counted from online payments.
           </div>
         </>
       )}

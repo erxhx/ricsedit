@@ -29,11 +29,26 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Invalid body' }, { status: 400 });
   }
 
-  // Merge onto current (defaults + saved), coercing the one known boolean field.
+  // Merge onto current (defaults + saved), taking only the known fields and
+  // only when they are the right shape. Iterating the roster's ids rather than
+  // the body's keys means an unknown id can't add a staff member by proxy.
   const perms = await getStaffPermissions();
   for (const id of Object.keys(perms)) {
     if (typeof body[id]?.canSeeAllRevenue === 'boolean') {
       perms[id].canSeeAllRevenue = body[id]!.canSeeAllRevenue!;
+    }
+    if (body[id]?.commissionRate !== undefined) {
+      const rate = body[id]!.commissionRate;
+      // Reject rather than clamp: a rate outside 0–1 means the caller is
+      // confused (sending 50 for 50%, say), and silently storing 1 would
+      // quietly pay someone the whole service price.
+      if (typeof rate !== 'number' || !Number.isFinite(rate) || rate < 0 || rate > 1) {
+        return NextResponse.json(
+          { error: 'commissionRate must be a number between 0 and 1' },
+          { status: 400 },
+        );
+      }
+      perms[id].commissionRate = rate;
     }
   }
 

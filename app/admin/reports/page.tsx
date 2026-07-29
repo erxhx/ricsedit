@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { verifySession, SESSION_COOKIE } from '@/lib/admin-auth';
 import { isAdmin } from '@/lib/staff';
 import { dbGetAppointmentsForRange } from '@/lib/db';
-import { getStaffPermissions, canViewAllRevenue, redactRevenue } from '@/lib/staff-permissions';
+import { getStaffPermissions, canViewAllRevenue, redactRevenue, payoutRateFor } from '@/lib/staff-permissions';
 import AdminHeader from '@/components/admin/AdminHeader';
 import ReportsView from '@/components/admin/ReportsView';
 import { RevenueAccessProvider } from '@/components/admin/RevenueAccess';
@@ -41,7 +41,7 @@ export default async function ReportsPage() {
   return (
     <>
       <AdminHeader name={session.name} isAdmin={isAdmin(session.sub)} />
-      <RevenueAccessProvider value={{ canSeeAllRevenue, viewerStaff: session.sub }}>
+      <RevenueAccessProvider value={{ canSeeAllRevenue, viewerStaff: session.sub, commissionRate: payoutRateFor(session.sub, perms) }}>
         <ReportsView appointments={redactRevenue(appointments, session.sub, canSeeAllRevenue)} />
       </RevenueAccessProvider>
     </>

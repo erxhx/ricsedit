@@ -180,11 +180,43 @@ forms for the categories they perform.
 | Edit intake forms | all categories | own categories only |
 | System settings (payments, permissions) | ✅ | ❌ |
 | See studio-wide revenue | ✅ | per-person toggle |
+| Money shown as | studio gross | their own payout |
 
 Every check resolves against the roster by staff id, never against the `role`
 claim in the session JWT — sessions last 90 days, so a token can carry a claim
 that predates a permission change. Hiding a control in the UI is a courtesy;
 each API route applies the same check itself.
+
+#### Payout vs. gross
+
+An admin sees what the studio takes in. Anyone restricted sees what they are
+paid: a percentage of the service plus **all** of their tips. Niamh is 50%.
+The rate is a roster default (`StaffMember.commissionRate`) that the owner can
+override per person in Settings, so a raise doesn't need a deploy; the API
+rejects anything outside 0–1 rather than clamping, so sending `50` for 50%
+fails loudly instead of quietly paying out the whole service price.
+
+Every money figure a restricted viewer sees is their payout — day and week
+totals, the Reports headline, by-day bars, per-staff and per-service rows — so
+the page is internally consistent. Two things stay the client-facing price,
+because whoever is at the counter needs to know what to charge: the **Price**
+row on an appointment (which gains a separate *Your payout* row beside it) and
+the client's past-visit history.
+
+Conventions, chosen to match how gross revenue was already counted:
+- **No-shows count**, and cancelled/blocked don't — the same set gross uses, so
+  a payout is always `rate x (the gross that viewer would otherwise have seen)
+  + tips`.
+- **A refunded payment pays no tip** — the money went back.
+- **Tips come only from online payments** (Square `tipCents`). Cash left at the
+  counter isn't in the data, so these figures are a floor, not a payslip. The
+  UI says so on the Reports page.
+
+Server-side, `redactRevenue` zeroes `price` *and* the payment amounts on other
+people's appointments before they reach the browser — tips being part of a
+payout makes someone else's `tipCents` as sensitive as their price. The
+`prepaid`/`refunded` flags survive, since they carry no amount and the day grid
+badges cards as paid.
 
 ### Calendar Views
 - Day view (default on mobile)

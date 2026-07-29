@@ -4,7 +4,7 @@ import { verifySession, SESSION_COOKIE } from '@/lib/admin-auth';
 import { isAdmin } from '@/lib/staff';
 import { dbGetAppointmentsForDate, dbGetAppointmentsForRange } from '@/lib/db';
 import { getAvailabilityConfig } from '@/lib/availability-store';
-import { getStaffPermissions, canViewAllRevenue, redactRevenue } from '@/lib/staff-permissions';
+import { getStaffPermissions, canViewAllRevenue, redactRevenue, payoutRateFor } from '@/lib/staff-permissions';
 import AdminHeader from '@/components/admin/AdminHeader';
 import DashboardTabs from '@/components/admin/DashboardTabs';
 import { RevenueAccessProvider } from '@/components/admin/RevenueAccess';
@@ -66,7 +66,7 @@ export default async function AdminPage({
   return (
     <>
       <AdminHeader name={session.name} isAdmin={isAdmin(session.sub)} />
-      <RevenueAccessProvider value={{ canSeeAllRevenue, viewerStaff: session.sub }}>
+      <RevenueAccessProvider value={{ canSeeAllRevenue, viewerStaff: session.sub, commissionRate: payoutRateFor(session.sub, perms) }}>
         <DashboardTabs
           todayApts={redactRevenue(todayApts, session.sub, canSeeAllRevenue)}
           weekApts={redactRevenue(weekApts, session.sub, canSeeAllRevenue)}

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import type { Appointment, AppointmentStatus } from '@/lib/admin-mock';
 import { getAppointmentColor } from '@/lib/appointment-colors';
 import { staffName } from '@/lib/staff';
+import { payoutOf, tipsOf, fmtMoney } from '@/lib/payout';
 import { useRevenueAccess } from './RevenueAccess';
 
 // Time slots 9 am – 7 pm in 15-min increments
@@ -68,7 +69,7 @@ export default function AppointmentDetail({
   history?: Appointment[];
 }) {
   const router = useRouter();
-  const { canSeeAllRevenue, viewerStaff } = useRevenueAccess();
+  const { canSeeAllRevenue, viewerStaff, commissionRate } = useRevenueAccess();
   const [apt, setApt] = useState(initial);
   const [note,          setNote]          = useState(initial.notes ?? '');
   const [editingNote,      setEditingNote]      = useState(false);
@@ -265,6 +266,20 @@ export default function AppointmentDetail({
           <Row label="Duration" value={`${apt.durationMinutes} min`} />
           {(canSeeAllRevenue || apt.staff === viewerStaff) && (
             <Row label="Price" value={`$${apt.price}`} />
+          )}
+          {/* Price stays the client-facing number — whoever is at the counter
+              needs to know what to charge. The payout is the separate question
+              of what they keep, so it gets its own row rather than replacing it. */}
+          {!canSeeAllRevenue && apt.staff === viewerStaff && (
+            <Row label="Your payout">
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)' }}>
+                {fmtMoney(payoutOf(apt, commissionRate))}
+                <span style={{ color: 'var(--admin-muted)', marginLeft: 6, fontSize: 12 }}>
+                  {Math.round(commissionRate * 100)}% of service
+                  {tipsOf(apt) > 0 ? ` + ${fmtMoney(tipsOf(apt))} tip` : ''}
+                </span>
+              </span>
+            </Row>
           )}
           <Row label="Staff">
             <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import type { Appointment } from '@/lib/admin-mock';
 import { STAFF as ROSTER, STAFF_COLORS } from '@/lib/staff';
+import { payoutOf, payoutBreakdown } from '@/lib/payout';
 import { useRevenueAccess } from './RevenueAccess';
 
 // ── types ─────────────────────────────────────────────────────────────────────
@@ -16,8 +17,12 @@ const RANGE_LABELS: Record<Range, string> = {
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
+// Thousands separators for gross figures, and cents whenever a payout lands
+// off a whole dollar — half of a $35 service is $17.50, not "$17.5".
 function fmtMoney(n: number): string {
-  return `$${n.toLocaleString('en-US')}`;
+  return Number.isInteger(n)
+    ? `$${n.toLocaleString('en-US')}`
+    : `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function localDateStr(d: Date): string {
@@ -79,7 +84,7 @@ function StatRow({ label, value }: { label: string; value: string }) {
 // ── main component ────────────────────────────────────────────────────────────
 
 export default function ReportsView({ appointments: initialAppointments }: { appointments: Appointment[] }) {
-  const { canSeeAllRevenue, viewerStaff } = useRevenueAccess();
+  const { canSeeAllRevenue, viewerStaff, commissionRate } = useRevenueAccess();
   const [range, setRange]   = useState<Range>('month');
   const [apts,  setApts]    = useState<Appointment[]>(initialAppointments);
   const [loading, setLoading]       = useState(false);
@@ -124,12 +129,21 @@ export default function ReportsView({ appointments: initialAppointments }: { app
 
   const active = scopedApts.filter(a => a.status !== 'cancelled' && a.status !== 'blocked');
 
+  // What one appointment is worth to this viewer: the gross menu price for an
+  // admin, the viewer's payout — their cut of the service plus their tips — for
+  // everyone else. Every money figure below runs through it, so the page stays
+  // internally consistent. A payout headline sitting above gross by-day bars
+  // would be worse than showing gross everywhere.
+  const valueOf = (a: Appointment) =>
+    canSeeAllRevenue ? a.price : payoutOf(a, commissionRate);
+
   // ── Total revenue ─────────────────────────────────────────────────────────
-  const totalRevenue = active.reduce((s, a) => s + a.price, 0);
+  const totalRevenue = active.reduce((s, a) => s + valueOf(a), 0);
+  const payoutSplit  = payoutBreakdown(active, commissionRate);
 
   // ── Period-over-period comparison (shown for month & 3months) ───────────────
   const compActive  = scopedComp.filter(a => a.status !== 'cancelled' && a.status !== 'blocked');
-  const compRevenue = compActive.reduce((s, a) => s + a.price, 0);
+  const compRevenue = compActive.reduce((s, a) => s + valueOf(a), 0);
   const pctChange   = compRevenue > 0
     ? Math.round((totalRevenue - compRevenue) / compRevenue * 100)
     : null;
@@ -139,7 +153,7 @@ export default function ReportsView({ appointments: initialAppointments }: { app
   const revenueByDow: number[] = [0, 0, 0, 0, 0, 0, 0];
   for (const a of active) {
     const [y, mo, d] = a.date.split('-').map(Number);
-    revenueByDow[new Date(y, mo - 1, d).getDay()] += a.price;
+    revenueByDow[new Date(y, mo - 1, d).getDay()] += valueOf(a);
   }
   const maxDowRevenue = Math.max(...revenueByDow, 1);
 
@@ -149,7 +163,7 @@ export default function ReportsView({ appointments: initialAppointments }: { app
     const days = new Set<string>();
     let apts = 0, revenue = 0;
     for (const a of active) {
-      if (a.staff === m.id) { days.add(a.date); apts++; revenue += a.price; }
+      if (a.staff === m.id) { days.add(a.date); apts++; revenue += valueOf(a); }
     }
     return {
       id: m.id, label: m.name, color: m.color,
@@ -163,7 +177,7 @@ export default function ReportsView({ appointments: initialAppointments }: { app
   for (const a of active) {
     if (!serviceCount[a.service]) serviceCount[a.service] = { count: 0, revenue: 0 };
     serviceCount[a.service].count++;
-    serviceCount[a.service].revenue += a.price;
+    serviceCount[a.service].revenue += valueOf(a);
   }
   const topServices = Object.entries(serviceCount)
     .sort((a, b) => b[1].count - a[1].count)
@@ -203,8 +217,15 @@ export default function ReportsView({ appointments: initialAppointments }: { app
       </h1>
 
       {!canSeeAllRevenue && (
-        <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)', margin: '-8px 0 16px' }}>
-          Showing your own numbers.
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)', margin: '-8px 0 16px', lineHeight: 1.5 }}>
+          Showing your payout — {Math.round(commissionRate * 100)}% of the service plus your tips.
+          {payoutSplit.total > 0 && (
+            <>
+              {' '}This period: {fmtMoney(payoutSplit.service)} service + {fmtMoney(payoutSplit.tips)} tips.
+            </>
+          )}
+          <br />
+          Tips are counted from online payments only.
         </div>
       )}
 
@@ -248,7 +269,7 @@ export default function ReportsView({ appointments: initialAppointments }: { app
           {/* ── Period-over-period (month / 3months only) ─────────────────── */}
           {showWoW && (
             <>
-              <SectionTitle>Revenue — {RANGE_LABELS[range]} vs {compLabel}</SectionTitle>
+              <SectionTitle>{canSeeAllRevenue ? 'Revenue' : 'Your payout'} — {RANGE_LABELS[range]} vs {compLabel}</SectionTitle>
               <Card style={{ marginBottom: 20 }}>
                 <div style={{ display: 'flex', gap: 0 }}>
                   <div style={{ flex: 1 }}>
@@ -275,7 +296,7 @@ export default function ReportsView({ appointments: initialAppointments }: { app
           {/* ── Total revenue (today / week only) ─────────────────────────── */}
           {!showWoW && (
             <>
-              <SectionTitle>Revenue — {RANGE_LABELS[range]}</SectionTitle>
+              <SectionTitle>{canSeeAllRevenue ? 'Revenue' : 'Your payout'} — {RANGE_LABELS[range]}</SectionTitle>
               <Card style={{ marginBottom: 20 }}>
                 <div style={{ fontFamily: 'var(--font-body)', fontSize: 36, fontWeight: 500, color: 'var(--admin-text)', letterSpacing: '-0.02em' }}>
                   {fmtMoney(totalRevenue)}
@@ -288,7 +309,7 @@ export default function ReportsView({ appointments: initialAppointments }: { app
           )}
 
           {/* ── Revenue by day of week ────────────────────────────────────── */}
-          <SectionTitle>Revenue by Day of Week</SectionTitle>
+          <SectionTitle>{canSeeAllRevenue ? 'Revenue' : 'Payout'} by Day of Week</SectionTitle>
           <Card style={{ marginBottom: 20 }}>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 80 }}>
               {DAY_LABELS.map((label, dow) => {
@@ -297,7 +318,7 @@ export default function ReportsView({ appointments: initialAppointments }: { app
                 return (
                   <div key={dow} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, height: '100%', justifyContent: 'flex-end' }}>
                     <div style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: isToday ? 'var(--admin-text)' : 'var(--admin-muted)', letterSpacing: '0.04em' }}>
-                      {revenueByDow[dow] > 0 ? `$${revenueByDow[dow]}` : ''}
+                      {revenueByDow[dow] > 0 ? fmtMoney(revenueByDow[dow]) : ''}
                     </div>
                     <div style={{
                       width: '100%', borderRadius: 3,
@@ -325,7 +346,7 @@ export default function ReportsView({ appointments: initialAppointments }: { app
                     <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 500, color: 'var(--admin-text)' }}>{label}</span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <StatRow label="Revenue"      value={fmtMoney(revenue)} />
+                    <StatRow label={canSeeAllRevenue ? 'Revenue' : 'Payout'} value={fmtMoney(revenue)} />
                     <StatRow label="Appointments" value={String(apts)} />
                     <StatRow label="Working days" value={String(days)} />
                     <StatRow label="Apts / day"   value={aptsPerDay} />

@@ -1,6 +1,7 @@
 'use client';
 import type { Appointment } from '@/lib/admin-mock';
 import { STAFF as ROSTER } from '@/lib/staff';
+import { payoutBreakdown, fmtMoney } from '@/lib/payout';
 import { useRevenueAccess } from './RevenueAccess';
 
 interface Props {
@@ -42,10 +43,19 @@ function Stat({ label, value, color, sub, subColor }: {
 }
 
 export default function StatsBox({ appointments, hoursByDay, startDate, endDate }: Props) {
-  const { canSeeAllRevenue, viewerStaff } = useRevenueAccess();
+  const { canSeeAllRevenue, viewerStaff, commissionRate } = useRevenueAccess();
   const active   = appointments.filter(a => a.status !== 'cancelled' && a.status !== 'blocked');
   const revenueApts = canSeeAllRevenue ? active : active.filter(a => a.staff === viewerStaff);
-  const total    = revenueApts.reduce((s, a) => s + a.price, 0);
+
+  // Admins see the studio's gross takings; everyone else sees their own payout —
+  // their commission on the service plus their tips, split out so the number is
+  // checkable rather than just asserted.
+  const gross = revenueApts.reduce((s, a) => s + a.price, 0);
+  const cut   = payoutBreakdown(revenueApts, commissionRate);
+  const total = canSeeAllRevenue ? gross : cut.total;
+  const totalSub = canSeeAllRevenue
+    ? undefined
+    : `${fmtMoney(cut.service)} service + ${fmtMoney(cut.tips)} tips`;
 
   // Compute utilization across the date range using hoursByDay
   function utilization(staffApts: Appointment[]): { pct: number; color: string } | null {
@@ -76,7 +86,11 @@ export default function StatsBox({ appointments, hoursByDay, startDate, endDate 
       borderRadius: 12,
       boxShadow: '0 1px 6px rgba(0,0,0,0.08)',
     }}>
-      <Stat label={canSeeAllRevenue ? 'Total' : 'Your total'} value={total > 0 ? `$${total}` : '—'} />
+      <Stat
+        label={canSeeAllRevenue ? 'Total' : 'Your payout'}
+        value={total > 0 ? fmtMoney(total) : '—'}
+        sub={total > 0 ? totalSub : undefined}
+      />
       {ROSTER.map((m) => {
         const apts = active.filter(a => a.staff === m.id);
         const util = utilization(apts);

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import type { Appointment } from '@/lib/admin-mock';
 import { getAppointmentColor } from '@/lib/appointment-colors';
 import { STAFF as ROSTER } from '@/lib/staff';
+import { payoutBreakdown, fmtMoney } from '@/lib/payout';
 import { useRevenueAccess } from './RevenueAccess';
 import AppointmentCard from './AppointmentCard';
 
@@ -313,11 +314,16 @@ export default function DayView({
   const open = openDays ? (openDays[date.getDay()] ?? true) : true;
   const dayHours: [number, number] = hoursByDay?.[date.getDay()] ?? [10, 18];
 
-  // Revenue summary — restricted viewers see only their own day total.
-  const { canSeeAllRevenue, viewerStaff } = useRevenueAccess();
+  // Revenue summary — admins see the studio's gross day total, restricted
+  // viewers see their own payout for the day (their cut plus their tips).
+  const { canSeeAllRevenue, viewerStaff, commissionRate } = useRevenueAccess();
   const active = appointments.filter((a) => a.status !== 'cancelled' && a.status !== 'blocked');
-  const total = (canSeeAllRevenue ? active : active.filter((a) => a.staff === viewerStaff))
-    .reduce((s, a) => s + a.price, 0);
+  const mine   = canSeeAllRevenue ? active : active.filter((a) => a.staff === viewerStaff);
+  const cut    = payoutBreakdown(mine, commissionRate);
+  const total  = canSeeAllRevenue ? mine.reduce((s, a) => s + a.price, 0) : cut.total;
+  const totalSub = canSeeAllRevenue
+    ? undefined
+    : `${fmtMoney(cut.service)} service + ${fmtMoney(cut.tips)} tips`;
 
   return (
     <div style={{ padding: '0 20px 40px' }}>
@@ -398,7 +404,11 @@ export default function DayView({
             }
             return (
               <>
-                <Stat label={canSeeAllRevenue ? 'Total' : 'Your total'} value={total > 0 ? `$${total}` : '—'} />
+                <Stat
+                  label={canSeeAllRevenue ? 'Total' : 'Your payout'}
+                  value={total > 0 ? fmtMoney(total) : '—'}
+                  sub={total > 0 ? totalSub : undefined}
+                />
                 {ROSTER.map((m) => {
                   const apts = active.filter((a) => a.staff === m.id);
                   const u = util(apts);

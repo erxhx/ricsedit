@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { verifySession, SESSION_COOKIE } from '@/lib/admin-auth';
 import { isAdmin } from '@/lib/staff';
 import { dbGetAppointmentById, dbGetAppointmentsByClient } from '@/lib/db';
-import { getStaffPermissions, canViewAllRevenue, redactRevenue } from '@/lib/staff-permissions';
+import { getStaffPermissions, canViewAllRevenue, redactRevenue, payoutRateFor } from '@/lib/staff-permissions';
 import AdminHeader from '@/components/admin/AdminHeader';
 import AppointmentDetail from '@/components/admin/AppointmentDetail';
 import { RevenueAccessProvider } from '@/components/admin/RevenueAccess';
@@ -30,7 +30,7 @@ export default async function AppointmentPage({ params }: { params: Promise<{ id
   return (
     <>
       <AdminHeader name={session.name} isAdmin={isAdmin(session.sub)} />
-      <RevenueAccessProvider value={{ canSeeAllRevenue, viewerStaff: session.sub }}>
+      <RevenueAccessProvider value={{ canSeeAllRevenue, viewerStaff: session.sub, commissionRate: payoutRateFor(session.sub, perms) }}>
         <AppointmentDetail apt={visibleApt} history={visibleHistory} />
       </RevenueAccessProvider>
     </>

@@ -5,7 +5,7 @@ import { verifySession, SESSION_COOKIE } from '@/lib/admin-auth';
 import { isAdmin } from '@/lib/staff';
 import { dbGetAppointmentsForDate } from '@/lib/db';
 import { getAvailabilityConfig } from '@/lib/availability-store';
-import { getStaffPermissions, canViewAllRevenue, redactRevenue } from '@/lib/staff-permissions';
+import { getStaffPermissions, canViewAllRevenue, redactRevenue, payoutRateFor } from '@/lib/staff-permissions';
 import AdminHeader from '@/components/admin/AdminHeader';
 import DaySchedule from '@/components/admin/DaySchedule';
 import { RevenueAccessProvider } from '@/components/admin/RevenueAccess';
@@ -85,7 +85,7 @@ export default async function DayPage({ params }: { params: Promise<{ date: stri
       </div>
       {/* Mounted for the same reason as on /admin: the grid reads viewerStaff
           from here to put the signed-in person's column first. */}
-      <RevenueAccessProvider value={{ canSeeAllRevenue, viewerStaff: session.sub }}>
+      <RevenueAccessProvider value={{ canSeeAllRevenue, viewerStaff: session.sub, commissionRate: payoutRateFor(session.sub, perms) }}>
         <DaySchedule appointments={visibleAppointments} date={date} hoursByDay={availability.days} staffHoursByDay={Object.fromEntries(Object.entries(availability.staff).map(([id, s]) => [id, s.days]))} barberThuClose={availability.barberThuClose} />
       </RevenueAccessProvider>
     </>

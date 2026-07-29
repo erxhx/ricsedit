@@ -40,6 +40,18 @@ export interface StaffMember {
    */
   canSeeAllRevenue: boolean;
   /**
+   * Share of the service price this person is paid, 0–1. Tips are paid out in
+   * full on top of it, so 0.5 means "half the service, all the tip".
+   *
+   * Only affects what a *restricted* viewer sees. Anyone with
+   * `canSeeAllRevenue` is looking at the studio's gross takings, where a
+   * personal payout rate has no meaning — so the value set for an admin is
+   * inert, not a claim about how they're paid.
+   *
+   * This is the default; the owner can change it per person in Settings.
+   */
+  commissionRate: number;
+  /**
    * Full administrative access: store hours, every staff member's schedule,
    * the whole service menu, every intake form, and Settings.
    *
@@ -69,6 +81,7 @@ export const STAFF: StaffMember[] = [
     color: STAFF_COLORS.ericBarber,
     categories: ['barber'],
     canSeeAllRevenue: true,
+    commissionRate: 1,
     admin: true,
   },
   {
@@ -79,6 +92,7 @@ export const STAFF: StaffMember[] = [
     categories: ['wax', 'tan'],
     categoryColors: { wax: STAFF_COLORS.liviWax, tan: STAFF_COLORS.liviTan },
     canSeeAllRevenue: true,
+    commissionRate: 1,
     admin: true,
   },
   {
@@ -88,6 +102,7 @@ export const STAFF: StaffMember[] = [
     color: STAFF_COLORS.niamhLash,
     categories: ['lashes'],
     canSeeAllRevenue: false,
+    commissionRate: 0.5,   // half the service, plus all of her tips
     admin: false,
     // Login: set ADMIN_PASSWORD_NIAMH in the environment to enable her sign-in.
   },
