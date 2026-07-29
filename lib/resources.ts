@@ -27,14 +27,18 @@ export interface Resource {
 }
 
 /**
- * One room, shared by waxing and lashes.
+ * The studio's three rooms.
  *
- * Sunless tan is deliberately NOT in here. It's Livi's other category, and
- * whether it happens in the same room is a studio fact rather than something
- * the code can infer — tick it on in Shared Resources if it does.
+ * Only the treatment room actually constrains anything today — it's the one
+ * with two categories in it. The other two are listed because a room holding a
+ * single category is still true, and it's what makes the model legible: adding
+ * a second barber, or moving tan in with the wax, becomes a tick box rather
+ * than a code change.
  */
 export const DEFAULT_RESOURCES: Resource[] = [
   { id: 'treatment-room', name: 'Treatment Room', categories: ['wax', 'lashes'] },
+  { id: 'barber-room',    name: 'Barber Room',    categories: ['barber'] },
+  { id: 'tan-room',       name: 'Tan Room',       categories: ['tan'] },
 ];
 
 declare global {
