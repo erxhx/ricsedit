@@ -47,6 +47,7 @@ export async function POST(
     startMin: h * 60 + m,
     durationMinutes: apt.durationMinutes,
     excludeId: apt.id,
+    serviceName: apt.service,
   });
   if (!check.ok) {
     return Response.json({ error: check.error }, { status: check.status });

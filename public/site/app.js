@@ -284,7 +284,7 @@
           const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
           if (!ERIC_HOURS[d.getDay()]) continue;
           const dateStr = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
-          const url = endpoint.replace(/\/booking\/create$/, "") + "/booking/availability?date=" + dateStr + "&staff=eric";
+          const url = endpoint.replace(/\/booking\/create$/, "") + "/booking/availability?date=" + dateStr + "&staff=eric&category=barber";
           try {
             const res = await fetch(url);
             if (!res.ok) {

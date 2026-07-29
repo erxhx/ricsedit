@@ -9,6 +9,8 @@ interface NavItem {
   label: string;
   href: string;
   icon: string;
+  /** Studio-wide configuration — hidden from restricted staff. */
+  adminOnly?: boolean;
 }
 
 // Primary nav — shown in the persistent bottom tab bar
@@ -27,6 +29,7 @@ const NAV: NavItem[] = [
   { label: 'Services & Pricing', href: '/admin/services',       icon: '✦' },
   { label: 'Availability',       href: '/admin/availability',   icon: '◷' },
   { label: 'Intake Forms',       href: '/admin/forms',          icon: '✎' },
+  { label: 'Shared Resources',   href: '/admin/resources',      icon: '⊞', adminOnly: true },
   { label: 'Live site',          href: '/admin/site',           icon: '⌁' },
   { label: 'Settings',           href: '/admin/settings',       icon: '◎' },
 ];
@@ -52,7 +55,7 @@ function isActive(href: string, pathname: string, searchParams: ReturnType<typeo
   return pathname.startsWith(href);
 }
 
-export default function AdminHeader({ name }: { name: string }) {
+export default function AdminHeader({ name, isAdmin = false }: { name: string; isAdmin?: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -228,7 +231,7 @@ export default function AdminHeader({ name }: { name: string }) {
 
         {/* Nav — active item gets a concentric capsule pill */}
         <nav style={{ flex: 1, padding: '4px 10px', overflowY: 'auto', overscrollBehavior: 'contain' }}>
-          {NAV.map((item) => {
+          {NAV.filter((item) => !item.adminOnly || isAdmin).map((item) => {
             const active = isActive(item.href, pathname, searchParams);
             return (
               <Link

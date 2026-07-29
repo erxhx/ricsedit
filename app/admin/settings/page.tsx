@@ -16,7 +16,7 @@ export default async function SettingsPage() {
 
   return (
     <>
-      <AdminHeader name={session.name} />
+      <AdminHeader name={session.name} isAdmin={isAdmin(session.sub)} />
       <SettingsPanel viewerIsAdmin={isAdmin(session.sub)} initialPermissions={permissions} />
     </>
   );

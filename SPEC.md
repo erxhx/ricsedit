@@ -121,7 +121,25 @@ The system consists of:
 - Signed waivers stored against client profile
 - Returning clients who have signed don't need to re-sign (unless form version updates)
 
-### 5.6 Client Profiles
+### 5.6 Shared Resources (rooms)
+
+Some services share a physical room, so they can't overlap even when different
+staff perform them and nobody is double-booked. Waxing and lashes share the
+treatment room.
+
+- Configured in Admin → **Shared Resources** (admin-only): name a room, tick
+  the service categories performed in it.
+- Enforced server-side in `validateSlot`, so it covers online booking and
+  client self-serve reschedule. `/api/booking/availability` also reports
+  room-blocked ranges, so blocked slots never appear as bookable.
+- A `blocked` appointment (lunch, an errand) takes that person off the books
+  but does NOT hold the room — "Block all staff" is what closes the room.
+  `cancelled` frees everything.
+- **Admin manual booking deliberately still allows overrides.** The admin
+  create/drag paths have never run conflict checks — staff can already
+  double-book one person — so the room rule isn't enforced there either.
+
+### 5.7 Client Profiles
 - Name, email, phone
 - Appointment history
 - Waiver status (wax / tan)

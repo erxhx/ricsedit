@@ -231,6 +231,17 @@ export function getAllServices(): Service[] {
   ];
 }
 
+/**
+ * service name → category, built from the LIVE store rather than the static
+ * seeds in services.ts, so admin-created services resolve too. Call
+ * getServicesStoreAsync() first if the store may not be loaded.
+ */
+export function categoryByServiceName(): Map<string, ServiceCategory> {
+  const m = new Map<string, ServiceCategory>();
+  for (const s of getAllServices()) m.set(s.name, s.category);
+  return m;
+}
+
 /** Bookable (non-addon) services for a single category. */
 export function servicesByCategory(cat: ServiceCategory, data: ServicesData): Service[] {
   switch (cat) {

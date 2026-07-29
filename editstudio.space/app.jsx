@@ -382,7 +382,7 @@ function NextAvailableBarber() {
           String(d.getMonth() + 1).padStart(2, '0') + '-' +
           String(d.getDate()).padStart(2, '0');
         const url = endpoint.replace(/\/booking\/create$/, '') +
-          '/booking/availability?date=' + dateStr + '&staff=eric';
+          '/booking/availability?date=' + dateStr + '&staff=eric&category=barber';
 
         try {
           const res = await fetch(url);

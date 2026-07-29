@@ -206,6 +206,7 @@ export async function POST(req: NextRequest) {
       dateStr,
       startMin: (time.h ?? 0) * 60 + (time.m ?? 0),
       durationMinutes: totalDuration,
+      serviceName,
     });
     if (!check.ok) {
       return Response.json({ error: check.error }, { status: check.status, headers: CORS });

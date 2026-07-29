@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { verifySession, SESSION_COOKIE } from '@/lib/admin-auth';
+import { isAdmin } from '@/lib/staff';
 import { dbGetAppointmentsForDate } from '@/lib/db';
 import { getAvailabilityConfig } from '@/lib/availability-store';
 import { getStaffPermissions, canViewAllRevenue, redactRevenue } from '@/lib/staff-permissions';
@@ -39,7 +40,7 @@ export default async function DayPage({ params }: { params: Promise<{ date: stri
 
   return (
     <>
-      <AdminHeader name={session.name} />
+      <AdminHeader name={session.name} isAdmin={isAdmin(session.sub)} />
       <div style={{
         display: 'flex', alignItems: 'center',
         padding: '0 16px', height: 44,

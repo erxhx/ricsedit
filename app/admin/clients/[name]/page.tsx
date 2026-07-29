@@ -1,6 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { verifySession, SESSION_COOKIE } from '@/lib/admin-auth';
+import { isAdmin } from '@/lib/staff';
 import { dbGetClientAppointments } from '@/lib/db';
 import AdminHeader from '@/components/admin/AdminHeader';
 import ClientProfile from '@/components/admin/ClientProfile';
@@ -26,7 +27,7 @@ export default async function ClientPage({
 
   return (
     <>
-      <AdminHeader name={session.name} />
+      <AdminHeader name={session.name} isAdmin={isAdmin(session.sub)} />
       <ClientProfile
         name={clientName}
         email={latest.clientEmail ?? ''}

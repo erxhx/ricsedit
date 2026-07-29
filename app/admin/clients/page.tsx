@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { verifySession, SESSION_COOKIE } from '@/lib/admin-auth';
+import { isAdmin } from '@/lib/staff';
 import { dbGetAllClients } from '@/lib/db';
 import AdminHeader from '@/components/admin/AdminHeader';
 import ClientList from '@/components/admin/ClientList';
@@ -15,7 +16,7 @@ export default async function ClientsPage() {
 
   return (
     <>
-      <AdminHeader name={session.name} />
+      <AdminHeader name={session.name} isAdmin={isAdmin(session.sub)} />
       <div style={{
         padding: '0 0 8px',
         borderBottom: '1px solid var(--admin-border)',

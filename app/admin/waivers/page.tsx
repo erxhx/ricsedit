@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { verifySession, SESSION_COOKIE } from '@/lib/admin-auth';
+import { isAdmin } from '@/lib/staff';
 import AdminHeader from '@/components/admin/AdminHeader';
 import WaiverEditor from '@/components/admin/WaiverEditor';
 
@@ -11,7 +12,7 @@ export default async function WaiversPage() {
   if (!session) redirect('/admin/login');
   return (
     <>
-      <AdminHeader name={session.name} />
+      <AdminHeader name={session.name} isAdmin={isAdmin(session.sub)} />
       <WaiverEditor />
     </>
   );

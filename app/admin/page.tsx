@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { verifySession, SESSION_COOKIE } from '@/lib/admin-auth';
+import { isAdmin } from '@/lib/staff';
 import { dbGetAppointmentsForDate, dbGetAppointmentsForRange } from '@/lib/db';
 import { getAvailabilityConfig } from '@/lib/availability-store';
 import { getStaffPermissions, canViewAllRevenue, redactRevenue } from '@/lib/staff-permissions';
@@ -64,7 +65,7 @@ export default async function AdminPage({
 
   return (
     <>
-      <AdminHeader name={session.name} />
+      <AdminHeader name={session.name} isAdmin={isAdmin(session.sub)} />
       <RevenueAccessProvider value={{ canSeeAllRevenue, viewerStaff: session.sub }}>
         <DashboardTabs
           todayApts={redactRevenue(todayApts, session.sub, canSeeAllRevenue)}

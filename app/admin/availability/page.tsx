@@ -16,7 +16,7 @@ export default async function AvailabilityPage() {
 
   return (
     <>
-      <AdminHeader name={session.name} />
+      <AdminHeader name={session.name} isAdmin={isAdmin(session.sub)} />
       <div style={{
         display: 'flex', alignItems: 'center',
         padding: '0 20px', height: 52,

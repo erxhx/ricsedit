@@ -542,7 +542,7 @@
           return;
         }
         var dateStr = selectedDate.getFullYear() + "-" + String(selectedDate.getMonth() + 1).padStart(2, "0") + "-" + String(selectedDate.getDate()).padStart(2, "0");
-        var url = endpoint.replace(/\/booking\/create$/, "") + "/booking/availability?date=" + dateStr + "&staff=" + staff;
+        var url = endpoint.replace(/\/booking\/create$/, "") + "/booking/availability?date=" + dateStr + "&staff=" + staff + "&category=" + encodeURIComponent(category);
         var cancelled = false;
         setLoadingSlots(true);
         setBookedRanges([]);

@@ -7,6 +7,8 @@
 
 import { dbGetAppointmentsForDate } from './db';
 import { getAvailabilityConfig } from './availability-store';
+import { getResources, appointmentCategories, findResourceConflict } from './resources';
+import { getServicesStoreAsync, categoryByServiceName } from './services-store';
 
 export type SlotCheck =
   | { ok: true }
@@ -55,6 +57,7 @@ export async function validateSlot({
   startMin,
   durationMinutes,
   excludeId,
+  serviceName,
 }: {
   staff: string;
   dateStr: string;          // YYYY-MM-DD
@@ -62,6 +65,13 @@ export async function validateSlot({
   durationMinutes: number;
   /** Appointment id to ignore in the conflict check (reschedules). */
   excludeId?: string;
+  /**
+   * What's being booked, as stored on the appointment (multi-service bookings
+   * are joined with ' + '). Used to work out which shared resources the
+   * booking occupies. Omitted, it falls back to every category the staff
+   * member performs — which errs toward reporting a conflict.
+   */
+  serviceName?: string;
 }): Promise<SlotCheck> {
   const endMin = startMin + durationMinutes;
 
@@ -102,6 +112,30 @@ export async function validateSlot({
   });
   if (conflict) {
     return { ok: false, status: 409, error: 'That time slot was just booked by someone else. Please choose a different time.' };
+  }
+
+  // ── Shared-resource (room) conflict ───────────────────────────────────────
+  // Distinct from the check above: nobody is double-booked, but the room is.
+  // Waxing and lashes run in the same treatment room, so one of each at the
+  // same time is two free staff and one impossible booking.
+  const [resources] = await Promise.all([getResources(), getServicesStoreAsync()]);
+  const categoryByName = categoryByServiceName();
+  const roomClash = findResourceConflict({
+    resources,
+    dayAppts: dayAppts,
+    categoryByName,
+    staff,
+    categories: appointmentCategories({ service: serviceName ?? '', staff }, categoryByName),
+    startMin,
+    endMin,
+    excludeId,
+  });
+  if (roomClash) {
+    return {
+      ok: false,
+      status: 409,
+      error: `Our ${roomClash.resource.name.toLowerCase()} is already in use at that time. Please choose a different slot.`,
+    };
   }
 
   return { ok: true };

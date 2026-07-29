@@ -662,8 +662,11 @@
                     String(selectedDate.getMonth() + 1).padStart(2, '0') + '-' +
                     String(selectedDate.getDate()).padStart(2, '0');
 
+      // category tells the server which shared rooms this booking needs, so
+      // slots held by another staff member in the same room come back blocked.
       var url = endpoint.replace(/\/booking\/create$/, '') +
-                '/booking/availability?date=' + dateStr + '&staff=' + staff;
+                '/booking/availability?date=' + dateStr + '&staff=' + staff +
+                '&category=' + encodeURIComponent(category);
 
       var cancelled = false;
       setLoadingSlots(true);
