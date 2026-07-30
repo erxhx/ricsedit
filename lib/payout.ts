@@ -18,12 +18,13 @@
  *    commission is a business call, not a display one.
  *
  *  - **Refunded payments pay no tip.** A refund sends the money back, so the
- *    tip went with it. The service side still follows the convention above.
+ *    tip went with it. Hand-logged tips are unaffected — a refunded service
+ *    doesn't reach into someone's pocket for the cash they were handed.
  *
- * Tips are only ever recorded when a client tips through the online booking
- * flow — the Square `tipCents` on the payment. Cash left at the counter is not
- * in this data and cannot be, so these figures are a floor on what someone
- * earned, not a payslip.
+ * Tips come from two places: the Square `tipCents` on an online payment, and
+ * `manualTips` logged by hand for cash or a tip added at the POS terminal.
+ * Hand-logged tips are self-reported, so the total is only as good as the
+ * logging — but it is no longer structurally blind to cash.
  */
 
 import type { Appointment } from './admin-mock';
@@ -51,11 +52,26 @@ export function clampRate(rate: number | null | undefined): number {
   return Math.min(1, Math.max(0, rate));
 }
 
-/** Tips recorded against one appointment, in dollars. */
-export function tipsOf(appt: Appointment): number {
+/** Tips taken through the online booking flow, in dollars. */
+export function onlineTipsOf(appt: Appointment): number {
   const p = appt.payment;
   if (!p || p.refunded) return 0;
   return round2((p.tipCents ?? 0) / 100);
+}
+
+/** Hand-logged tips — cash, or added at the POS terminal — in dollars. */
+export function manualTipsOf(appt: Appointment): number {
+  if (!Array.isArray(appt.manualTips)) return 0;
+  let cents = 0;
+  for (const t of appt.manualTips) {
+    if (t && Number.isFinite(t.amountCents)) cents += t.amountCents;
+  }
+  return round2(cents / 100);
+}
+
+/** Every tip on one appointment, whatever route it arrived by. */
+export function tipsOf(appt: Appointment): number {
+  return round2(onlineTipsOf(appt) + manualTipsOf(appt));
 }
 
 /** What one appointment pays out: commission on the service, plus its tips. */

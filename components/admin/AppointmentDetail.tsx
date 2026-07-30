@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { Appointment, AppointmentStatus } from '@/lib/admin-mock';
 import { getAppointmentColor } from '@/lib/appointment-colors';
-import { staffName } from '@/lib/staff';
-import { payoutOf, tipsOf, fmtMoney } from '@/lib/payout';
+import { staffName, canLogTipFor } from '@/lib/staff';
+import { payoutOf, tipsOf, manualTipsOf, fmtMoney } from '@/lib/payout';
 import { useRevenueAccess } from './RevenueAccess';
 
 // Time slots 9 am – 7 pm in 15-min increments
@@ -144,6 +144,54 @@ export default function AppointmentDetail({
     }
   }
 
+  // ── Hand-logged tips (cash, or added at the POS terminal) ────────────────
+  const [tipAmount, setTipAmount]   = useState('');
+  const [tipMethod, setTipMethod]   = useState<'cash' | 'card'>('cash');
+  const [tipSaving, setTipSaving]   = useState(false);
+  const [tipError,  setTipError]    = useState('');
+  const [tipAdding, setTipAdding]   = useState(false);
+
+  const manualTips = apt.manualTips ?? [];
+  const canLogTips = canLogTipFor(viewerStaff, apt.staff);
+
+  async function addTip() {
+    // Parse in cents to avoid 0.1 + 0.2 territory on money the staff typed.
+    const cents = Math.round(parseFloat(tipAmount) * 100);
+    if (!Number.isFinite(cents) || cents < 1) { setTipError('Enter an amount.'); return; }
+    setTipSaving(true); setTipError('');
+    try {
+      const res = await fetch(`/api/admin/appointments/${apt.id}/tips`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amountCents: cents, method: tipMethod }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not save the tip.');
+      setApt({ ...apt, manualTips: data.manualTips });
+      setTipAmount(''); setTipAdding(false);
+    } catch (e) {
+      setTipError(e instanceof Error ? e.message : 'Could not save the tip.');
+    } finally {
+      setTipSaving(false);
+    }
+  }
+
+  async function removeTip(tipId: string) {
+    setTipSaving(true); setTipError('');
+    try {
+      const res = await fetch(`/api/admin/appointments/${apt.id}/tips?tipId=${encodeURIComponent(tipId)}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not remove the tip.');
+      setApt({ ...apt, manualTips: data.manualTips });
+    } catch (e) {
+      setTipError(e instanceof Error ? e.message : 'Could not remove the tip.');
+    } finally {
+      setTipSaving(false);
+    }
+  }
+
   async function patchApt(patch: Record<string, unknown>): Promise<Appointment | null> {
     setSaving(true);
     try {
@@ -276,7 +324,7 @@ export default function AppointmentDetail({
                 {fmtMoney(payoutOf(apt, commissionRate))}
                 <span style={{ color: 'var(--admin-muted)', marginLeft: 6, fontSize: 12 }}>
                   {Math.round(commissionRate * 100)}% of service
-                  {tipsOf(apt) > 0 ? ` + ${fmtMoney(tipsOf(apt))} tip` : ''}
+                  {tipsOf(apt) > 0 ? ` + ${fmtMoney(tipsOf(apt))} tips` : ''}
                 </span>
               </span>
             </Row>
@@ -406,6 +454,129 @@ export default function AppointmentDetail({
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+          </Section>
+        )}
+
+        {/* Tips logged by hand — cash, or added at the POS terminal.
+            Its own section rather than a row inside Payment: a cash-paying
+            client has a tip but no Square payment, so this has to render when
+            that section doesn't. Visible to whoever may log them, which is the
+            appointment's own staff member plus admins. */}
+        {canLogTips && (
+          <Section label="Tips received">
+            {manualTips.length === 0 && !tipAdding && (
+              <Row label="Logged" last>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-muted)' }}>
+                  None
+                </span>
+              </Row>
+            )}
+
+            {manualTips.map((t, i) => (
+              <Row
+                key={t.id}
+                label={t.method === 'cash' ? 'Cash' : 'Card / POS'}
+                last={i === manualTips.length - 1 && !tipAdding}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--admin-text)' }}>
+                    {fmtMoney(t.amountCents / 100)}
+                  </span>
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--admin-muted)' }}>
+                    {staffName(t.byStaff)} · {new Date(t.at).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}
+                  </span>
+                  <button
+                    onClick={() => removeTip(t.id)}
+                    disabled={tipSaving}
+                    aria-label={`Remove ${t.method} tip of $${(t.amountCents / 100).toFixed(2)}`}
+                    style={{
+                      border: 'none', background: 'none', cursor: 'pointer',
+                      color: 'var(--admin-muted)', fontSize: 15, lineHeight: 1,
+                      padding: '2px 4px', opacity: tipSaving ? 0.5 : 1,
+                      WebkitTapHighlightColor: 'transparent',
+                    }}
+                  >
+                    ✕
+                  </button>
+                </span>
+              </Row>
+            ))}
+
+            {/* Total, only once there's more than one entry to add up. */}
+            {manualTips.length > 1 && (
+              <Row label="Total logged" last={!tipAdding}>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, color: 'var(--admin-text)' }}>
+                  {fmtMoney(manualTipsOf(apt))}
+                </span>
+              </Row>
+            )}
+
+            {tipAdding ? (
+              <div style={{ padding: '12px 0 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: 15, color: 'var(--admin-text3)' }}>$</span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step={1}
+                    autoFocus
+                    value={tipAmount}
+                    onChange={(e) => setTipAmount(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !tipSaving) addTip(); }}
+                    placeholder="0.00"
+                    aria-label="Tip amount"
+                    style={{
+                      flex: 1, minWidth: 0, padding: '9px 11px', borderRadius: 9,
+                      border: '1px solid var(--admin-border)', background: 'var(--admin-bg)',
+                      color: 'var(--admin-text)', fontFamily: 'var(--font-body)', fontSize: 15,
+                    }}
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  {(['cash', 'card'] as const).map((m) => (
+                    <button
+                      key={m}
+                      onClick={() => setTipMethod(m)}
+                      style={{
+                        flex: 1, padding: '9px 0', borderRadius: 9, cursor: 'pointer',
+                        fontFamily: 'var(--font-body)', fontSize: 13,
+                        border: '1px solid ' + (tipMethod === m ? 'var(--admin-text)' : 'var(--admin-border)'),
+                        background: tipMethod === m ? 'var(--admin-text)' : 'transparent',
+                        color: tipMethod === m ? 'var(--admin-bg)' : 'var(--admin-text3)',
+                        WebkitTapHighlightColor: 'transparent',
+                      }}
+                    >
+                      {m === 'cash' ? 'Cash' : 'Card / POS'}
+                    </button>
+                  ))}
+                </div>
+                {tipError && (
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-error)' }}>{tipError}</div>
+                )}
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <ActionButton onClick={addTip} variant="primary" disabled={tipSaving}>
+                    {tipSaving ? 'Saving…' : 'Log tip'}
+                  </ActionButton>
+                  <ActionButton
+                    onClick={() => { setTipAdding(false); setTipAmount(''); setTipError(''); }}
+                    variant="ghost"
+                    disabled={tipSaving}
+                  >
+                    Cancel
+                  </ActionButton>
+                </div>
+              </div>
+            ) : (
+              <div style={{ padding: '12px 0 14px' }}>
+                {tipError && (
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-error)', marginBottom: 10 }}>{tipError}</div>
+                )}
+                <ActionButton onClick={() => { setTipAdding(true); setTipError(''); }} variant="ghost">
+                  + Log a tip
+                </ActionButton>
               </div>
             )}
           </Section>

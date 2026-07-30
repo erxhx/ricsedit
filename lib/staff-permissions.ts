@@ -98,10 +98,11 @@ export function payoutRateFor(
  * that isn't their own — so other staff's revenue never reaches the client,
  * not just gets hidden in the UI.
  *
- * That means the payment amounts as well as `price`. Tips are part of a payout
- * now, which makes `tipCents` on someone else's appointment exactly as
- * sensitive as their service price. The `prepaid` and `refunded` flags survive:
- * they carry no amount, and the day grid uses them to badge a card as paid.
+ * That means the payment amounts and the hand-logged tip list as well as
+ * `price`. Tips are part of a payout now, which makes someone else's tips
+ * exactly as sensitive as their service price. The `prepaid` and `refunded`
+ * flags survive: they carry no amount, and the day grid uses them to badge a
+ * card as paid.
  */
 export function redactRevenue(
   appts: Appointment[],
@@ -111,7 +112,7 @@ export function redactRevenue(
   if (canSeeAll) return appts;
   return appts.map((a) => {
     if (a.staff === viewerStaff) return a;
-    const clean: Appointment = { ...a, price: 0 };
+    const clean: Appointment = { ...a, price: 0, manualTips: undefined };
     if (a.payment) {
       clean.payment = {
         ...a.payment,

@@ -225,7 +225,7 @@ export default function ReportsView({ appointments: initialAppointments }: { app
             </>
           )}
           <br />
-          Tips are counted from online payments only.
+          Cash and POS tips count once they&rsquo;re logged on the appointment.
         </div>
       )}
 

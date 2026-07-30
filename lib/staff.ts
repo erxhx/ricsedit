@@ -178,6 +178,24 @@ export function canEditStaffSchedule(
 }
 
 /**
+ * Whether `viewerId` may log or remove a hand-entered tip on an appointment
+ * worked by `targetStaffId`. Admins may do it for anyone — they're the ones
+ * reconciling the till — and everyone else only for their own appointments.
+ *
+ * Note this lets a restricted staff member enter tips that feed their own
+ * "money earned" figure. That is the point: they're the one who was handed the
+ * cash. It isn't a payroll control — every entry records who logged it and
+ * when, and an admin can see the whole list.
+ */
+export function canLogTipFor(
+  viewerId: string | null | undefined,
+  targetStaffId: string,
+): boolean {
+  if (isAdmin(viewerId)) return true;
+  return !!viewerId && viewerId === targetStaffId;
+}
+
+/**
  * Whether this person may edit studio-wide settings — store hours, the barber
  * Thursday late close, payments, and other people's permissions.
  */

@@ -7,6 +7,27 @@ export type AppointmentStatus = 'confirmed' | 'completed' | 'cancelled' | 'block
 /** A staff member id from the roster in lib/staff.ts (e.g. 'eric', 'livi'). */
 export type StaffId = string;
 
+/**
+ * A tip recorded by hand, for money the online booking flow never saw — cash
+ * left at the counter, or a tip added on the Square terminal at checkout.
+ *
+ * Kept as a list rather than a single running total so a mis-entry can be
+ * removed instead of silently overwritten, and so who logged it is on record.
+ * Money entered by hand needs an audit trail more than it needs brevity.
+ */
+export interface ManualTip {
+  /** Client-generated id, used to delete a single entry. */
+  id: string;
+  amountCents: number;
+  /** Where it came from: cash in hand, or added to a card at the terminal. */
+  method: 'cash' | 'card';
+  /** ISO timestamp of when it was logged (not when it was received). */
+  at: string;
+  /** Staff id of whoever logged it. */
+  byStaff: string;
+  note?: string;
+}
+
 export interface Appointment {
   id: string;
   date: string;       // YYYY-MM-DD
@@ -50,6 +71,15 @@ export interface Appointment {
       at: string; // ISO timestamp
     };
   };
+  /**
+   * Hand-logged tips — cash, or a tip added at the POS terminal. Deliberately
+   * a sibling of `payment` rather than a field inside it: `payment` means "a
+   * Square payment happened", and half the codebase reads `apt.payment` as
+   * exactly that. A cash-paying client has a tip but no payment.
+   *
+   * Optional column (`manual_tips` jsonb) — absent until the SQL is run.
+   */
+  manualTips?: ManualTip[];
 }
 
 export interface ClientRecord {

@@ -339,7 +339,8 @@ export default function SettingsPanel({
           <div style={{ marginTop: 10, fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-muted)', lineHeight: 1.5 }}>
             Controls whether each person sees studio-wide revenue (Reports, day &amp; week totals) or only their own
             money earned. That is their percentage of the service plus all of their tips — so Reports shows what
-            they earn, not what the studio takes in. Tips can only be counted from online payments.
+            they earn, not what the studio takes in. Tips include online tips plus any cash or POS tips logged
+            on the appointment.
           </div>
         </>
       )}

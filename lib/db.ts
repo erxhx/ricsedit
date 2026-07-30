@@ -5,7 +5,7 @@
 
 import { randomBytes } from 'crypto';
 import { db } from './supabase';
-import type { Appointment, AppointmentStatus, ClientRecord } from './admin-mock';
+import type { Appointment, AppointmentStatus, ClientRecord, ManualTip } from './admin-mock';
 
 /** High-entropy, unguessable self-serve manage token (192 bits). Generated in
  *  app code so it never depends on a DB column default, and is never derived
@@ -38,6 +38,7 @@ function toApt(row: any): Appointment {
     intakeResponses:  row.intake_responses ?? undefined,
     manageToken:      row.manage_token,
     payment:          row.payment ?? undefined,
+    manualTips:       Array.isArray(row.manual_tips) ? row.manual_tips : undefined,
   };
 }
 
@@ -292,6 +293,37 @@ export async function dbUpdateAppointment(
 
   if (error || !row) return null;
   return toApt(row);
+}
+
+/**
+ * Replaces the hand-logged tip list on an appointment.
+ *
+ * `manual_tips` is an optional column, like `payment` was — so a missing column
+ * is reported distinctly rather than as a generic failure. Writing money and
+ * getting back "something went wrong" would leave whoever logged a cash tip
+ * unsure whether it saved; "the column isn't there yet" is actionable.
+ */
+export async function dbSetManualTips(
+  id: string,
+  tips: ManualTip[],
+): Promise<{ ok: true; apt: Appointment } | { ok: false; reason: 'missing_column' | 'failed' }> {
+  const { data: row, error } = await db
+    .from('appointments')
+    .update({ manual_tips: tips })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    // 42703 = undefined_column (Postgres); PGRST204 = column absent from the
+    // PostgREST schema cache. Either way the migration hasn't been run.
+    const missing = error.code === '42703'
+      || error.code === 'PGRST204'
+      || /manual_tips/.test(error.message ?? '');
+    return { ok: false, reason: missing ? 'missing_column' : 'failed' };
+  }
+  if (!row) return { ok: false, reason: 'failed' };
+  return { ok: true, apt: toApt(row) };
 }
 
 // ── Migration helpers ─────────────────────────────────────────────────────────

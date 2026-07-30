@@ -211,9 +211,33 @@ Conventions, chosen to match how gross revenue was already counted:
   a payout is always `rate x (the gross that viewer would otherwise have seen)
   + tips`.
 - **A refunded payment pays no tip** — the money went back.
-- **Tips come only from online payments** (Square `tipCents`). Cash left at the
-  counter isn't in the data, so these figures are a floor, not a payslip. The
-  UI says so on the Reports page.
+- **Tips come from two sources**: the Square `tipCents` on an online payment,
+  and tips logged by hand on the appointment (see below).
+
+#### Logging cash and POS tips
+
+An appointment's detail page has a **Tips received** section for money the
+booking flow never saw — cash in hand, or a tip added on the Square terminal at
+checkout. Each entry records the amount, whether it was cash or card, who
+logged it, and when; entries are a list so a mis-entry is removed rather than
+overwritten.
+
+Who can log: the appointment's own staff member, plus admins
+(`canLogTipFor`). This does mean a restricted staff member can enter tips that
+feed their own "money earned" figure — deliberately, since they're the one who
+was handed the cash. It is not a payroll control: every entry is attributed and
+an admin sees the full list.
+
+Stored in `appointments.manual_tips` (jsonb), an **optional column** like
+`payment`. Until the migration is run the UI is present but every save returns
+501 with an actionable message rather than a generic failure:
+
+```sql
+alter table appointments add column if not exists manual_tips jsonb;
+```
+
+Refunds don't touch hand-logged tips — a refunded service doesn't reach into
+someone's pocket for cash they were handed.
 
 Server-side, `redactRevenue` zeroes `price` *and* the payment amounts on other
 people's appointments before they reach the browser — tips being part of a
