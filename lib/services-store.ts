@@ -14,7 +14,13 @@ export interface ServicesData {
 }
 
 // Bump this when LASH_SERVICES changes and you want existing stores to re-seed it.
-const LASH_MENU_VERSION = 2;
+//
+// Re-seeding REPLACES the whole persisted lash array, prices included — so
+// before bumping, check the seeded prices in lib/services.ts still match Square.
+// v3 (29 Jul 2026) added the four mini fills and, in the same pass, corrected
+// nine seeded prices that had drifted behind the synced ones; without that the
+// bump would have reverted the live menu to stale numbers.
+const LASH_MENU_VERSION = 3;
 
 declare global {
   // eslint-disable-next-line no-var

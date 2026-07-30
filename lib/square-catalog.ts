@@ -47,6 +47,13 @@ const SYNONYMS: Record<string, string> = {
   'full back':                      'back',           // Square: "Back wax" (norm strips 'wax')
   'brow shape':                     'eyebrow shape',  // "Brow Wax & Shape" → "Eyebrow wax and shape"
   'prep plus lock':                 'prep lock',      // Square: "prep and lock"
+  // Square puts "Lash" inside the mini-fill names, and in a different position
+  // for classic than for the others. The site menu says it once, in the section
+  // heading. Mega Volume needs no entry — there Square's name normalizes
+  // identically and matches on the raw-name pass.
+  'classic mini fill touch up':     'classic lash mini fill touch up',
+  'hybrid mini fill touch up':      'hybrid mini lash fill touch up',
+  'volume mini fill touch up':      'volume mini lash fill touch up',
 };
 
 /** Site service ids excluded from sync (none currently). The lash Brow Tint

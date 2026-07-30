@@ -130,20 +130,42 @@ export const TAN_ADDONS: Service[] = [
  */
 export const LASH_ADDONS: Service[] = [];
 
+/** Shared by the four mini fills — one string so they can't drift apart. */
+const LASH_MINI_DESC =
+  'Must have 75% retention. This is for those needing a little touch up before vacation or events.';
+
+/**
+ * Prices here match the Square production catalog as of 29 Jul 2026 — verified
+ * item by item, not assumed. That matters more than it looks: bumping
+ * LASH_MENU_VERSION makes persisted stores re-adopt this whole array, so a
+ * stale price here would silently overwrite a correct synced one on the live
+ * menu. Nine of these were stale by up to $35 before that reconciliation.
+ *
+ * Durations are ours — Square doesn't model them.
+ *
+ * The mini fills are a shorter touch-up for a client who still has good
+ * retention and an event coming up. Their durations are scaled from the
+ * matching full fill by the price ratio (~40% for classic/hybrid/volume, 50%
+ * for mega), rounded to the quarter hour.
+ */
 export const LASH_SERVICES: Service[] = [
-  { id: 'lash-classic-set',  name: 'Classic Full Set',  category: 'lashes', durationMinutes: 120, price: 150, description: 'One extension per natural lash — a natural, mascara-like finish.', requiresWaiver: true },
-  { id: 'lash-classic-fill', name: 'Classic Fill',      category: 'lashes', durationMinutes: 60,  price: 80,  description: 'Must have minimum 50% retention.',                                requiresWaiver: true },
-  { id: 'lash-hybrid-set',   name: 'Hybrid Full Set',   category: 'lashes', durationMinutes: 135, price: 180, description: 'A mix of classic and volume for texture and fullness.',          requiresWaiver: true },
-  { id: 'lash-hybrid-fill',  name: 'Hybrid Fill',       category: 'lashes', durationMinutes: 75,  price: 95,  description: 'Must have minimum 50% retention.',                                requiresWaiver: true },
-  { id: 'lash-volume-set',   name: 'Volume Full Set',   category: 'lashes', durationMinutes: 150, price: 220, description: 'Multiple lightweight extensions per lash for a fuller look.',     requiresWaiver: true },
-  { id: 'lash-volume-fill',  name: 'Volume Fill',       category: 'lashes', durationMinutes: 80,  price: 110, description: 'Must have minimum 50% retention.',                                requiresWaiver: true },
-  { id: 'lash-mega-set',     name: 'Mega Volume Set',   category: 'lashes', durationMinutes: 165, price: 245, description: 'Maximum density for a dramatic, full finish.',                    requiresWaiver: true },
-  { id: 'lash-mega-fill',    name: 'Mega Volume Fill',  category: 'lashes', durationMinutes: 90,  price: 125, description: 'Must have minimum 50% retention.',                                requiresWaiver: true },
+  { id: 'lash-classic-set',  name: 'Classic Full Set',  category: 'lashes', durationMinutes: 120, price: 130, description: 'One extension per natural lash — a natural, mascara-like finish.', requiresWaiver: true },
+  { id: 'lash-classic-fill', name: 'Classic Fill',      category: 'lashes', durationMinutes: 60,  price: 75,  description: 'Must have minimum 50% retention.',                                requiresWaiver: true },
+  { id: 'lash-classic-mini', name: 'Classic Mini Fill / Touch-Up', category: 'lashes', durationMinutes: 30, price: 30, description: LASH_MINI_DESC,                                         requiresWaiver: true },
+  { id: 'lash-hybrid-set',   name: 'Hybrid Full Set',   category: 'lashes', durationMinutes: 135, price: 160, description: 'A mix of classic and volume for texture and fullness.',          requiresWaiver: true },
+  { id: 'lash-hybrid-fill',  name: 'Hybrid Fill',       category: 'lashes', durationMinutes: 75,  price: 85,  description: 'Must have minimum 50% retention.',                                requiresWaiver: true },
+  { id: 'lash-hybrid-mini',  name: 'Hybrid Mini Fill / Touch-Up',  category: 'lashes', durationMinutes: 30, price: 35, description: LASH_MINI_DESC,                                         requiresWaiver: true },
+  { id: 'lash-volume-set',   name: 'Volume Full Set',   category: 'lashes', durationMinutes: 150, price: 185, description: 'Multiple lightweight extensions per lash for a fuller look.',     requiresWaiver: true },
+  { id: 'lash-volume-fill',  name: 'Volume Fill',       category: 'lashes', durationMinutes: 80,  price: 95,  description: 'Must have minimum 50% retention.',                                requiresWaiver: true },
+  { id: 'lash-volume-mini',  name: 'Volume Mini Fill / Touch-Up',  category: 'lashes', durationMinutes: 30, price: 40, description: LASH_MINI_DESC,                                         requiresWaiver: true },
+  { id: 'lash-mega-set',     name: 'Mega Volume Set',   category: 'lashes', durationMinutes: 165, price: 210, description: 'Maximum density for a dramatic, full finish.',                    requiresWaiver: true },
+  { id: 'lash-mega-fill',    name: 'Mega Volume Fill',  category: 'lashes', durationMinutes: 90,  price: 110, description: 'Must have minimum 50% retention.',                                requiresWaiver: true },
+  { id: 'lash-mega-mini',    name: 'Mega Volume Mini Fill / Touch-Up', category: 'lashes', durationMinutes: 45, price: 55, description: LASH_MINI_DESC,                                    requiresWaiver: true },
   { id: 'lash-removal',      name: 'Lash Removal',      category: 'lashes', durationMinutes: 15,  price: 30,  description: 'Safe, gentle removal of existing extensions.',                    requiresWaiver: false },
   { id: 'lash-lift-tint',    name: 'Lash Lift and Tint', category: 'lashes', durationMinutes: 60, price: 100, description: 'Lifts and tints your natural lashes — no extensions.',            requiresWaiver: true },
   { id: 'lash-lift',         name: 'Lash Lift',         category: 'lashes', durationMinutes: 30,  price: 90,  description: 'Lifts and curls your natural lashes.',                            requiresWaiver: true },
   { id: 'lash-brow-lam-tint', name: 'Brow Lamination and Tint', category: 'lashes', durationMinutes: 60, price: 120, description: 'Smooths, sets and tints brows for a fuller shape.',           requiresWaiver: true },
-  { id: 'lash-brow-tint',    name: 'Brow Tint',         category: 'lashes', durationMinutes: 30,  price: 75,  description: 'Define and deepen the brows.',                                    requiresWaiver: true },
+  { id: 'lash-brow-tint',    name: 'Brow Tint',         category: 'lashes', durationMinutes: 30,  price: 40,  description: 'Define and deepen the brows.',                                    requiresWaiver: true },
   { id: 'lash-bundle-brow-lash', name: 'Bundle — Brow Lamination and Tint + Lash Lift and Tint', category: 'lashes', durationMinutes: 105, price: 210, description: 'Brow lamination & tint paired with a lash lift & tint.', requiresWaiver: true },
 ];
 
