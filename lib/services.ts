@@ -144,23 +144,22 @@ const LASH_MINI_DESC =
  * Durations are ours — Square doesn't model them.
  *
  * The mini fills are a shorter touch-up for a client who still has good
- * retention and an event coming up. Their durations are scaled from the
- * matching full fill by the price ratio (~40% for classic/hybrid/volume, 50%
- * for mega), rounded to the quarter hour.
+ * retention and an event coming up. All four are 30 minutes regardless of lash
+ * type — Eric's call, and it keeps them to a single bookable slot.
  */
 export const LASH_SERVICES: Service[] = [
   { id: 'lash-classic-set',  name: 'Classic Full Set',  category: 'lashes', durationMinutes: 120, price: 130, description: 'One extension per natural lash — a natural, mascara-like finish.', requiresWaiver: true },
   { id: 'lash-classic-fill', name: 'Classic Fill',      category: 'lashes', durationMinutes: 60,  price: 75,  description: 'Must have minimum 50% retention.',                                requiresWaiver: true },
-  { id: 'lash-classic-mini', name: 'Classic Mini Fill / Touch-Up', category: 'lashes', durationMinutes: 30, price: 30, description: LASH_MINI_DESC,                                         requiresWaiver: true },
+  { id: 'lash-classic-mini', name: 'Classic Lash Mini Fill / Touch-Up', category: 'lashes', durationMinutes: 30, price: 30, description: LASH_MINI_DESC,                                requiresWaiver: true },
   { id: 'lash-hybrid-set',   name: 'Hybrid Full Set',   category: 'lashes', durationMinutes: 135, price: 160, description: 'A mix of classic and volume for texture and fullness.',          requiresWaiver: true },
   { id: 'lash-hybrid-fill',  name: 'Hybrid Fill',       category: 'lashes', durationMinutes: 75,  price: 85,  description: 'Must have minimum 50% retention.',                                requiresWaiver: true },
-  { id: 'lash-hybrid-mini',  name: 'Hybrid Mini Fill / Touch-Up',  category: 'lashes', durationMinutes: 30, price: 35, description: LASH_MINI_DESC,                                         requiresWaiver: true },
+  { id: 'lash-hybrid-mini',  name: 'Hybrid Lash Mini Fill / Touch-Up',  category: 'lashes', durationMinutes: 30, price: 35, description: LASH_MINI_DESC,                                requiresWaiver: true },
   { id: 'lash-volume-set',   name: 'Volume Full Set',   category: 'lashes', durationMinutes: 150, price: 185, description: 'Multiple lightweight extensions per lash for a fuller look.',     requiresWaiver: true },
   { id: 'lash-volume-fill',  name: 'Volume Fill',       category: 'lashes', durationMinutes: 80,  price: 95,  description: 'Must have minimum 50% retention.',                                requiresWaiver: true },
-  { id: 'lash-volume-mini',  name: 'Volume Mini Fill / Touch-Up',  category: 'lashes', durationMinutes: 30, price: 40, description: LASH_MINI_DESC,                                         requiresWaiver: true },
+  { id: 'lash-volume-mini',  name: 'Volume Lash Mini Fill / Touch-Up',  category: 'lashes', durationMinutes: 30, price: 40, description: LASH_MINI_DESC,                                requiresWaiver: true },
   { id: 'lash-mega-set',     name: 'Mega Volume Set',   category: 'lashes', durationMinutes: 165, price: 210, description: 'Maximum density for a dramatic, full finish.',                    requiresWaiver: true },
   { id: 'lash-mega-fill',    name: 'Mega Volume Fill',  category: 'lashes', durationMinutes: 90,  price: 110, description: 'Must have minimum 50% retention.',                                requiresWaiver: true },
-  { id: 'lash-mega-mini',    name: 'Mega Volume Mini Fill / Touch-Up', category: 'lashes', durationMinutes: 45, price: 55, description: LASH_MINI_DESC,                                    requiresWaiver: true },
+  { id: 'lash-mega-mini',    name: 'Mega Volume Lash Mini Fill / Touch-Up', category: 'lashes', durationMinutes: 30, price: 55, description: LASH_MINI_DESC,                          requiresWaiver: true },
   { id: 'lash-removal',      name: 'Lash Removal',      category: 'lashes', durationMinutes: 15,  price: 30,  description: 'Safe, gentle removal of existing extensions.',                    requiresWaiver: false },
   { id: 'lash-lift-tint',    name: 'Lash Lift and Tint', category: 'lashes', durationMinutes: 60, price: 100, description: 'Lifts and tints your natural lashes — no extensions.',            requiresWaiver: true },
   { id: 'lash-lift',         name: 'Lash Lift',         category: 'lashes', durationMinutes: 30,  price: 90,  description: 'Lifts and curls your natural lashes.',                            requiresWaiver: true },

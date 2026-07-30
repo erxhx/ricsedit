@@ -20,7 +20,9 @@ export interface ServicesData {
 // v3 (29 Jul 2026) added the four mini fills and, in the same pass, corrected
 // nine seeded prices that had drifted behind the synced ones; without that the
 // bump would have reverted the live menu to stale numbers.
-const LASH_MENU_VERSION = 3;
+// v4 (30 Jul 2026) renamed the minis to "<type> Lash Mini Fill / Touch-Up" and
+// set them all to 30 minutes.
+const LASH_MENU_VERSION = 4;
 
 declare global {
   // eslint-disable-next-line no-var

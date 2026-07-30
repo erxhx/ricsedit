@@ -47,13 +47,17 @@ const SYNONYMS: Record<string, string> = {
   'full back':                      'back',           // Square: "Back wax" (norm strips 'wax')
   'brow shape':                     'eyebrow shape',  // "Brow Wax & Shape" → "Eyebrow wax and shape"
   'prep plus lock':                 'prep lock',      // Square: "prep and lock"
-  // Square puts "Lash" inside the mini-fill names, and in a different position
-  // for classic than for the others. The site menu says it once, in the section
-  // heading. Mega Volume needs no entry — there Square's name normalizes
-  // identically and matches on the raw-name pass.
-  'classic mini fill touch up':     'classic lash mini fill touch up',
-  'hybrid mini fill touch up':      'hybrid mini lash fill touch up',
-  'volume mini fill touch up':      'volume mini lash fill touch up',
+  // Belt and braces for the mega mini. Square's names now match the site's
+  // "<type> Lash Mini Fill / Touch-Up", so all four resolve on the raw-name
+  // pass and this entry goes unread — but it stays because the failure it
+  // prevents is silent and expensive.
+  //
+  // Before the rename, "Mega Volume Lash Mini Fill" scored 0.857 against its
+  // own Square item and *exactly* 0.857 against "Volume Mini Lash Fill", which
+  // shared six of its seven tokens. The tie broke toward whichever the catalog
+  // listed first, quietly repricing the $55 mega mini to $40. Any future edit
+  // that drops "Mega" or "Lash" from one of these names revives that tie.
+  'mega volume lash mini fill touch up': 'mega volume mini fill touch up',
 };
 
 /** Site service ids excluded from sync (none currently). The lash Brow Tint
