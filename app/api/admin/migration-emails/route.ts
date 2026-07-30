@@ -4,6 +4,7 @@ import { verifySession, SESSION_COOKIE } from '@/lib/admin-auth';
 import { dbGetUpcomingConfirmedAppointments } from '@/lib/db';
 import { sendMigrationNotification } from '@/lib/notifications';
 import { db } from '@/lib/supabase';
+import { isAdmin } from '@/lib/staff';
 
 const SETTINGS_KEY = 'migration_sent_ids';
 
@@ -74,7 +75,10 @@ export async function GET() {
  *  Body: { id: string, force: true } → resend a single appointment regardless of sent status
  */
 export async function POST(req: Request) {
-  if (!await auth()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Admins only: this sends email to every upcoming client at once.
+  const session = await auth();
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!isAdmin(session.sub)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const body = await req.json().catch(() => ({})) as { id?: string; force?: boolean };
 

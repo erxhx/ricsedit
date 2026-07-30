@@ -51,7 +51,10 @@ export async function POST(request: Request) {
   }
 
   try {
-    const apt = await dbCreateAppointment(body);
+    // Made by a signed-in staff member, so it is exempt from the database's
+    // no-overlap constraint — that guard exists for the public funnel's race,
+    // not to stop the studio from deliberately booking two things at once.
+    const apt = await dbCreateAppointment(body, { overlapOk: true });
     // Send confirmation to the client (fire-and-forget — skip for blocks)
     if (!isBlock) await sendBookingConfirmation(apt).catch(() => {});
     return Response.json(apt, { status: 201 });

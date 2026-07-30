@@ -17,7 +17,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const existing = await dbGetAppointmentById(id);
   if (!existing) return Response.json({ error: 'Not found' }, { status: 404 });
 
-  const updated = await dbUpdateAppointment(id, patch);
+  // Same reasoning as the admin create: a staff member moving an appointment
+  // is placing it on purpose, so the row leaves the no-overlap constraint.
+  const movesInTime = patch.date !== undefined
+    || patch.startTime !== undefined || patch.endTime !== undefined;
+  const updated = await dbUpdateAppointment(id, patch, { overlapOk: movesInTime });
   if (!updated) return Response.json({ error: 'Update failed' }, { status: 500 });
 
   // Fire notifications based on what changed (fire-and-forget)

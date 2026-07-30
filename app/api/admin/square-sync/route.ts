@@ -7,6 +7,7 @@
 import { cookies } from 'next/headers';
 import { verifySession, SESSION_COOKIE } from '@/lib/admin-auth';
 import { squareProdConfigured, syncCatalogPrices, getLastSyncReport } from '@/lib/square-catalog';
+import { isAdmin } from '@/lib/staff';
 
 async function auth() {
   const cookieStore = await cookies();
@@ -17,6 +18,8 @@ async function auth() {
 export async function POST() {
   const session = await auth();
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  // Admins only: a sync rewrites every price on the menu.
+  if (!isAdmin(session.sub)) return Response.json({ error: 'Forbidden' }, { status: 403 });
   if (!squareProdConfigured()) {
     return Response.json({ error: 'Production Square token not configured.' }, { status: 400 });
   }

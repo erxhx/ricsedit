@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySession, SESSION_COOKIE } from '@/lib/admin-auth';
 import { db } from '@/lib/supabase';
+import { isAdmin } from '@/lib/staff';
 
 const KEY = 'site_banner';
 
@@ -47,11 +48,14 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  if (!await auth()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const body = await req.json() as Partial<BannerConfig>;
+  // Admins only: this writes copy onto the public customer site.
+  const session = await auth();
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!isAdmin(session.sub)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  const body = await req.json().catch(() => ({})) as Partial<BannerConfig>;
   const config: BannerConfig = {
     enabled: typeof body.enabled === 'boolean' ? body.enabled : DEFAULT.enabled,
-    text:    typeof body.text   === 'string'  ? body.text   : DEFAULT.text,
+    text:    typeof body.text   === 'string'  ? body.text.slice(0, 200) : DEFAULT.text,
     target:  (['barber','tan','wax'] as const).includes(body.target as 'barber') ? body.target as BannerConfig['target'] : DEFAULT.target,
     style:   (['lime','noir','bone'] as const).includes(body.style as 'lime')   ? body.style  as BannerConfig['style']  : DEFAULT.style,
   };

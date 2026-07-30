@@ -646,6 +646,9 @@
     var [viewYear,      setViewYear]      = useState(defDate.getFullYear());
     var [bookedRanges,  setBookedRanges]  = useState([]);
     var [loadingSlots,  setLoadingSlots]  = useState(true);
+    // Set when we could not find out what is booked. Distinct from "nothing is
+    // booked" — see the fetch below.
+    var [slotsError,    setSlotsError]    = useState(false);
 
     // Fetch real availability whenever the selected date or category changes
     useEffect(function() {
@@ -665,16 +668,36 @@
 
       var cancelled = false;
       setLoadingSlots(true);
+      setSlotsError(false);
       setBookedRanges([]);
       fetch(url)
-        .then(function(r) { return r.json(); })
-        .then(function(data) { if (!cancelled) setBookedRanges(data.bookedRanges || []); })
-        .catch(function()    { if (!cancelled) setBookedRanges([]); })
+        .then(function(r) {
+          // A 500 still parses as JSON, so check the status rather than trusting
+          // the body — an error payload has no bookedRanges and would otherwise
+          // read as "nothing is booked".
+          if (!r.ok) throw new Error('availability ' + r.status);
+          return r.json();
+        })
+        .then(function(data) {
+          if (cancelled) return;
+          if (!data || !Array.isArray(data.bookedRanges)) throw new Error('malformed availability');
+          setBookedRanges(data.bookedRanges);
+        })
+        .catch(function() {
+          // Do NOT fall back to an empty list. Empty means "everything is free",
+          // so an outage would offer slots that are already taken — the client
+          // fills in the whole form and enters card details before the server
+          // rejects it. Show nothing and say why instead.
+          if (!cancelled) { setBookedRanges([]); setSlotsError(true); }
+        })
         .finally(function()  { if (!cancelled) setLoadingSlots(false); });
       return function() { cancelled = true; };
     }, [selectedDate.toDateString(), category]);
 
-    var slots   = loadingSlots ? [] : bkAvailableSlots(selectedDate, duration, category, bookedRanges);
+    // No slots at all when availability is unknown — offering times we can't
+    // vouch for is worse than offering none.
+    var slots   = (loadingSlots || slotsError)
+      ? [] : bkAvailableSlots(selectedDate, duration, category, bookedRanges);
     var todayMs = today.getTime();
 
     // Filter out past time slots when viewing today (Pacific time)
@@ -809,6 +832,13 @@
         />
         {loadingSlots
           ? <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--ink-faint)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 20 }}>Checking availability…</p>
+          : slotsError
+            /* Deliberately not "No slots available" — we don't know that, and
+               saying it would turn an outage into a lost booking. */
+            ? <p style={{ fontFamily: 'var(--body)', fontSize: 13, lineHeight: 1.5, color: 'var(--ink-soft)', marginBottom: 20 }}>
+                We couldn’t load times just now. Please check your connection and try again —
+                or call or text us at <a href="tel:7785353348" style={{ color: 'var(--ink)' }}>778 535 3348</a> and we’ll book you in.
+              </p>
           : slots.length === 0
             ? <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--ink-faint)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 20 }}>No slots available.</p>
             : (

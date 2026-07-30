@@ -401,17 +401,30 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     console.error('[booking/create]', e);
 
-    // PostgreSQL unique constraint violation (23505) = slot was just taken
-    const msg = e instanceof Error ? e.message : '';
-    if (msg.includes('23505') || msg.toLowerCase().includes('unique') || msg.toLowerCase().includes('duplicate')) {
+    const msg = (e instanceof Error ? e.message : '').toLowerCase();
+
+    // A body that isn't JSON is the caller's mistake, not ours. Without this it
+    // fell through to the 500 below and logged as a server fault.
+    if (e instanceof SyntaxError) {
+      return Response.json({ error: 'Invalid request.' }, { status: 400, headers: CORS });
+    }
+
+    // The slot was taken between validateSlot and the insert. 23505 is the
+    // exact-start-time unique index; 23P01 is the no-overlap exclusion
+    // constraint, which also catches a partial overlap (an hour-long set
+    // landing across someone's half-hour fill).
+    if (msg.includes('23505') || msg.includes('23p01')
+        || msg.includes('unique') || msg.includes('duplicate') || msg.includes('exclusion')) {
       return Response.json(
         { error: 'That time slot was just booked by someone else. Please go back and choose a different time.' },
         { status: 409, headers: CORS },
       );
     }
 
+    // Never echo the raw error: it can carry table, column and constraint names
+    // straight to an anonymous caller. The detail is in the log line above.
     return Response.json(
-      { error: e instanceof Error ? e.message : 'Booking failed' },
+      { error: 'Something went wrong on our end. Please try again, or call us at 778 535 3348.' },
       { status: 500, headers: CORS },
     );
   }

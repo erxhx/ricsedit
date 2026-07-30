@@ -524,6 +524,7 @@
       var [viewYear, setViewYear] = useState(defDate.getFullYear());
       var [bookedRanges, setBookedRanges] = useState([]);
       var [loadingSlots, setLoadingSlots] = useState(true);
+      var [slotsError, setSlotsError] = useState(false);
       useEffect(function() {
         var staff = bkCategoryStaff(category);
         var endpoint = window.__booking && window.__booking.endpoint;
@@ -535,13 +536,20 @@
         var url = endpoint.replace(/\/booking\/create$/, "") + "/booking/availability?date=" + dateStr + "&staff=" + staff + "&category=" + encodeURIComponent(category);
         var cancelled = false;
         setLoadingSlots(true);
+        setSlotsError(false);
         setBookedRanges([]);
         fetch(url).then(function(r) {
+          if (!r.ok) throw new Error("availability " + r.status);
           return r.json();
         }).then(function(data) {
-          if (!cancelled) setBookedRanges(data.bookedRanges || []);
+          if (cancelled) return;
+          if (!data || !Array.isArray(data.bookedRanges)) throw new Error("malformed availability");
+          setBookedRanges(data.bookedRanges);
         }).catch(function() {
-          if (!cancelled) setBookedRanges([]);
+          if (!cancelled) {
+            setBookedRanges([]);
+            setSlotsError(true);
+          }
         }).finally(function() {
           if (!cancelled) setLoadingSlots(false);
         });
@@ -549,7 +557,7 @@
           cancelled = true;
         };
       }, [selectedDate.toDateString(), category]);
-      var slots = loadingSlots ? [] : bkAvailableSlots(selectedDate, duration, category, bookedRanges);
+      var slots = loadingSlots || slotsError ? [] : bkAvailableSlots(selectedDate, duration, category, bookedRanges);
       var todayMs = today.getTime();
       if (selectedDate.toDateString() === today.toDateString()) {
         var pacParts = new Intl.DateTimeFormat("en-US", {
@@ -685,7 +693,7 @@
           left: "Available \xB7 " + bkFmtDate(selectedDate),
           right: loadingSlots ? "Checking\u2026" : null
         }
-      ), loadingSlots ? /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "var(--mono)", fontSize: 11, color: "var(--ink-faint)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 20 } }, "Checking availability\u2026") : slots.length === 0 ? /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "var(--mono)", fontSize: 11, color: "var(--ink-faint)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 20 } }, "No slots available.") : /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, marginBottom: 28 } }, slots.map(function(slot, i) {
+      ), loadingSlots ? /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "var(--mono)", fontSize: 11, color: "var(--ink-faint)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 20 } }, "Checking availability\u2026") : slotsError ? /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "var(--body)", fontSize: 13, lineHeight: 1.5, color: "var(--ink-soft)", marginBottom: 20 } }, "We couldn\u2019t load times just now. Please check your connection and try again \u2014 or call or text us at ", /* @__PURE__ */ React.createElement("a", { href: "tel:7785353348", style: { color: "var(--ink)" } }, "778 535 3348"), " and we\u2019ll book you in.") : slots.length === 0 ? /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "var(--mono)", fontSize: 11, color: "var(--ink-faint)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 20 } }, "No slots available.") : /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, marginBottom: 28 } }, slots.map(function(slot, i) {
         var isSel = selectedTime && selectedTime.h === slot.h && selectedTime.m === slot.m;
         return /* @__PURE__ */ React.createElement(
           "button",

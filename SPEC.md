@@ -327,6 +327,12 @@ in dev/simulator. Last reviewed 2026-07-27.
 
 ### Blockers — must be done before taking real bookings
 
+- [ ] **Run `sql/001_no_overlap.sql`.** Adds the database guard against the
+      public funnel double-booking a staff member. Until it runs, the only
+      protection is the application check, whose window spans a Square charge.
+      Admin-made bookings set `overlap_ok` and are deliberately exempt, so
+      staff can still book two people at once on purpose.
+
 - [ ] **Square is in sandbox.** Admin → Settings shows "Square connected
       (sandbox)". Swap to production credentials and re-run an end-to-end
       payment before any real money moves.

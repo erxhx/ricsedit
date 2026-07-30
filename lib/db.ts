@@ -216,12 +216,25 @@ export async function dbGetClientAppointments(clientName: string): Promise<Appoi
 
 // ── Writes ────────────────────────────────────────────────────────────────────
 
+/**
+ * `overlapOk` exempts the row from the database's no-overlap constraint.
+ *
+ * The constraint is a last-resort guard for the public funnel: two clients can
+ * both pass validateSlot and then both insert, because the window between the
+ * two includes a Square charge and is seconds wide. It is NOT a rule about what
+ * the studio may do — an admin booking two people at once (a quick top-up
+ * alongside a long set, say) is legitimate, and the admin path deliberately
+ * skips validateSlot entirely. So admin-made rows set this and the constraint
+ * ignores them; public bookings never do.
+ */
 export async function dbCreateAppointment(
   data: Omit<Appointment, 'id' | 'manageToken'>,
+  opts: { overlapOk?: boolean } = {},
 ): Promise<Appointment> {
   const { data: row, error } = await db
     .from('appointments')
     .insert({
+      overlap_ok: opts.overlapOk === true,
       date:             data.date,
       start_time:       data.startTime,
       end_time:         data.endTime,
@@ -267,6 +280,7 @@ export async function dbMarkReminderSent(id: string): Promise<void> {
 export async function dbUpdateAppointment(
   id: string,
   patch: Partial<Omit<Appointment, 'id'>>,
+  opts: { overlapOk?: boolean } = {},
 ): Promise<Appointment | null> {
   // Build the snake_case update object
   const update: Record<string, unknown> = {};
@@ -283,6 +297,11 @@ export async function dbUpdateAppointment(
   if (patch.status          !== undefined) update.status           = patch.status;
   if (patch.notes           !== undefined) update.notes            = patch.notes ?? null;
   if (patch.adminNotes      !== undefined) update.admin_notes      = patch.adminNotes ?? null;
+  // Moving an appointment in the admin is an admin placing it deliberately, so
+  // the row stops being subject to the no-overlap constraint — otherwise
+  // dragging a client onto a busy slot would be refused by the database, which
+  // is exactly the override the admin path is supposed to allow.
+  if (opts.overlapOk) update.overlap_ok = true;
 
   const { data: row, error } = await db
     .from('appointments')
