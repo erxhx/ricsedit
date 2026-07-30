@@ -253,7 +253,14 @@ export async function dbCreateAppointment(
     .select()
     .single();
 
-  if (error || !row) throw new Error(error?.message ?? 'Failed to create appointment');
+  if (error || !row) {
+    // Keep the SQLSTATE in the message. Callers classify the failure by it —
+    // 23505 (same-minute unique index) and 23P01 (no-overlap exclusion) both
+    // mean "someone just took this slot" and deserve a 409, not a 500. Without
+    // the code they would be matching on Postgres' English wording.
+    throw new Error([error?.code, error?.message ?? 'Failed to create appointment']
+      .filter(Boolean).join(' '));
+  }
   return toApt(row);
 }
 
