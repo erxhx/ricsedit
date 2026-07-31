@@ -246,7 +246,7 @@ export function buildEmail(
         html: emailLayout(`
           ${eyebrow('Studio news')}
           ${h1(`We've upgraded our booking system.`)}
-          ${para(`Hi ${name}, we've made a few improvements to our booking platform behind the scenes. Your appointment is confirmed — your manage link below has been updated.`)}
+          ${para(`Hi ${name}, we've made a few improvements to our booking platform behind the scenes. Your appointment is still in our system — your manage link below has been updated.`)}
           ${aptDetailsHtml(apt)}
           ${ctaBtn('Manage appointment', url)}
           ${muted('Use the link above to cancel or reschedule up to 3 hours before your appointment.')}
