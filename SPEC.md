@@ -358,7 +358,18 @@ in dev/simulator. Last reviewed 2026-07-31.
       HSTS is cached per host for 2 years). Verify with
       `curl -sI https://<prod-host>/ | grep -i strict-transport` after deploy —
       it MUST be present in production.
-- [ ] **Consolidate onto one domain: `editstudio.space` serves everything.**
+- [ ] **Consolidate onto one domain: `editstudio.space` serves everything**,
+      hosted on Vercel, moving off SiteGround. **Read `docs/dns-snapshot.md`
+      first** — it records every current DNS record, what each one does, and
+      what breaks if it is lost.
+
+      The headline: SiteGround provides DNS, web hosting *and mail* today, and
+      **Vercel does not host email**. Cancelling SiteGround outright kills every
+      @editstudio.space mailbox. Decide the mail story before moving DNS. Do not
+      migrate DNS and enforce DMARC in the same change — under `p=quarantine`, a
+      Resend record that didn't survive the move sends every booking
+      confirmation to spam with no error anywhere.
+
       Today there are three origins and no canonical one:
       - `ricsedit.vercel.app` — this Next app (admin, API, manage pages).
       - `www.editstudio.space` and `editstudio.space` — a static nginx host with
