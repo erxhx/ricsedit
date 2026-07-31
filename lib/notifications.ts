@@ -90,10 +90,19 @@ function toE164(phone: string): string | null {
 // ── Email design system ───────────────────────────────────────────────────────
 // Editorial ink-on-paper, matching the site: mono uppercase eyebrows with the
 // lime dot, serif italic headlines ("Looks good?" voice), hairline-ruled
-// detail rows, solid-ink CTA. Dark-mode strategy: the header band is ALREADY
-// ink (#141210) with a paper logo, so Gmail's forced dark transform leaves it
-// alone (dark stays dark) — the logo can never vanish again. The rest is a
-// flat paper surface that inverts gracefully.
+// detail rows, solid-ink CTA.
+//
+// Dark-mode strategy, in two halves, because the two engines are nothing alike:
+//
+// Apple Mail honours prefers-color-scheme, so the .es-* classes in emailLayout
+// paint the real designed dark palette there.
+//
+// Gmail supports no media queries at all and instead runs its own forced-dark
+// transform over the computed colours. Nothing below can opt out of it, so the
+// body is built to invert gracefully rather than to resist. The one thing that
+// cannot survive inversion is the logo — an image, so its pixels are immune to
+// the transform while the surface behind it is not. That is handled by giving
+// the header cell a background IMAGE rather than a colour; see emailLayout.
 
 const FONT_BODY = `'Inter Tight',Helvetica,Arial,sans-serif`;
 const FONT_MONO = `'SF Mono','Courier New',monospace`;
@@ -347,12 +356,18 @@ function emailLayout(bodyHtml: string): string {
     <tr><td align="center" style="padding:28px 16px 44px;">
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;">
         <tr>
-          <td style="background:#141210;border-radius:14px;padding:22px 26px;text-align:center;">
-            <!-- CSS band + white logo. Known trade-off: Gmail dark mode
-                 inverts the band to cream, softening the logo — accepted
-                 over a baked-image header, whose remote fetch can fail and
-                 render a broken-image box (worse). -->
-            <img src="https://www.editstudio.space/assets/logo-white.png" alt="Edit Studio" width="86" style="display:inline-block;height:auto;" />
+          <!-- The band is a tiled 4x4 ink PNG, not a background COLOUR, and that
+               is the whole point. Gmail's forced-dark transform rewrites
+               background colours but never touches image pixels, so a plain
+               background:#141210 got flipped to cream while logo-white.png
+               stayed white — a ghost logo on every Gmail dark client. A
+               background-image survives the transform, so the band stays ink
+               and the white logo reads. background-color is kept as the
+               images-off fallback, and the alt text is styled paper so that
+               case still says something. -->
+          <td background="https://www.editstudio.space/assets/email-band.png"
+              style="background-color:#141210;background-image:url('https://www.editstudio.space/assets/email-band.png');background-repeat:repeat;border-radius:14px;padding:22px 26px;text-align:center;">
+            <img src="https://www.editstudio.space/assets/logo-white.png" alt="Edit Studio" width="86" style="display:inline-block;height:auto;font-family:${FONT_MONO};font-size:13px;letter-spacing:0.14em;text-transform:uppercase;color:#f7f3eb;" />
           </td>
         </tr>
         <tr>
