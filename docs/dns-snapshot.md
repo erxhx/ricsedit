@@ -78,22 +78,64 @@ confirmations authenticate, they have nothing to do with the website, and they
 are the easiest to forget precisely because nothing on the new host references
 them.
 
-## Do not move the nameservers
+## Leaving SiteGround entirely
 
-There are two ways to put the site on Vercel, and they carry very different risk.
+Decided 2026-07-31. That makes this a three-part migration, not a hosting swap.
+Taken in the wrong order it loses mail.
 
-**Keep DNS at SiteGround and repoint the `A` record at Vercel.** One record
-changes. Mail, both DKIM keys, DMARC and the Apple verification are never
-touched, so they cannot be lost. Vercel supports external DNS and simply gives
-you an IP to paste in. **This is the recommended path.**
+**The domain itself is safe.** It is registered with Automattic (WordPress.com),
+created 2025-07-24, expiring 2027-07-24. SiteGround only holds the nameservers,
+so closing the account cannot cost the domain.
 
-The alternative — moving the nameservers to Vercel DNS — starts from an empty
-zone and requires re-typing all eleven records by hand. Every risk described in
-this document exists only on that path. There is no benefit here that justifies
-it: the records above are stable and rarely edited.
+### Where each service goes
 
-Leaving DNS at SiteGround also means keeping a SiteGround plan, which is wanted
-anyway for mail.
+| service | to | notes |
+|---|---|---|
+| web | **Vercel** | already running there |
+| DNS | **Cloudflare** (recommended) or Vercel DNS | free either way |
+| mail | **an actual mail host** | Google Workspace ≈$7/user/mo, Fastmail ≈$5/mo, iCloud+ Custom Email Domain if already subscribed |
+
+DNS is worth putting somewhere neutral rather than at either the host or the
+registrar. Everything awkward in this document traces back to DNS, web and mail
+being one provider; a dedicated DNS host means the next hosting change is one
+record again instead of a migration.
+
+### Mail is the part that bites
+
+`lib/notifications.ts` sends with no `Reply-To`, so every client reply to a
+booking confirmation goes to **`bookings@editstudio.space`** — wherever the MX
+points. Losing mail does not just lose staff email; it silently swallows clients
+asking to move appointments.
+
+Before cancelling anything, in SiteGround Site Tools → Email:
+
+1. **List every mailbox, alias and forwarder.** Addresses printed on old cards
+   or written on Google Business will still be receiving mail. Anything not
+   recreated on the new host simply stops existing.
+2. **Confirm `bookings@` and `dmarc@` are among them** — the first takes client
+   replies, the second takes DMARC reports.
+3. **Export mail history over IMAP** if it is worth keeping. Cancelling deletes
+   it, and there is no undo.
+
+Then: create the mailboxes on the new host *first*, switch MX, and leave the old
+host running a couple of weeks to catch anything still routing there. Only
+cancel once nothing has arrived at the old host for a fortnight.
+
+### Order
+
+Mail and DNS are separate cutovers. Do them separately, and never at the same
+time as the DMARC flip.
+
+1. Repoint the `A` record at Vercel — DNS still at SiteGround. Verify the site.
+2. Stand up the new mail host, recreate every address, switch MX. Verify by
+   sending to `bookings@` and `dmarc@` from outside.
+3. Move the nameservers, recreating every record in this file. Diff the snapshot.
+4. Two quiet weeks, then cancel SiteGround.
+5. Only then flip DMARC to `p=quarantine`.
+
+Step 3 is the one this document exists for: the new zone starts empty, and the
+records nothing else references — `resend._domainkey`, `send`,
+`apple-domain-verification` — are the ones that get left behind.
 
 ## Ordering
 
