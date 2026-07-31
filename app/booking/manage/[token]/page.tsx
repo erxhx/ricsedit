@@ -18,7 +18,12 @@ export default async function ManagePage({
   if (!apt) notFound();
 
   return (
-    <main className="min-h-screen px-6 py-12">
+    // White, declared rather than inherited. The page previously set no
+    // background at all and relied on the browser defaulting to white — which
+    // every mainstream browser does, but it is a dependency worth not having.
+    // Same values as the not-found page next door, so a dead link and a live
+    // one look identical.
+    <main className="min-h-screen px-6 py-12" style={{ background: '#ffffff', color: '#141210' }}>
       <div className="max-w-sm mx-auto">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/assets/logo-black.png" alt="Edit Studio" style={{ height: 69, width: 'auto', opacity: 0.7, marginBottom: 24, display: 'block', margin: '0 auto 24px' }} />
