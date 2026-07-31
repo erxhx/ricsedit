@@ -327,11 +327,24 @@ in dev/simulator. Last reviewed 2026-07-31.
 
 ### Blockers — must be done before taking real bookings
 
-- [ ] **Run `sql/001_no_overlap.sql`.** Adds the database guard against the
-      public funnel double-booking a staff member. Until it runs, the only
-      protection is the application check, whose window spans a Square charge.
-      Admin-made bookings set `overlap_ok` and are deliberately exempt, so
-      staff can still book two people at once on purpose.
+- [x] **Run `sql/001_no_overlap.sql`.** Done — verified 2026-07-31 against the
+      live database by behaviour, not by `pg_constraint` lookup. Four probe rows
+      on 2099-01-01, all deleted afterwards and the date confirmed empty:
+
+      | probe | expected | result |
+      |---|---|---|
+      | base row 14:00–15:00 | accepted | `201` |
+      | overlapping 14:30–15:30, public | rejected | `400 23P01` |
+      | overlapping 14:30–15:30, `overlap_ok=true` | accepted | `201` |
+      | back-to-back 15:00–16:00 | accepted | `201` |
+
+      So the funnel's race is closed, admins can still deliberately double-book,
+      and half-open ranges let appointments butt up against each other.
+
+      Note if re-testing: `appointments` has NOT NULL columns not obvious from
+      `lib/db.ts` (`client_email`, `duration_minutes`). A malformed probe returns
+      `400 23502`, which is easy to misread as the constraint firing — template
+      probe rows off a real row instead of hand-building them.
 
 - [ ] **Square is in sandbox.** Admin → Settings shows "Square connected
       (sandbox)". Swap to production credentials and re-run an end-to-end
@@ -373,6 +386,41 @@ in dev/simulator. Last reviewed 2026-07-31.
          env — `.env.local` still holds the placeholder
          `https://your-vercel-app.vercel.app`, and every manage link is built
          from it.
+
+#### Post-cutover verification
+
+      Run these against the new domain once DNS moves. Each one exists because
+      the corresponding failure is silent — the page still loads, the email
+      still sends, nothing logs an error.
+
+      1. **Redirect is canonical, one hop.** Both must land on bare, 301:
+         ```
+         curl -sI https://www.editstudio.space/ | head -1
+         curl -sI http://editstudio.space/     | head -1
+         ```
+      2. **Every email image is an image, not the soft-404 page.** Status is
+         meaningless on this host; only content-type distinguishes them:
+         ```
+         for u in /assets/logo-white.png /assets/email-band.png /assets/og-image.jpg; do
+           curl -sI "https://editstudio.space$u" | awk -v u="$u" '/^content-type/{print u, $2}'
+         done
+         ```
+         Anything reporting `text/html` is missing and rendering as nothing.
+      3. **Send one real email and open it in Gmail dark mode.** The header band
+         is a background *image* precisely so Gmail's forced-dark transform can't
+         repaint it; if the tile 404s, it falls back to the background colour and
+         the white logo goes invisible again — which looks like a styling
+         regression, not a missing file. `/api/admin/email-preview?type=confirmation&send=1`
+         sends to `OWNER_EMAIL`.
+      4. **Manage links point at the new host.** Build one and follow it:
+         `NEXT_PUBLIC_SITE_URL` is read at build time, so a stale value survives
+         a DNS change and keeps minting links to the old origin.
+      5. **Sign in to the admin, then reopen it on the other hostname.** Confirms
+         the redirect happens before the cookie is read, rather than stranding a
+         session on a hostname staff can still reach.
+      6. **Security headers still ship.** The host changed, so HSTS is being
+         cached fresh for 2 years against the new name:
+         `curl -sI https://editstudio.space/ | grep -i strict-transport`.
 
 - [ ] **Verify Web Push on the HTTPS deployment.** The admin currently reports
       "This browser doesn't support push notifications", which is correct over
