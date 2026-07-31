@@ -492,13 +492,20 @@ evidence from real mail.
       XML. One edit to the `rua=` tag, and reporting stops depending on the mail
       migration entirely.
 
-- [ ] **`bookings@editstudio.space` does not exist — client replies bounce.**
-      Live issue, not migration-related. `lib/notifications.ts` sends from that
-      address with no `Reply-To`, so a client replying to a booking confirmation
-      to ask for a different time gets a 550. Add it as a **forwarder** to an
-      address that is actually read, and recreate it on whatever mail host
-      replaces SiteGround. While auditing, check every other address that has
-      ever been printed or listed publicly — the same 550 applies to all of them.
+- [x] **`bookings@editstudio.space` — client replies were bouncing.** Fixed
+      2026-07-31 with Cloudflare Email Routing: `bookings@` and a catch-all both
+      forward to `editstudiospace@gmail.com`. The catch-all is deliberate — it
+      covers every address ever printed on a card or listed on Google Business
+      without anyone having to remember what they were, which is exactly how
+      `bookings@` and `dmarc@` came to be silently dead.
+
+      Verified by sending from Outlook and watching it arrive.
+
+      **Caveat while DNS propagates:** Google's resolver was the last major one
+      still delegating to SiteGround, so mail *from Gmail* kept resolving the old
+      MX and bouncing. Sync SiteGround's apex MX to `route1/2/3.mx.cloudflare.net`
+      to close that window, or wait out the registry NS TTL (~24h). Not closed
+      until a Gmail-sent test lands — most clients are on Gmail.
 
 - [ ] **Step 2 — enforce, after launch and after reading real reports.**
       ```
