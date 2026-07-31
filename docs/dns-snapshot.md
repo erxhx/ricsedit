@@ -115,10 +115,21 @@ Under Acuity's `no-reply@`, clients had no way to answer a confirmation at all;
 the new system invites a reply, so the address has to work before launch rather
 than after.
 
-DNS is worth putting somewhere neutral rather than at either the host or the
-registrar. Everything awkward in this document traces back to DNS, web and mail
-being one provider; a dedicated DNS host means the next hosting change is one
-record again instead of a migration.
+**Why Cloudflare and not Vercel DNS**, given the app is on Vercel: Vercel DNS
+has no email forwarding, so `bookings@` would still need a third-party forwarder
+or a paid mail host. Cloudflare provides it free in the same place. Secondarily,
+it keeps DNS independent of whoever hosts the site — that coupling is what made
+leaving SiteGround mean leaving three services at once, and a neutral DNS host
+makes the next hosting change one record instead of a migration.
+
+Vercel needs only an `A` record pointing at the IP it shows when the domain is
+added; it supports external DNS and nothing about deploys or certificates
+changes.
+
+**Set that record to DNS-only — the grey cloud, not the orange one.** Proxying
+Cloudflare in front of Vercel puts two CDNs in series and is a known source of
+redirect loops and certificate failures. Vercel keeps handling CDN and TLS, as
+it does today.
 
 ### Mail is the part that bites
 
