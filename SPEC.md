@@ -450,17 +450,27 @@ passing. "Should" is doing work in that sentence — with no `rua=`, no aggregat
 report has ever been collected, so this is inference from the records, not
 evidence from real mail.
 
-- [ ] **Step 1 — turn on DMARC reporting (do first, harmless).** Replace the
-      `_dmarc.editstudio.space` TXT with:
+- [x] **Step 1 — turn on DMARC reporting.** Done 2026-07-31, confirmed live on
+      the authoritative SiteGround nameservers and both public resolvers:
       ```
-      v=DMARC1; p=none; rua=mailto:<report-address>; aspf=r; adkim=r; fo=1
+      v=DMARC1; p=none; rua=mailto:dmarc@editstudio.space; aspf=r; adkim=r
       ```
-      Policy stays `none`, so nothing changes about delivery — this only starts
-      the receiving world sending daily XML summaries of who is sending as
-      editstudio.space. Raw aggregate reports are unreadable XML; a free
-      monitoring service (Postmark's DMARC digests, dmarcian, URIports) turns
-      them into a weekly human summary and is worth using rather than pointing
-      `rua` at a mailbox.
+      Policy stays `none`, so delivery is unchanged — this only starts receivers
+      sending daily XML summaries of who sends as editstudio.space.
+
+      The report address is deliberately **on editstudio.space itself**. RFC 7489
+      requires an off-domain `rua` destination to publish an authorization record
+      (`editstudio.space._report._dmarc.<their-domain>`), and Google does not
+      publish those for individual accounts — so pointing `rua` at a personal
+      Gmail means strict reporters drop the reports silently, and the resulting
+      silence is indistinguishable from "no problems found".
+
+      Still to confirm: that `dmarc@editstudio.space` actually receives mail.
+      If it doesn't, reports bounce and produce that same false silence. Reports
+      arrive on a daily cycle; if nothing has appeared after 72h, suspect the
+      mailbox, not the record. Swapping to a digest service (Postmark, dmarcian,
+      URIports) later is just an edit to this same tag — they publish their own
+      authorization records and send readable weekly summaries instead of XML.
 
 - [ ] **Step 2 — enforce, after launch and after reading real reports.**
       ```
