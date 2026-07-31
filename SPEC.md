@@ -428,6 +428,71 @@ in dev/simulator. Last reviewed 2026-07-31.
       16.4+ supports push in installed PWAs, and a new-booking alert is probably
       the single highest-value feature for staff.
 
+### Email authentication & Apple Branded Mail
+
+Not launch blockers — mail authenticates correctly today. This is about the
+sender logo appearing in Apple Mail, and about gaining visibility we don't have.
+
+**Verified state as of 2026-07-31** (all by `dig +short @8.8.8.8`):
+
+| record | value | status |
+|---|---|---|
+| `resend._domainkey` | RSA key | ✅ Resend DKIM live |
+| `send.editstudio.space` | `v=spf1 include:amazonses.com ~all` + SES MX | ✅ custom Return-Path, so SPF aligns |
+| root SPF | `+a +mx include:…dnssmarthost.net ~all` | ✅ covers the web host |
+| `default._domainkey` | host DKIM | ✅ |
+| `_dmarc` | `v=DMARC1; p=none; aspf=r; adkim=r;` | ⚠️ no reporting, no enforcement |
+| `apple-domain-verification` | present | ✅ Apple domain check already done |
+| `default._bimi` | — | ❌ none |
+
+DKIM and SPF both align under relaxed alignment, so DMARC should already be
+passing. "Should" is doing work in that sentence — with no `rua=`, no aggregate
+report has ever been collected, so this is inference from the records, not
+evidence from real mail.
+
+- [ ] **Step 1 — turn on DMARC reporting (do first, harmless).** Replace the
+      `_dmarc.editstudio.space` TXT with:
+      ```
+      v=DMARC1; p=none; rua=mailto:<report-address>; aspf=r; adkim=r; fo=1
+      ```
+      Policy stays `none`, so nothing changes about delivery — this only starts
+      the receiving world sending daily XML summaries of who is sending as
+      editstudio.space. Raw aggregate reports are unreadable XML; a free
+      monitoring service (Postmark's DMARC digests, dmarcian, URIports) turns
+      them into a weekly human summary and is worth using rather than pointing
+      `rua` at a mailbox.
+
+- [ ] **Step 2 — enforce, after launch and after reading real reports.**
+      ```
+      v=DMARC1; p=quarantine; rua=mailto:<report-address>; aspf=r; adkim=r; fo=1
+      ```
+      Deliberately sequenced after the migration send. Enforcement is the gate
+      for Apple Branded Mail, but flipping it while blind means any misaligned
+      sender starts going to spam, and the first signal would be a client
+      mentioning it — not a log. Wait for reports that show only known senders,
+      then flip. `p=reject` later, once quarantine has been quiet.
+
+- [ ] **Step 3 — Apple Branded Mail** (free; Apple Business Connect).
+      Requires the business claimed and verified in Business Connect, the domain
+      verified (the `apple-domain-verification` TXT above suggests this is done
+      or started), DMARC at enforcement from step 2, and a square logo uploaded
+      through Business Connect. `public/assets/favicon.png` is the right mark —
+      the lime monogram, already square — but it is only 512×512 and Apple wants
+      a larger square export; get a fresh one from the vector source rather than
+      upscaling. Verify current requirements in Business Connect itself, since
+      Apple has been iterating on this since launch.
+
+**BIMI: deliberately not doing it.** Decided 2026-07-31. The DNS record and SVG
+are free, but a logo only renders in Gmail and Apple Mail with a paid
+certificate — a VMC (~$1,000–1,500/yr, and requires a *registered trademark*) or
+a CMC (~$500–800/yr, requires 12+ months documented prior use). Without one,
+only Yahoo, AOL and Fastmail show it. Apple Branded Mail covers the Apple side
+for free, which leaves the annual fee buying the Gmail avatar alone. Revisit if
+"Edit Studio" is ever trademarked. Note if it is revisited: BIMI needs SVG Tiny
+P/S — square viewBox, `<title>` first child, no scripts, no external refs, and
+**no embedded raster images**, so the PNG cannot simply be wrapped; it needs a
+true vector source.
+
 ### Known UI issues — logged, not yet fixed
 
 Admin PWA (reviewed on an iPhone 17 Pro Max simulator, installed to home screen):
