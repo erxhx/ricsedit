@@ -108,6 +108,21 @@ const FONT_BODY = `'Inter Tight',Helvetica,Arial,sans-serif`;
 const FONT_MONO = `'SF Mono','Courier New',monospace`;
 const FONT_DISPLAY = `Georgia,'Times New Roman',serif`;
 
+// Where the two header images are fetched from. They are deliberately separate
+// because the two files live on different hosts right now:
+//
+// www.editstudio.space is a static nginx host — it serves the marketing site and
+// the compiled customer SPA, and logo-white.png was uploaded there by hand. It
+// does NOT serve this Next app, and, worse, it answers unknown paths with its
+// index page under a 200 rather than a 404. So a file that has not been uploaded
+// there does not fail loudly; it returns HTML that an <img> or background-image
+// silently renders as nothing.
+//
+// email-band.png ships in this repo's public/, so it is served by the app host.
+// Collapse these to one constant once both files sit on the same origin.
+const LOGO_SRC = 'https://www.editstudio.space/assets/logo-white.png';
+const BAND_SRC = 'https://ricsedit.vercel.app/assets/email-band.png';
+
 /** Mono uppercase kicker with the lime dot — one per email, above the h1. */
 // ── Email registry ────────────────────────────────────────────────────────────
 //
@@ -365,9 +380,9 @@ function emailLayout(bodyHtml: string): string {
                and the white logo reads. background-color is kept as the
                images-off fallback, and the alt text is styled paper so that
                case still says something. -->
-          <td background="https://www.editstudio.space/assets/email-band.png"
-              style="background-color:#141210;background-image:url('https://www.editstudio.space/assets/email-band.png');background-repeat:repeat;border-radius:14px;padding:22px 26px;text-align:center;">
-            <img src="https://www.editstudio.space/assets/logo-white.png" alt="Edit Studio" width="86" style="display:inline-block;height:auto;font-family:${FONT_MONO};font-size:13px;letter-spacing:0.14em;text-transform:uppercase;color:#f7f3eb;" />
+          <td background="${BAND_SRC}"
+              style="background-color:#141210;background-image:url('${BAND_SRC}');background-repeat:repeat;border-radius:14px;padding:22px 26px;text-align:center;">
+            <img src="${LOGO_SRC}" alt="Edit Studio" width="86" style="display:inline-block;height:auto;font-family:${FONT_MONO};font-size:13px;letter-spacing:0.14em;text-transform:uppercase;color:#f7f3eb;" />
           </td>
         </tr>
         <tr>
