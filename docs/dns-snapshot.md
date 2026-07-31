@@ -78,15 +78,32 @@ confirmations authenticate, they have nothing to do with the website, and they
 are the easiest to forget precisely because nothing on the new host references
 them.
 
+## Do not move the nameservers
+
+There are two ways to put the site on Vercel, and they carry very different risk.
+
+**Keep DNS at SiteGround and repoint the `A` record at Vercel.** One record
+changes. Mail, both DKIM keys, DMARC and the Apple verification are never
+touched, so they cannot be lost. Vercel supports external DNS and simply gives
+you an IP to paste in. **This is the recommended path.**
+
+The alternative — moving the nameservers to Vercel DNS — starts from an empty
+zone and requires re-typing all eleven records by hand. Every risk described in
+this document exists only on that path. There is no benefit here that justifies
+it: the records above are stable and rarely edited.
+
+Leaving DNS at SiteGround also means keeping a SiteGround plan, which is wanted
+anyway for mail.
+
 ## Ordering
 
-Do **not** migrate DNS and enforce DMARC in the same change. Under
-`p=quarantine`, a Resend record that didn't survive the move sends every booking
-confirmation to spam, and the symptom appears a day later with no error anywhere.
+Do **not** migrate and enforce DMARC in the same change. Under `p=quarantine`, a
+Resend record that didn't survive sends every booking confirmation to spam, and
+the symptom appears a day later with no error anywhere.
 
-1. Move web hosting to Vercel; recreate every record above in the new DNS.
-2. Re-run the snapshot and **diff it against this file** — expect only `A`/`NS`
-   to differ.
+1. Repoint the `A` record at Vercel.
+2. Re-run the snapshot and **diff it against this file** — on the recommended
+   path only `A` should differ. Anything else changing is a mistake.
 3. Send a real booking confirmation and inspect its headers for
    `dkim=pass` and `spf=pass` with `header.from=editstudio.space`.
 4. Confirm DMARC aggregate reports still arrive for a few days.
