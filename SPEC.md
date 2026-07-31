@@ -461,8 +461,9 @@ passing. "Should" is doing work in that sentence — with no `rua=`, no aggregat
 report has ever been collected, so this is inference from the records, not
 evidence from real mail.
 
-- [x] **Step 1 — turn on DMARC reporting.** Done 2026-07-31, confirmed live on
-      the authoritative SiteGround nameservers and both public resolvers:
+- [ ] **Step 1 — turn on DMARC reporting.** Record published 2026-07-31 and
+      confirmed live on the authoritative SiteGround nameservers and both public
+      resolvers — but see below, it is **not yet collecting anything**:
       ```
       v=DMARC1; p=none; rua=mailto:dmarc@editstudio.space; aspf=r; adkim=r
       ```
@@ -476,12 +477,28 @@ evidence from real mail.
       Gmail means strict reporters drop the reports silently, and the resulting
       silence is indistinguishable from "no problems found".
 
-      Still to confirm: that `dmarc@editstudio.space` actually receives mail.
-      If it doesn't, reports bounce and produce that same false silence. Reports
-      arrive on a daily cycle; if nothing has appeared after 72h, suspect the
-      mailbox, not the record. Swapping to a digest service (Postmark, dmarcian,
-      URIports) later is just an edit to this same tag — they publish their own
-      authorization records and send readable weekly summaries instead of XML.
+      **The record is correct but the reporting does not work.** Verified
+      2026-07-31: `dmarc@editstudio.space` returns **550, no such mailbox**, as
+      does `bookings@`. Every report bounces. The tag was chosen on-domain to
+      avoid RFC 7489's external-destination authorization requirement, which was
+      right as far as it went — it just never checked that the mailbox existed.
+
+- [ ] **Step 1b — point `rua` at a service, not a mailbox.** With the domain's
+      mail about to move off SiteGround, any address on it is a moving target,
+      and this is the one place where a broken address looks exactly like good
+      news. Sign up for a free DMARC monitor (Postmark's digests, dmarcian,
+      URIports); they publish their own authorization record, so an off-domain
+      address is fine, and they send readable weekly summaries instead of raw
+      XML. One edit to the `rua=` tag, and reporting stops depending on the mail
+      migration entirely.
+
+- [ ] **`bookings@editstudio.space` does not exist — client replies bounce.**
+      Live issue, not migration-related. `lib/notifications.ts` sends from that
+      address with no `Reply-To`, so a client replying to a booking confirmation
+      to ask for a different time gets a 550. Add it as a **forwarder** to an
+      address that is actually read, and recreate it on whatever mail host
+      replaces SiteGround. While auditing, check every other address that has
+      ever been printed or listed publicly — the same 550 applies to all of them.
 
 - [ ] **Step 2 — enforce, after launch and after reading real reports.**
       ```
