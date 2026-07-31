@@ -100,37 +100,187 @@ const FONT_MONO = `'SF Mono','Courier New',monospace`;
 const FONT_DISPLAY = `Georgia,'Times New Roman',serif`;
 
 /** Mono uppercase kicker with the lime dot — one per email, above the h1. */
-/** Compose a full email for the admin preview endpoint (and tests). */
-export function buildPreviewEmail(kind: 'confirmation' | 'owner' | 'noshow-fee', apt: Appointment): string {
-  if (kind === 'owner') {
-    return emailLayout(`
-      ${eyebrow('New booking')}
-      ${h1(`${firstName(apt.clientName)} just booked.`)}
-      ${para(esc(apt.clientName) + (apt.payment?.prepaid ? ' — paid in full online.' : ''))}
-      ${aptDetailsHtml(apt)}
-      <p style="margin:8px 0 0;font-family:${FONT_BODY};font-size:13px;color:#5f594f;">Email: <a href="mailto:${esc(apt.clientEmail)}" style="color:#5f594f;">${esc(apt.clientEmail)}</a></p>
-      <p style="margin:4px 0 0;font-family:${FONT_BODY};font-size:13px;color:#5f594f;">Phone: <a href="tel:${esc(apt.clientPhone)}" style="color:#5f594f;">${esc(apt.clientPhone)}</a></p>
-    `);
-  }
-  if (kind === 'noshow-fee') {
-    return emailLayout(`
-      ${eyebrow('Payment notice')}
-      ${h1('No-show fee charged.')}
-      ${para(`Hi ${firstName(apt.clientName)}, as per our cancellation policy, a no-show fee of <strong>$40.00</strong> was charged to your card on file ending in 5858 for the missed appointment below.`)}
-      ${aptDetailsHtml(apt)}
-      ${muted('Think this was a mistake? Call or text us at 778 535 3348 and we’ll sort it out.')}
-      ${ctaBtn('Rebook Online', 'https://www.editstudio.space')}
-    `);
-  }
-  return emailLayout(`
-    ${eyebrow('Booking confirmed')}
-    ${h1(`You're booked in.`)}
-    ${para(`Hi ${firstName(apt.clientName)}, your appointment is confirmed. We'll see you soon.`)}
-    ${aptDetailsHtml(apt)}
-    ${ctaBtn('Manage appointment', 'https://www.editstudio.space')}
-    ${muted('Need to cancel or reschedule? Use the link above up to 3 hours before your appointment.')}
-  `);
+// ── Email registry ────────────────────────────────────────────────────────────
+//
+// Every email is built here and nowhere else. The senders below call buildEmail
+// and hand the result to Resend; the admin preview endpoint calls the same
+// function with sample data. That is the whole point of the indirection.
+//
+// It previously wasn't so: buildPreviewEmail re-implemented three of the
+// templates, and had already drifted from what actually shipped — the owner
+// preview had lost the deposit wording, and the confirmation preview pointed
+// its button at the homepage instead of the client's manage link. Copy could be
+// approved in the preview and never reach a client. Sharing the builders makes
+// that class of bug impossible rather than merely unlikely.
+
+export type EmailKind =
+  | 'confirmation'
+  | 'reminder'
+  | 'cancelled-client'
+  | 'cancelled-admin'
+  | 'rescheduled'
+  | 'no-show'
+  | 'no-show-fee'
+  | 'migration'
+  | 'owner-new-booking';
+
+/** Extras that only some emails need. */
+export interface EmailExtras {
+  /** Studio's reason, shown quoted in the admin-cancelled email. */
+  note?: string;
+  /** No-show fee actually charged. */
+  amountCents?: number;
+  /** Last four of the card charged. */
+  last4?: string;
 }
+
+const BOOK_URL = 'https://www.editstudio.space';
+
+export function buildEmail(
+  kind: EmailKind,
+  apt: Appointment,
+  extras: EmailExtras = {},
+): { subject: string; html: string } {
+  const url  = manageUrl(apt.manageToken);
+  const name = firstName(apt.clientName);
+
+  switch (kind) {
+    case 'confirmation':
+      return {
+        subject: `Booking confirmed — ${apt.service}`,
+        html: emailLayout(`
+          ${eyebrow('Booking confirmed')}
+          ${h1(`You're booked in.`)}
+          ${para(`Hi ${name}, your appointment is confirmed. We'll see you soon.`)}
+          ${aptDetailsHtml(apt)}
+          ${ctaBtn('Manage appointment', url)}
+          ${muted('Need to cancel or reschedule? Use the link above up to 3 hours before your appointment.')}
+        `),
+      };
+
+    case 'reminder':
+      return {
+        subject: `Reminder: ${apt.service} tomorrow at ${formatTime(apt.startTime)}`,
+        html: emailLayout(`
+          ${eyebrow('Appointment reminder')}
+          ${h1('See you tomorrow.')}
+          ${para(`Hi ${name}, just a reminder about your appointment.`)}
+          ${aptDetailsHtml(apt)}
+          ${ctaBtn('Manage appointment', url)}
+          ${muted('Need to cancel or reschedule? Please do so at least a few hours in advance.')}
+        `),
+      };
+
+    case 'cancelled-client':
+      return {
+        subject: `Appointment cancelled — ${apt.service}`,
+        html: emailLayout(`
+          ${eyebrow('Cancellation')}
+          ${h1('Appointment cancelled.')}
+          ${para(`Hi ${name}, your appointment has been cancelled.`)}
+          ${aptDetailsHtml(apt)}
+          ${ctaBtn('Book Again', BOOK_URL)}
+          ${muted('Questions? Call or text us at 778 535 3348.')}
+        `),
+      };
+
+    case 'cancelled-admin':
+      return {
+        subject: `Appointment cancelled — ${apt.service}`,
+        html: emailLayout(`
+          ${eyebrow('Cancellation')}
+          ${h1('Appointment cancelled.')}
+          ${para(`Hi ${name}, we've had to cancel your upcoming appointment. We're sorry for any inconvenience.`)}
+          ${aptDetailsHtml(apt)}
+          ${extras.note ? `<p class="es-body" style="margin:0 0 16px;font-family:${FONT_BODY};font-size:15px;line-height:1.6;color:#2e2a26;border-left:3px solid #dbd5c8;padding-left:12px;">${esc(extras.note)}</p>` : ''}
+          ${muted('Please call or text us at <a href="tel:+17785353348" style="color:#5f594f;">778 535 3348</a> to rebook.')}
+          ${ctaBtn('Book Online', BOOK_URL)}
+        `),
+      };
+
+    case 'rescheduled':
+      return {
+        subject: `Appointment rescheduled — ${formatDate(apt.date)} at ${formatTime(apt.startTime)}`,
+        html: emailLayout(`
+          ${eyebrow('Updated booking')}
+          ${h1('Appointment rescheduled.')}
+          ${para(`Hi ${name}, here are your updated details.`)}
+          ${aptDetailsHtml(apt)}
+          ${ctaBtn('Manage appointment', url)}
+          ${muted('Questions? Call or text us at 778 535 3348.')}
+        `),
+      };
+
+    case 'no-show':
+      return {
+        subject: `We missed you — ${apt.service}`,
+        html: emailLayout(`
+          ${eyebrow('Missed appointment')}
+          ${h1('We missed you.')}
+          ${para(`Hi ${name}, we noticed you missed your appointment today — hope everything is okay!`)}
+          ${aptDetailsHtml(apt)}
+          ${ctaBtn('Rebook Online', BOOK_URL)}
+          ${muted('Questions? Call or text us at 778 535 3348.')}
+        `),
+      };
+
+    case 'no-show-fee': {
+      const amount   = `$${((extras.amountCents ?? 0) / 100).toFixed(2)}`;
+      const cardText = extras.last4 ? ` ending in ${extras.last4}` : '';
+      return {
+        subject: `No-show fee — ${apt.service}`,
+        html: emailLayout(`
+          ${eyebrow('Payment notice')}
+          ${h1('No-show fee charged.')}
+          ${para(`Hi ${name}, as per our cancellation policy, a no-show fee of <strong>${amount}</strong> was charged to your card on file${cardText} for the missed appointment below.`)}
+          ${aptDetailsHtml(apt)}
+          ${muted('Think this was a mistake? Call or text us at 778 535 3348 and we’ll sort it out.')}
+          ${ctaBtn('Rebook Online', BOOK_URL)}
+        `),
+      };
+    }
+
+    case 'migration':
+      return {
+        subject: `Your Edit Studio appointment — updated booking link`,
+        html: emailLayout(`
+          ${eyebrow('Studio news')}
+          ${h1(`We've upgraded our booking system.`)}
+          ${para(`Hi ${name}, we've made a few improvements to our booking platform behind the scenes. Your appointment is confirmed — your manage link below has been updated.`)}
+          ${aptDetailsHtml(apt)}
+          ${ctaBtn('Manage appointment', url)}
+          ${muted('Use the link above to cancel or reschedule up to 3 hours before your appointment.')}
+        `),
+      };
+
+    case 'owner-new-booking':
+      return {
+        subject: `New booking · ${apt.clientName} · ${formatDate(apt.date)} ${formatTime(apt.startTime)}`,
+        html: emailLayout(`
+          ${eyebrow('New booking')}
+          ${h1(`${name} just booked.`)}
+          ${para(esc(apt.clientName) + (apt.payment?.prepaid ? ' — paid in full online.' : apt.payment?.amountCents ? ' — deposit paid online.' : ''))}
+          ${aptDetailsHtml(apt)}
+          ${apt.clientEmail ? `<p style="margin:8px 0 0;font-family:${FONT_BODY};font-size:13px;color:#5f594f;">Email: <a href="mailto:${esc(apt.clientEmail)}" style="color:#5f594f;">${esc(apt.clientEmail)}</a></p>` : ''}
+          ${apt.clientPhone ? `<p style="margin:4px 0 0;font-family:${FONT_BODY};font-size:13px;color:#5f594f;">Phone: <a href="tel:${esc(apt.clientPhone)}" style="color:#5f594f;">${esc(apt.clientPhone)}</a></p>` : ''}
+          ${apt.notes       ? `<p style="margin:4px 0 0;font-family:${FONT_BODY};font-size:13px;color:#5f594f;">Notes: ${esc(apt.notes)}</p>` : ''}
+        `),
+      };
+  }
+}
+
+/** Human labels for the preview picker. */
+export const EMAIL_KINDS: { kind: EmailKind; label: string; when: string }[] = [
+  { kind: 'confirmation',      label: 'Booking confirmed',   when: 'Immediately on booking' },
+  { kind: 'reminder',          label: 'Reminder',            when: '24h before, from the cron' },
+  { kind: 'cancelled-client',  label: 'Cancelled by client', when: 'Client cancels via their link' },
+  { kind: 'cancelled-admin',   label: 'Cancelled by studio', when: 'Staff cancels — quotes your note' },
+  { kind: 'rescheduled',       label: 'Rescheduled',         when: 'Either side moves it' },
+  { kind: 'no-show',           label: 'No-show',             when: 'Marked as a no-show' },
+  { kind: 'no-show-fee',       label: 'No-show fee',         when: 'Fee charged to card on file' },
+  { kind: 'migration',         label: 'Migration notice',    when: 'One-off Acuity import' },
+  { kind: 'owner-new-booking', label: 'New booking (staff)', when: 'To the studio, not the client' },
+];
 
 function eyebrow(text: string): string {
   return `<p class="es-body" style="margin:0 0 14px;font-family:${FONT_MONO};font-size:12px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:#3f3a33;">
@@ -278,25 +428,8 @@ async function sendSms(to: string, body: string): Promise<void> {
  */
 export async function sendBookingConfirmation(apt: Appointment): Promise<void> {
   const url = manageUrl(apt.manageToken);
-
-  const clientHtml = emailLayout(`
-    ${eyebrow('Booking confirmed')}
-    ${h1(`You're booked in.`)}
-    ${para(`Hi ${firstName(apt.clientName)}, your appointment is confirmed. We'll see you soon.`)}
-    ${aptDetailsHtml(apt)}
-    ${ctaBtn('Manage appointment', url)}
-    ${muted('Need to cancel or reschedule? Use the link above up to 3 hours before your appointment.')}
-  `);
-
-  const ownerHtml = emailLayout(`
-    ${eyebrow('New booking')}
-    ${h1(`${firstName(apt.clientName)} just booked.`)}
-    ${para(esc(apt.clientName) + (apt.payment?.prepaid ? ' — paid in full online.' : apt.payment?.amountCents ? ' — deposit paid online.' : ''))}
-    ${aptDetailsHtml(apt)}
-    ${apt.clientEmail ? `<p style="margin:8px 0 0;font-family:${FONT_BODY};font-size:13px;color:#5f594f;">Email: <a href="mailto:${esc(apt.clientEmail)}" style="color:#5f594f;">${esc(apt.clientEmail)}</a></p>` : ''}
-    ${apt.clientPhone ? `<p style="margin:4px 0 0;font-family:${FONT_BODY};font-size:13px;color:#5f594f;">Phone: <a href="tel:${esc(apt.clientPhone)}" style="color:#5f594f;">${esc(apt.clientPhone)}</a></p>` : ''}
-    ${apt.notes       ? `<p style="margin:4px 0 0;font-family:${FONT_BODY};font-size:13px;color:#5f594f;">Notes: ${esc(apt.notes)}</p>` : ''}
-  `);
+  const client = buildEmail('confirmation', apt);
+  const owner  = buildEmail('owner-new-booking', apt);
 
   const clientSms =
     `Edit Studio: You're booked!\n${apt.service} · ${formatDate(apt.date)} at ${formatTime(apt.startTime)}\nManage: ${url}`;
@@ -305,9 +438,9 @@ export async function sendBookingConfirmation(apt: Appointment): Promise<void> {
     `New booking: ${apt.clientName} · ${apt.service} · ${formatDate(apt.date)} at ${formatTime(apt.startTime)}`;
 
   await Promise.all([
-    sendEmail(apt.clientEmail, `Booking confirmed — ${apt.service}`, clientHtml),
+    sendEmail(apt.clientEmail, client.subject, client.html),
     sendSms(apt.clientPhone, clientSms),
-    sendEmail(OWNER_EMAIL, `New booking · ${apt.clientName} · ${formatDate(apt.date)} ${formatTime(apt.startTime)}`, ownerHtml),
+    sendEmail(OWNER_EMAIL, owner.subject, owner.html),
     OWNER_PHONE ? sendSms(OWNER_PHONE, ownerSms) : Promise.resolve(),
   ]);
 }
@@ -323,28 +456,14 @@ export async function sendCancellationNotification(
   note?: string,
 ): Promise<void> {
   const isAdmin = cancelledBy === 'admin';
-
-  const clientHtml = emailLayout(`
-    ${eyebrow('Cancellation')}
-    ${h1('Appointment cancelled.')}
-    ${para(isAdmin
-        ? `Hi ${firstName(apt.clientName)}, we've had to cancel your upcoming appointment. We're sorry for any inconvenience.`
-        : `Hi ${firstName(apt.clientName)}, your appointment has been cancelled.`)}
-    ${aptDetailsHtml(apt)}
-    ${isAdmin && note ? `<p class="es-body" style="margin:0 0 16px;font-family:${FONT_BODY};font-size:15px;line-height:1.6;color:#2e2a26;border-left:3px solid #dbd5c8;padding-left:12px;">${esc(note)}</p>` : ''}
-    ${isAdmin
-      ? `${muted('Please call or text us at <a href="tel:+17785353348" style="color:#5f594f;">778 535 3348</a> to rebook.')}
-         ${ctaBtn('Book Online', 'https://www.editstudio.space')}`
-      : `${ctaBtn('Book Again', 'https://www.editstudio.space')}
-         ${muted('Questions? Call or text us at 778 535 3348.')}`}
-  `);
+  const email = buildEmail(isAdmin ? 'cancelled-admin' : 'cancelled-client', apt, { note });
 
   const clientSms = isAdmin
     ? `Edit Studio: We've had to cancel your ${apt.service} on ${formatDate(apt.date)}.${note ? ` ${note}` : ''} Sorry for the inconvenience — call us at 778 535 3348 or rebook at editstudio.space`
     : `Edit Studio: Your ${apt.service} on ${formatDate(apt.date)} has been cancelled. Book again at editstudio.space`;
 
   await Promise.all([
-    sendEmail(apt.clientEmail, `Appointment cancelled — ${apt.service}`, clientHtml),
+    sendEmail(apt.clientEmail, email.subject, email.html),
     sendSms(apt.clientPhone, clientSms),
   ]);
 }
@@ -357,17 +476,10 @@ export async function sendNoShowNotification(
   apt: Appointment,
   { sms = false }: { sms?: boolean } = {},
 ): Promise<void> {
-  const clientHtml = emailLayout(`
-    ${eyebrow('Missed appointment')}
-    ${h1('We missed you.')}
-    ${para(`Hi ${firstName(apt.clientName)}, we noticed you missed your appointment today — hope everything is okay!`)}
-    ${aptDetailsHtml(apt)}
-    ${ctaBtn('Rebook Online', 'https://www.editstudio.space')}
-    ${muted('Questions? Call or text us at 778 535 3348.')}
-  `);
+  const email = buildEmail('no-show', apt);
 
   const promises: Promise<void>[] = [
-    sendEmail(apt.clientEmail, `We missed you — ${apt.service}`, clientHtml),
+    sendEmail(apt.clientEmail, email.subject, email.html),
   ];
 
   if (sms) {
@@ -389,19 +501,8 @@ export async function sendNoShowFeeNotification(
   amountCents: number,
   last4?: string,
 ): Promise<void> {
-  const amount = `$${(amountCents / 100).toFixed(2)}`;
-  const cardText = last4 ? ` ending in ${last4}` : '';
-
-  const clientHtml = emailLayout(`
-    ${eyebrow('Payment notice')}
-    ${h1('No-show fee charged.')}
-    ${para(`Hi ${firstName(apt.clientName)}, as per our cancellation policy, a no-show fee of <strong>${amount}</strong> was charged to your card on file${cardText} for the missed appointment below.`)}
-    ${aptDetailsHtml(apt)}
-    ${muted('Think this was a mistake? Call or text us at 778 535 3348 and we’ll sort it out.')}
-    ${ctaBtn('Rebook Online', 'https://www.editstudio.space')}
-  `);
-
-  await sendEmail(apt.clientEmail, `No-show fee — ${apt.service}`, clientHtml);
+  const email = buildEmail('no-show-fee', apt, { amountCents, last4 });
+  await sendEmail(apt.clientEmail, email.subject, email.html);
 }
 
 /**
@@ -411,20 +512,13 @@ export async function sendNoShowFeeNotification(
 export async function sendRescheduleNotification(apt: Appointment): Promise<void> {
   const url = manageUrl(apt.manageToken);
 
-  const clientHtml = emailLayout(`
-    ${eyebrow('Updated booking')}
-    ${h1('Appointment rescheduled.')}
-    ${para(`Hi ${firstName(apt.clientName)}, here are your updated details.`)}
-    ${aptDetailsHtml(apt)}
-    ${ctaBtn('Manage appointment', url)}
-    ${muted('Questions? Call or text us at 778 535 3348.')}
-  `);
+  const email = buildEmail('rescheduled', apt);
 
   const clientSms =
     `Edit Studio: Rescheduled!\n${apt.service} is now on ${formatDate(apt.date)} at ${formatTime(apt.startTime)}\nManage: ${url}`;
 
   await Promise.all([
-    sendEmail(apt.clientEmail, `Appointment rescheduled — ${formatDate(apt.date)} at ${formatTime(apt.startTime)}`, clientHtml),
+    sendEmail(apt.clientEmail, email.subject, email.html),
     sendSms(apt.clientPhone, clientSms),
   ]);
 }
@@ -436,20 +530,8 @@ export async function sendRescheduleNotification(apt: Appointment): Promise<void
 export async function sendMigrationNotification(apt: Appointment): Promise<void> {
   const url = manageUrl(apt.manageToken);
 
-  const clientHtml = emailLayout(`
-    ${eyebrow('Studio news')}
-    ${h1(`We've upgraded our booking system.`)}
-    ${para(`Hi ${firstName(apt.clientName)}, we've made a few improvements to our booking platform behind the scenes. Your appointment is confirmed — your manage link below has been updated.`)}
-    ${aptDetailsHtml(apt)}
-    ${ctaBtn('Manage appointment', url)}
-    ${muted('Use the link above to cancel or reschedule up to 3 hours before your appointment.')}
-  `);
-
-  await sendEmail(
-    apt.clientEmail,
-    `Your Edit Studio appointment — updated booking link`,
-    clientHtml,
-  );
+  const email = buildEmail('migration', apt);
+  await sendEmail(apt.clientEmail, email.subject, email.html);
 }
 
 /**
@@ -459,20 +541,13 @@ export async function sendMigrationNotification(apt: Appointment): Promise<void>
 export async function sendReminderNotification(apt: Appointment): Promise<void> {
   const url = manageUrl(apt.manageToken);
 
-  const clientHtml = emailLayout(`
-    ${eyebrow('Appointment reminder')}
-    ${h1('See you tomorrow.')}
-    ${para(`Hi ${firstName(apt.clientName)}, just a reminder about your appointment.`)}
-    ${aptDetailsHtml(apt)}
-    ${ctaBtn('Manage appointment', url)}
-    ${muted('Need to cancel or reschedule? Please do so at least a few hours in advance.')}
-  `);
+  const email = buildEmail('reminder', apt);
 
   const clientSms =
     `Edit Studio: Reminder — ${apt.service} is tomorrow at ${formatTime(apt.startTime)}.\nManage: ${url}`;
 
   await Promise.all([
-    sendEmail(apt.clientEmail, `Reminder: ${apt.service} tomorrow at ${formatTime(apt.startTime)}`, clientHtml),
+    sendEmail(apt.clientEmail, email.subject, email.html),
     sendSms(apt.clientPhone, clientSms),
   ]);
 }
