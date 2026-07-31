@@ -244,7 +244,28 @@ value, so the same answer is simply served by different nameservers.
    expected and costs nothing — no SiteGround mailbox has ever been used. Verify
    by emailing `bookings@` from outside. This also resolves the live
    client-replies-bounce issue without waiting for the Vercel move.
-7. **Leave the SiteGround zone intact** until propagation is confirmed.
+7. **Keep the SiteGround zone in sync** until propagation is confirmed — not
+   merely intact. A stale fallback zone is worse than none: it answers
+   confidently with the old value to whoever is still asking it.
+
+   This bit in practice on 2026-07-31. The apex MX was changed at Cloudflare
+   only, and Google's resolver was the last of the major four still delegating
+   to SiteGround. Mail sent from Gmail to `bookings@` therefore resolved the old
+   SiteGround MX, delivered there, and bounced `550 No mailbox by that name is
+   currently available` — a real bounce, from a correct configuration, that
+   looked exactly like Email Routing not working.
+
+   Diagnose by asking several resolvers rather than one:
+
+   ```
+   for r in 8.8.8.8 1.1.1.1 9.9.9.9 208.67.222.222; do
+     printf "%-16s " "$r"; dig +short @$r editstudio.space MX | tr '\n' ' '; echo
+   done
+   ```
+
+   Disagreement between resolvers means propagation, not misconfiguration. The
+   fix is to make both zones give the same answer, or to wait out the registry's
+   NS TTL — up to 24h.
 8. **Then** repoint the `A` record at Vercel — one edit, at a time of your
    choosing, with DNS already proven.
 9. Two quiet weeks, then cancel SiteGround. Nothing needs exporting.
