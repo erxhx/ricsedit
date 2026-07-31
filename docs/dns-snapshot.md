@@ -157,16 +157,38 @@ cancel once nothing has arrived at the old host for a fortnight.
 Mail and DNS are separate cutovers. Do them separately, and never at the same
 time as the DMARC flip.
 
-1. Repoint the `A` record at Vercel — DNS still at SiteGround. Verify the site.
-2. Move the nameservers to Cloudflare, recreating every record in this file.
-   Diff the snapshot: only `A` and `NS` should differ.
-3. Turn on Cloudflare Email Routing; forward `bookings@` and any legacy
-   published address to the Gmail in daily use. Cloudflare replaces the `MX`
-   records with its own — expected, and the one deviation from the diff above.
-   Verify by emailing `bookings@` from outside and watching it arrive.
-4. Two quiet weeks, then cancel SiteGround. Nothing needs exporting: no mailbox
-   there has ever been used.
-5. Only then flip DMARC to `p=quarantine`.
+**Move DNS first, while the site is still on SiteGround.** The nameserver move
+and the hosting move are independent, and separating them means neither can be
+blamed for the other's symptoms. It also front-loads all the risk into the step
+where the website cannot break: the `A` record keeps its current SiteGround
+value, so the same answer is simply served by different nameservers.
+
+1. **Add the domain to Cloudflare** and let it auto-import the existing records.
+2. **Diff the import against this file.** The step everything else depends on.
+   Cloudflare's scanner is good but not exhaustive and misses TXT records at
+   unusual names. Check by name for `resend._domainkey`, `send` (TXT *and* MX),
+   `default._domainkey`, `apple-domain-verification`, `google-site-verification`
+   and `_dmarc`. Add anything missing by hand.
+3. **Set the `A` records to DNS-only** — grey cloud.
+4. **Change the nameservers at the registrar** (WordPress.com/Automattic), not
+   at SiteGround.
+5. **Wait for propagation**, then `./scripts/dns-snapshot.sh` and diff again. It
+   should match this file exactly — the `A` record has not moved yet.
+6. **Turn on Email Routing**; forward `bookings@` and any legacy published
+   address to the Gmail in daily use. This replaces the `MX` records, which is
+   expected and costs nothing — no SiteGround mailbox has ever been used. Verify
+   by emailing `bookings@` from outside. This also resolves the live
+   client-replies-bounce issue without waiting for the Vercel move.
+7. **Leave the SiteGround zone intact** until propagation is confirmed.
+8. **Then** repoint the `A` record at Vercel — one edit, at a time of your
+   choosing, with DNS already proven.
+9. Two quiet weeks, then cancel SiteGround. Nothing needs exporting.
+10. Only then flip DMARC to `p=quarantine`.
+
+SiteGround renews the TLS certificate automatically. That normally uses HTTP
+validation and is unaffected by a nameserver change — but if the certificate
+ever fails to renew while the site is still there, this is the first thing to
+suspect.
 
 Step 3 is the one this document exists for: the new zone starts empty, and the
 records nothing else references — `resend._domainkey`, `send`,
