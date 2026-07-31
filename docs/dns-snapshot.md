@@ -53,6 +53,10 @@ No `AAAA`, no `CAA`.
 ```
 www                     A     35.208.146.53
 mail                    A     35.208.146.53
+ftp                     A     35.208.146.53
+ssh                     A     35.208.146.53
+autoconfig              A     35.208.146.53
+autodiscover            A     35.208.146.53
 _dmarc                  TXT   "v=DMARC1; p=none; rua=mailto:dmarc@editstudio.space; aspf=r; adkim=r"
 send                    TXT   "v=spf1 include:amazonses.com ~all"
 send                    MX    10 feedback-smtp.us-east-1.amazonses.com.
@@ -72,6 +76,20 @@ default._domainkey      CNAME editstudio.space.default.dkim.auto.dnssmarthost.ne
 | `apple-domain-verification` | **Apple Business Connect** | Branded Mail verification lost, must redo |
 | `google-site-verification` | Search Console | console access lost |
 | `mail` A | SiteGround webmail at `/webmail` | webmail unreachable |
+| `ftp`, `ssh` A | SiteGround file/shell access | those tools stop resolving |
+| `autoconfig`, `autodiscover` A | mail client auto-setup | clients cannot self-configure |
+
+`ftp`, `ssh`, `mail`, `autoconfig` and `autodiscover` all die with SiteGround and
+should be deleted once the account closes — but **never proxy them in the
+meantime**. Cloudflare proxies HTTP/HTTPS only, so an orange-clouded `ssh` record
+resolves to a Cloudflare address that does not answer on port 22, and the same
+applies to FTP and any mail client pointed at `mail.`.
+
+This list was itself incomplete when first written — it had only `www` and
+`mail`, because `scripts/dns-snapshot.sh` probes names that were guessed rather
+than discovered. Cloudflare's scanner found the other four during the 2026-07-31
+import. The script is a diff tool for known records, not a discovery tool; trust
+the registrar or the new provider's scan for completeness.
 
 The first two are the ones to guard hardest. They are what makes booking
 confirmations authenticate, they have nothing to do with the website, and they

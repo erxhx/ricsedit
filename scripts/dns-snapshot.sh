@@ -16,7 +16,13 @@
 set -euo pipefail
 
 DOMAIN=${DOMAIN:-editstudio.space}
-SUBS=(www mail send _dmarc resend._domainkey default._domainkey)
+
+# Hardcoded, and therefore only ever as complete as this list. Cloudflare's own
+# scanner found autoconfig/autodiscover/ftp/ssh in 2026-07 that an earlier
+# version of this list did not, because it probes a far wider set of names.
+# Treat this as a diff tool for known records, never as a discovery tool.
+SUBS=(www mail send ftp ssh autoconfig autodiscover
+      _dmarc resend._domainkey default._domainkey)
 
 if [ $# -ge 1 ]; then
   RESOLVER="@$1"
