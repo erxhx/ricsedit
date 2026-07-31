@@ -323,7 +323,7 @@ badges cards as paid.
 ## 12. Pre-Launch Checklist
 
 Things that are deliberately not production-ready yet, or that were verified only
-in dev/simulator. Last reviewed 2026-07-27.
+in dev/simulator. Last reviewed 2026-07-31.
 
 ### Blockers — must be done before taking real bookings
 
@@ -345,6 +345,35 @@ in dev/simulator. Last reviewed 2026-07-27.
       HSTS is cached per host for 2 years). Verify with
       `curl -sI https://<prod-host>/ | grep -i strict-transport` after deploy —
       it MUST be present in production.
+- [ ] **Consolidate onto one domain: `editstudio.space` serves everything.**
+      Today there are three origins and no canonical one:
+      - `ricsedit.vercel.app` — this Next app (admin, API, manage pages).
+      - `www.editstudio.space` and `editstudio.space` — a static nginx host with
+        the marketing pages, the compiled customer SPA, and `/assets/`. Both
+        hostnames answer independently and **neither redirects to the other**.
+
+      Three consequences worth fixing deliberately rather than discovering:
+
+      1. **Sessions don't cross hostnames.** The admin cookie is host-scoped and
+         sessions run 90 days, so signing in on `www.` and later opening the bare
+         domain silently logs staff out. Pick bare, 301 `www.` → bare.
+      2. **The nginx host soft-404s** — it answers unknown paths with its index
+         page under a `200`, not a 404. A missing asset therefore returns 16KB of
+         HTML that an `<img>` or `background-image` renders as nothing, with no
+         failing status anywhere. This already nearly shipped a broken email
+         header. After the cutover, re-verify assets by **content-type**, not
+         status: `curl -sI <url> | grep -i content-type`.
+      3. **Hostnames are hardcoded in ~15 places**, mixing bare and `www.`
+         inconsistently — `editstudio.space/index.html` declares a `www.`
+         canonical next to a bare `og:url`. Sweep them together:
+         `grep -rn "editstudio\.space\|vercel\.app" --include='*.ts*' --include='*.jsx' --include='*.html' .`
+         The email images are already single-sourced as `LOGO_SRC` / `BAND_SRC`
+         in `lib/notifications.ts`; collapse them to one constant once both files
+         sit on the same origin. Also set `NEXT_PUBLIC_SITE_URL` in the Vercel
+         env — `.env.local` still holds the placeholder
+         `https://your-vercel-app.vercel.app`, and every manage link is built
+         from it.
+
 - [ ] **Verify Web Push on the HTTPS deployment.** The admin currently reports
       "This browser doesn't support push notifications", which is correct over
       plain HTTP (push needs a secure context) but untested in production. iOS
