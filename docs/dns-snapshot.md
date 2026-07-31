@@ -45,7 +45,27 @@ diff <(tail -n +3 /tmp/old.txt) <(tail -n +3 /tmp/new.txt)
 Only the `NS` records differed. All 18 records survived, including
 `resend._domainkey` and `send`.
 
-Two things the diff surfaced that are worth knowing for next time:
+**2026-07-31 — Cloudflare Email Routing enabled.** Two changes to the records
+above, both intended:
+
+- Apex `MX` → `route1/2/3.mx.cloudflare.net`. Cloudflare refuses to activate
+  while foreign apex MX records exist, so the three SiteGround ones had to be
+  deleted by hand first. The `send` MX is on a subdomain and is not part of that
+  conflict — **it must survive**, it is what gives Resend its Return-Path.
+- Apex `SPF` **replaced**, not duplicated:
+  `v=spf1 +a +mx include:editstudio.space.spf.auto.dnssmarthost.net ~all`
+  became `v=spf1 include:_spf.mx.cloudflare.net ~all`. Worth watching for,
+  because two `v=spf1` records at one name is a permerror that silently
+  invalidates SPF for the whole domain — Cloudflare happened to replace rather
+  than append. Dropping SiteGround's authorisation is harmless and verified so:
+  the marketing site has no contact form and no `mailto:`, so nothing has ever
+  sent mail from that host. Booking email is unaffected, authenticating through
+  `send.editstudio.space`.
+
+A third DKIM selector, `cf2024-1._domainkey`, was added. Selectors are
+namespaced, so it coexists with `resend._domainkey` and `default._domainkey`.
+
+Two things the earlier nameserver diff surfaced that are worth knowing:
 
 - Cloudflare's import missed the `default._domainkey` **CNAME** entirely — it
   reported zero CNAMEs. Added by hand. Its scan is good on A/MX/TXT and should
