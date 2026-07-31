@@ -30,6 +30,33 @@ Transactional email is unaffected either way: Resend authenticates through its
 own records (`resend._domainkey`, `send.editstudio.space`), which have nothing to
 do with SiteGround and just need recreating wherever DNS ends up.
 
+## Migration log
+
+**2026-07-31 — nameservers moved to Cloudflare.** Site left on SiteGround; the
+`A` record still holds `35.208.146.53`. Verified by diffing both live zones
+against each other while SiteGround's nameservers were still answering:
+
+```
+./scripts/dns-snapshot.sh ns1.siteground.net          > /tmp/old.txt
+./scripts/dns-snapshot.sh ainsley.ns.cloudflare.com   > /tmp/new.txt
+diff <(tail -n +3 /tmp/old.txt) <(tail -n +3 /tmp/new.txt)
+```
+
+Only the `NS` records differed. All 18 records survived, including
+`resend._domainkey` and `send`.
+
+Two things the diff surfaced that are worth knowing for next time:
+
+- Cloudflare's import missed the `default._domainkey` **CNAME** entirely — it
+  reported zero CNAMEs. Added by hand. Its scan is good on A/MX/TXT and should
+  not be trusted to be complete.
+- `default._domainkey` appears to differ between the two zones, but does not.
+  Querying an authoritative server directly returns only what that server is
+  authoritative for, so Cloudflare returns the bare CNAME while SiteGround
+  volunteered the resolved chain. A recursive resolver follows it to the same
+  `v=DKIM1` key from either zone. **Diff authoritative answers, but confirm any
+  CNAME difference through a recursive resolver before believing it.**
+
 ## Records
 
 ### Apex
