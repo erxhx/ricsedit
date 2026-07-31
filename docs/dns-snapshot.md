@@ -92,8 +92,28 @@ so closing the account cannot cost the domain.
 | service | to | notes |
 |---|---|---|
 | web | **Vercel** | already running there |
-| DNS | **Cloudflare** (recommended) or Vercel DNS | free either way |
-| mail | **an actual mail host** | Google Workspace ≈$7/user/mo, Fastmail ≈$5/mo, iCloud+ Custom Email Domain if already subscribed |
+| DNS | **Cloudflare** | free |
+| mail | **Cloudflare Email Routing** — forwarding, not hosting | free |
+
+**No mail host is needed.** Established 2026-07-31: the studio runs on Gmail
+accounts, and Acuity always sent confirmations from `no-reply@acuityscheduling.com`,
+so no @editstudio.space mailbox has ever been used by anyone — which is why
+`bookings@` and `dmarc@` were both returning 550 with nobody noticing.
+
+What is actually required is that mail *to* the domain reaches a human. Cloudflare
+Email Routing does that for free and comes with the DNS move: forward `bookings@`
+and any legacy published address to the Gmail account already in daily use. No
+mailbox, no extra login, no bill.
+
+Its one limit is that forwarding is receive-only — replies go out from the Gmail
+address, not `bookings@editstudio.space`. Google Workspace (≈$7/user/mo) is the
+upgrade if sending as the brand ever matters, and nothing here has to change to
+adopt it later.
+
+Note this makes `bookings@editstudio.space` client-facing for the first time.
+Under Acuity's `no-reply@`, clients had no way to answer a confirmation at all;
+the new system invites a reply, so the address has to work before launch rather
+than after.
 
 DNS is worth putting somewhere neutral rather than at either the host or the
 registrar. Everything awkward in this document traces back to DNS, web and mail
@@ -127,10 +147,14 @@ Mail and DNS are separate cutovers. Do them separately, and never at the same
 time as the DMARC flip.
 
 1. Repoint the `A` record at Vercel — DNS still at SiteGround. Verify the site.
-2. Stand up the new mail host, recreate every address, switch MX. Verify by
-   sending to `bookings@` and `dmarc@` from outside.
-3. Move the nameservers, recreating every record in this file. Diff the snapshot.
-4. Two quiet weeks, then cancel SiteGround.
+2. Move the nameservers to Cloudflare, recreating every record in this file.
+   Diff the snapshot: only `A` and `NS` should differ.
+3. Turn on Cloudflare Email Routing; forward `bookings@` and any legacy
+   published address to the Gmail in daily use. Cloudflare replaces the `MX`
+   records with its own — expected, and the one deviation from the diff above.
+   Verify by emailing `bookings@` from outside and watching it arrive.
+4. Two quiet weeks, then cancel SiteGround. Nothing needs exporting: no mailbox
+   there has ever been used.
 5. Only then flip DMARC to `p=quarantine`.
 
 Step 3 is the one this document exists for: the new zone starts empty, and the
