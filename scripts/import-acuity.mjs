@@ -29,12 +29,26 @@ import { dirname } from 'path';
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
-/** Map your Acuity calendar name(s) → staff ID. Case-insensitive. */
+/**
+ * Map your Acuity calendar name(s) → staff ID. Case-insensitive.
+ *
+ * Keep this exhaustive. An unmapped calendar does not error — it silently falls
+ * through to DEFAULT_STAFF, so the appointments land on the wrong person and the
+ * only symptom is a payout that looks slightly off months later. The 2026-08-02
+ * export contained `olivia` and `nia`, neither of which was mapped, which would
+ * have credited 140 of Livi's and Niamh's appointments to Eric — and Niamh is on
+ * 50% commission, so it would have understated what she was owed.
+ *
+ * Before any import, list the calendars actually present in the file:
+ *   tail -n +2 export.csv | cut -d, -f9 | sort -u
+ */
 const CALENDAR_MAP = {
-  'eric':  'eric',
-  'livi':  'livi',
-  'livia': 'livi',
-  // add more as needed, e.g. "edit studio": "eric"
+  'eric':   'eric',
+  'livi':   'livi',
+  'livia':  'livi',
+  'olivia': 'livi',
+  'nia':    'niamh',
+  'niamh':  'niamh',
 };
 
 /** Fallback staff if the calendar name isn't in CALENDAR_MAP */
@@ -252,7 +266,7 @@ if (criticalMissing.length) {
 
 // ── Parse rows ────────────────────────────────────────────────────────────────
 
-const records = [];
+let records = [];   // reassigned by the dedup pass below
 const errors = [];
 
 for (let r = 1; r < rows.length; r++) {
@@ -292,7 +306,7 @@ for (let r = 1; r < rows.length; r++) {
 
   // Prefer computing duration from parsed start/end times (Acuity has no Duration column).
   // Fall back to an explicit Duration column or 30 min if end time is unavailable.
-  let durationMinutes: number;
+  let durationMinutes;
   if (endTime) {
     const [sh, sm] = startTime.split(':').map(Number);
     const [eh, em] = endTime.split(':').map(Number);
@@ -304,9 +318,14 @@ for (let r = 1; r < rows.length; r++) {
     endTime = addMinutes(startTime, isNaN(durationMinutes) ? 30 : durationMinutes);
   }
 
-  // Acuity puts a date string in Canceled when cancelled, or leaves it empty
-  const cancelledRaw = get(idxCancelled).toLowerCase();
-  const isCancelled  = cancelledRaw !== '' && cancelledRaw !== 'no' && cancelledRaw !== 'false' && cancelledRaw !== '0';
+  // Acuity puts a date string in Canceled when cancelled, or leaves it empty.
+  // It also puts the literal "no-show" there, which is NOT a cancellation: a
+  // no-show counts toward staff payout (lib/payout.ts) and a cancellation does
+  // not, so collapsing the two understates what someone is owed.
+  const cancelledRaw = get(idxCancelled).toLowerCase().trim();
+  const isNoShow     = cancelledRaw === 'no-show' || cancelledRaw === 'no show';
+  const isCancelled  = !isNoShow && cancelledRaw !== '' && cancelledRaw !== 'no'
+                    && cancelledRaw !== 'false' && cancelledRaw !== '0';
 
   const priceRaw = get(idxPrice).replace(/[$,]/g, '');
   const price = priceRaw ? parseFloat(priceRaw) : 0;
@@ -322,16 +341,68 @@ for (let r = 1; r < rows.length; r++) {
     service:          get(idxService) || 'Haircut',
     duration_minutes: durationMinutes,
     price:            isNaN(price) ? 0 : price,
-    status:           isCancelled ? 'cancelled' : 'confirmed',
+    status:           isNoShow ? 'no_show' : isCancelled ? 'cancelled' : 'confirmed',
     reminder_sent:    true,  // suppress automated reminders for all imported Acuity records
+    // Exempt from appointments_no_overlap. That constraint exists to stop the
+    // public funnel double-booking across a Square charge; these are historical
+    // records of what the studio actually did, including deliberate overlaps.
+    // Without this the import aborts mid-batch on real double-bookings.
+    overlap_ok:       true,
     notes:            get(idxNotes) || null,
     // manage_token inserted after we get the DB-assigned id
   });
 }
 
+// ── Deduplicate against what is already in the database ──────────────────────
+//
+// Acuity exports are cumulative: every export repeats everything in its date
+// range. Without this, re-running the import inserts the overlap again. It does
+// not fail loudly either — appointments_no_overlap rejects the duplicate
+// *confirmed* rows but happily accepts duplicate cancelled ones, so a naive
+// re-run half-succeeds and leaves the table in a state nobody can eyeball.
+//
+// The 2026-08-02 export was 1080 rows of which 702 were already present.
+//
+// Matched on date + start_time + normalised name. There is no Acuity id column
+// on `appointments` to match against; if imports become routine, adding one is
+// the better fix than sharpening this heuristic.
+
+// Both sides are normalised through this. parseTime() emits "HH:MM:SS" while
+// Postgres returns "HH:MM:SS" too, but slicing both to HH:MM keeps the key
+// insensitive to either side gaining or losing seconds. An earlier version
+// sliced only the database side and matched nothing at all — reporting
+// "0 already present" for a file that was 65% duplicates.
+const keyOf = (date, time, name) =>
+  `${date}|${String(time).slice(0, 5)}|${(name ?? '').toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+
+console.log('Checking for rows already in the database…');
+const existingKeys = new Set();
+for (let from = 0; ; from += 1000) {
+  // Paged deliberately: PostgREST caps a response at 1000 rows whatever `limit`
+  // says, and returns the truncated page with a 200 and no warning.
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/appointments?select=date,start_time,client_name`,
+    { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`,
+                 Range: `${from}-${from + 999}` } },
+  );
+  if (!res.ok) { console.error(`Could not read existing appointments: ${res.status}`); process.exit(1); }
+  const page = await res.json();
+  for (const a of page) existingKeys.add(keyOf(a.date, a.start_time, a.client_name));
+  if (page.length < 1000) break;
+}
+
+const parsedCount = records.length;
+const isDupe      = r => existingKeys.has(keyOf(r.date, r.start_time, r.client_name));
+const duplicates  = records.filter(isDupe);
+records           = records.filter(r => !isDupe(r));
+
+console.log(`  ${existingKeys.size} appointments already in the database`);
+console.log(`  ${duplicates.length} of ${parsedCount} CSV rows already present — skipping`);
+console.log(`  ${records.length} new to import\n`);
+
 // ── Report ────────────────────────────────────────────────────────────────────
 
-console.log(`Parsed ${records.length} appointments from ${rows.length - 1} CSV rows.`);
+console.log(`Parsed ${parsedCount} appointments from ${rows.length - 1} CSV rows.`);
 if (errors.length) {
   console.log(`\nSkipped rows (${errors.length}):`);
   errors.forEach(e => console.log(`  ⚠ ${e}`));
