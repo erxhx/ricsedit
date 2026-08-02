@@ -439,6 +439,33 @@ in dev/simulator. Last reviewed 2026-07-31.
       16.4+ supports push in installed PWAs, and a new-booking alert is probably
       the single highest-value feature for staff.
 
+### Hosting: why Vercel and not Cloudflare Workers
+
+Asked twice, so recorded. Cloudflare Pages hosts static sites free, but this is a
+Next.js server — API routes, SSR, cookie auth, a daily cron, Square webhooks. On
+Cloudflare that means Workers via the OpenNext adapter, and two things block it:
+
+1. **Three routes read from disk at runtime** — `app/route.ts`,
+   `app/[...slug]/route.ts`, `app/privacy/route.ts` all `readFile` the marketing
+   HTML from `process.cwd()` and rewrite asset paths per request. Workers have no
+   filesystem. Roughly an hour to inline at build time; `scripts/compile-site-jsx.mjs`
+   already runs at the right moment to do it.
+2. **Four Node-runtime SDK imports.** `twilio` (notifications.ts) and `web-push`
+   (push.ts) are the hard ones — heavy Node http and Node crypto respectively.
+   Both are replaceable (Twilio's REST API is plain `fetch`; VAPID can use Web
+   Crypto) but that is rewriting live SMS and push paths. `square` ×2 is likelier
+   to survive `nodejs_compat`, but that is a find-out-by-trying.
+
+Cron and webhooks are fine — Cloudflare Cron Triggers cover the daily reminder.
+
+Estimate: a day or two with real uncertainty mid-way, plus a full re-verification
+of payments, email, SMS and push, to save roughly $200–240/yr against Vercel Pro.
+Not a trade worth making around a launch, and if ever done, it should be its own
+project rather than a cost optimisation squeezed in beside one.
+
+Cheaper later if Web Push turns out to be unused — that removes one of the two
+hard blockers, and it is still unverified over HTTPS (see above).
+
 ### Email authentication & Apple Branded Mail
 
 Not launch blockers — mail authenticates correctly today. This is about the
