@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import type { Appointment } from '@/lib/admin-mock';
 import { getAppointmentColor } from '@/lib/appointment-colors';
 import { STAFF as ROSTER } from '@/lib/staff';
@@ -148,12 +149,19 @@ function StaffStatus({ appointments, dayHours }: {
           const hr = h > 12 ? h - 12 : h === 0 ? 12 : h;
           return `${hr}:${String(m).padStart(2,'0')}${p}`;
         }
-        return (
-          <div key={id} style={{
-            flex: 1, padding: '10px 12px', borderRadius: 10,
-            background: info.current ? `${color}18` : 'var(--admin-card)',
-            border: `1px solid ${info.current ? `${color}40` : 'var(--admin-border)'}`,
-          }}>
+        // Whoever this card is talking about — the person in the chair, or the
+        // one coming up. A card showing "Free" has nothing to open.
+        const target = info.current ?? info.next;
+        const cardStyle = {
+          flex: 1, padding: '10px 12px', borderRadius: 10,
+          background: info.current ? `${color}18` : 'var(--admin-card)',
+          border: `1px solid ${info.current ? `${color}40` : 'var(--admin-border)'}`,
+          display: 'block', textDecoration: 'none', color: 'inherit',
+          WebkitTapHighlightColor: 'transparent',
+        } as const;
+
+        const body = (
+          <>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <div style={{ width: 6, height: 6, borderRadius: '50%', background: color }} />
@@ -182,8 +190,12 @@ function StaffStatus({ appointments, dayHours }: {
             ) : (
               <div style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--admin-muted)', fontStyle: 'italic' }}>Free</div>
             )}
-          </div>
+          </>
         );
+
+        return target
+          ? <Link key={id} href={`/admin/appointments/${target.id}`} style={cardStyle}>{body}</Link>
+          : <div key={id} style={cardStyle}>{body}</div>;
       })}
     </div>
   );
@@ -250,9 +262,20 @@ function NowStrip({ appointments }: { appointments: Appointment[] }) {
           {label}
         </div>
         {apt ? (
-          <>
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 500, color: 'var(--admin-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {apt.clientName}
+          // Tappable through to the appointment. This is the one place on Today
+          // that names the client you are about to see, so it is where staff
+          // reach for their notes and history.
+          <Link
+            href={`/admin/appointments/${apt.id}`}
+            style={{ display: 'block', textDecoration: 'none', color: 'inherit', WebkitTapHighlightColor: 'transparent' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 500, color: 'var(--admin-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
+                {apt.clientName}
+              </div>
+              {/* Same chevron AppointmentCard uses, so "this opens something"
+                  reads the same way everywhere on the screen. */}
+              <span aria-hidden style={{ fontSize: 15, lineHeight: 1, color: 'var(--admin-text3)', flexShrink: 0 }}>›</span>
             </div>
             <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--admin-text3)', marginTop: 2 }}>
               {apt.service}
@@ -260,7 +283,7 @@ function NowStrip({ appointments }: { appointments: Appointment[] }) {
             <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: color, marginTop: 3 }}>
               {fmtT(apt.startTime)} – {fmtT(apt.endTime)}
             </div>
-          </>
+          </Link>
         ) : (
           <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--admin-muted)', fontStyle: 'italic' }}>
             —
