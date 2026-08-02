@@ -461,9 +461,9 @@ passing. "Should" is doing work in that sentence — with no `rua=`, no aggregat
 report has ever been collected, so this is inference from the records, not
 evidence from real mail.
 
-- [ ] **Step 1 — turn on DMARC reporting.** Record published 2026-07-31 and
-      confirmed live on the authoritative SiteGround nameservers and both public
-      resolvers — but see below, it is **not yet collecting anything**:
+- [x] **Step 1 — turn on DMARC reporting.** Published 2026-07-31; collecting
+      since 2026-08-02, once Cloudflare Email Routing gave `dmarc@` somewhere to
+      land:
       ```
       v=DMARC1; p=none; rua=mailto:dmarc@editstudio.space; aspf=r; adkim=r
       ```
@@ -477,20 +477,18 @@ evidence from real mail.
       Gmail means strict reporters drop the reports silently, and the resulting
       silence is indistinguishable from "no problems found".
 
-      **The record is correct but the reporting does not work.** Verified
-      2026-07-31: `dmarc@editstudio.space` returns **550, no such mailbox**, as
-      does `bookings@`. Every report bounces. The tag was chosen on-domain to
-      avoid RFC 7489's external-destination authorization requirement, which was
-      right as far as it went — it just never checked that the mailbox existed.
+      That reasoning was right about the wrong risk. For nine days the record
+      was correct and collecting nothing: `dmarc@editstudio.space` returned
+      **550, no such mailbox**, so every report bounced. Choosing an on-domain
+      address dodged the authorization requirement and then never checked the
+      mailbox existed. Cloudflare Email Routing's catch-all now covers it.
 
-- [ ] **Step 1b — point `rua` at a service, not a mailbox.** With the domain's
-      mail about to move off SiteGround, any address on it is a moving target,
-      and this is the one place where a broken address looks exactly like good
-      news. Sign up for a free DMARC monitor (Postmark's digests, dmarcian,
-      URIports); they publish their own authorization record, so an off-domain
-      address is fine, and they send readable weekly summaries instead of raw
-      XML. One edit to the `rua=` tag, and reporting stops depending on the mail
-      migration entirely.
+      **Reports arrive as zipped XML, by choice.** A monitoring service
+      (Postmark, dmarcian, URIports) would send readable weekly digests instead,
+      and remains a one-tag edit if the XML gets old. Reading them raw is
+      workable — one file per reporter per day, and the only question that
+      matters is whether any source other than Resend and Cloudflare appears
+      with `dkim=fail` or `spf=fail`. Volume is low at this size.
 
 - [x] **`bookings@editstudio.space` — client replies were bouncing.** Fixed
       2026-07-31 with Cloudflare Email Routing: `bookings@` and a catch-all both
@@ -501,11 +499,12 @@ evidence from real mail.
 
       Verified by sending from Outlook and watching it arrive.
 
-      **Caveat while DNS propagates:** Google's resolver was the last major one
-      still delegating to SiteGround, so mail *from Gmail* kept resolving the old
-      MX and bouncing. Sync SiteGround's apex MX to `route1/2/3.mx.cloudflare.net`
-      to close that window, or wait out the registry NS TTL (~24h). Not closed
-      until a Gmail-sent test lands — most clients are on Gmail.
+      **Propagation window, now closed.** Google's resolver was the last major
+      one still delegating to SiteGround, so for about two days mail *from Gmail*
+      resolved the old MX and bounced `550` while every other resolver worked —
+      a real bounce from a correct configuration. Confirmed 2026-08-02 that all
+      four major resolvers return `route1/2/3.mx.cloudflare.net`. It expired on
+      the registry NS TTL without needing the SiteGround MX sync.
 
 - [ ] **Step 2 — enforce, after launch and after reading real reports.**
       ```
