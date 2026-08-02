@@ -435,9 +435,13 @@ export default function DayView({
             {/* Timeline strip */}
             <DayTimeline appointments={active} isToday={isToday} hours={dayHours} />
 
-            {/* Appointment list */}
+            {/* Appointment list. `active`, not `appointments` — cancelled and
+                blocked rows are excluded from the gate above, the timeline, and
+                every count on this screen, and AppointmentCard renders a
+                cancelled booking identically to a live one. Listing them here
+                told staff to expect a client who had cancelled. */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {appointments.map((a) => (
+              {active.map((a) => (
                 <AppointmentCard key={a.id} apt={a} />
               ))}
             </div>
