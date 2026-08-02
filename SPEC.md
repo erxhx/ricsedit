@@ -513,9 +513,10 @@ than wired up: `client_notes` already covers staff-notes-about-a-client, and a
 genuine per-appointment internal note can be added later under a name that does
 not collide.
 
-- [ ] **Run `sql/002_drop_admin_notes.sql`.** Removes the column. Verified empty
-      first — 0 of 1597 rows. The code no longer references it either way, so
-      there is no ordering constraint against the deploy.
+- [x] **Run `sql/002_drop_admin_notes.sql`.** Done 2026-08-02. Column verified
+      empty first (0 of 1597 rows), and gone afterwards: `information_schema`
+      returns no row, and selecting it now 400s. Appointments still 1597,
+      `client_notes` still 66, and a note lookup by phone still resolves.
 
 Acuity, for its part, also keeps two things called notes — per-appointment and
 per-client — and only the first appears in an appointment export. See
