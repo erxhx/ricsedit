@@ -2,36 +2,46 @@
 import { useState, useCallback } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import {
+  CalendarCheck, CalendarDays, Users, TrendingUp, Settings as SettingsIcon,
+  Scissors, Clock, ClipboardList, DoorOpen, Globe,
+  type LucideIcon,
+} from 'lucide-react';
 import { useAdminTheme } from './AdminThemeProvider';
 import useScrollLock from './useScrollLock';
 
 interface NavItem {
   label: string;
   href: string;
-  icon: string;
+  /**
+   * These were typographic glyphs (◈ ▦ ⌘ ↑ ◎) standing in for icons. They read
+   * as symbols rather than pictures — `⌘` for Clients is the Mac Command key,
+   * which is what a staff member sees before they see "people".
+   */
+  icon: LucideIcon;
   /** Studio-wide configuration — hidden from restricted staff. */
   adminOnly?: boolean;
 }
 
 // Primary nav — shown in the persistent bottom tab bar
 const BOTTOM_NAV: NavItem[] = [
-  { label: 'Today',    href: '/admin',             icon: '◈' },
-  { label: 'Schedule', href: '/admin?tab=calendar', icon: '▦' },
-  { label: 'Clients',  href: '/admin/clients',      icon: '⌘' },
-  { label: 'Reports',  href: '/admin/reports',      icon: '↑' },
-  { label: 'Settings', href: '/admin/settings',     icon: '◎' },
+  { label: 'Today',    href: '/admin',              icon: CalendarCheck },
+  { label: 'Schedule', href: '/admin?tab=calendar', icon: CalendarDays },
+  { label: 'Clients',  href: '/admin/clients',      icon: Users },
+  { label: 'Reports',  href: '/admin/reports',      icon: TrendingUp },
+  { label: 'Settings', href: '/admin/settings',     icon: SettingsIcon },
 ];
 
 // Secondary nav — overflow items kept in the drawer
 const NAV: NavItem[] = [
-  { label: 'Schedule',           href: '/admin',                icon: '▦' },
-  { label: 'Clients',            href: '/admin/clients',        icon: '⌘' },
-  { label: 'Services & Pricing', href: '/admin/services',       icon: '✦' },
-  { label: 'Availability',       href: '/admin/availability',   icon: '◷' },
-  { label: 'Intake Forms',       href: '/admin/forms',          icon: '✎' },
-  { label: 'Shared Resources',   href: '/admin/resources',      icon: '⊞', adminOnly: true },
-  { label: 'Live site',          href: '/admin/site',           icon: '⌁' },
-  { label: 'Settings',           href: '/admin/settings',       icon: '◎' },
+  { label: 'Schedule',           href: '/admin',              icon: CalendarDays },
+  { label: 'Clients',            href: '/admin/clients',      icon: Users },
+  { label: 'Services & Pricing', href: '/admin/services',     icon: Scissors },
+  { label: 'Availability',       href: '/admin/availability', icon: Clock },
+  { label: 'Intake Forms',       href: '/admin/forms',        icon: ClipboardList },
+  { label: 'Shared Resources',   href: '/admin/resources',    icon: DoorOpen, adminOnly: true },
+  { label: 'Live site',          href: '/admin/site',         icon: Globe },
+  { label: 'Settings',           href: '/admin/settings',     icon: SettingsIcon },
 ];
 
 function isActive(href: string, pathname: string, searchParams: ReturnType<typeof useSearchParams>): boolean {
@@ -250,12 +260,13 @@ export default function AdminHeader({ name, isAdmin = false }: { name: string; i
                   WebkitTapHighlightColor: 'transparent',
                 }}
               >
-                <span style={{
-                  fontSize: 14, color: active ? 'var(--admin-text)' : 'var(--admin-muted)',
-                  width: 16, textAlign: 'center',
-                }}>
-                  {item.icon}
-                </span>
+                <item.icon
+                  size={17}
+                  strokeWidth={active ? 2.2 : 1.8}
+                  color={active ? 'var(--admin-text)' : 'var(--admin-muted)'}
+                  style={{ flexShrink: 0 }}
+                  aria-hidden
+                />
                 <span style={{
                   fontFamily: 'var(--font-body)', fontSize: 15,
                   color: active ? 'var(--admin-text)' : 'var(--admin-text3)',
@@ -326,7 +337,9 @@ export default function AdminHeader({ name, isAdmin = false }: { name: string; i
                 WebkitTapHighlightColor: 'transparent',
               }}
             >
-              <span style={{ fontSize: 17, lineHeight: 1 }}>{item.icon}</span>
+              {/* Weight carries the active state as well as colour — at 20px
+                  on a phone, a colour shift alone is easy to miss. */}
+              <item.icon size={20} strokeWidth={active ? 2.4 : 1.8} aria-hidden />
               <span style={{
                 fontFamily: 'var(--font-body)', fontSize: 10,
                 letterSpacing: '0.05em', textTransform: 'uppercase',

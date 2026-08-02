@@ -644,7 +644,11 @@ Admin PWA (reviewed on an iPhone 17 Pro Max simulator, installed to home screen)
   12–13px.
 - **Nav labels collide**: the tab bar's *Schedule* → `/admin?tab=calendar`, the
   drawer's *Schedule* → `/admin` (which is Today).
-- **Tab-bar icons are abstract glyphs** (`⌘` for Clients is the Command symbol).
+- ~~**Tab-bar icons are abstract glyphs**~~ — fixed 2026-08-02. `◈ ▦ ⌘ ↑ ◎` and
+  the drawer's eight glyphs are now `lucide-react` icons. They were typographic
+  symbols standing in for pictures, and `⌘` reads as the Mac Command key before
+  it reads as "people". Active state is carried by stroke weight as well as
+  colour, since a colour shift alone is easy to miss at 20px on a phone.
 - **Manifest**: `background_color: #0d0c0a` against a light app gives a dark
   splash flash on launch; the single 512px icon is declared
   `"purpose": "any maskable"`, and maskable icons get cropped. No 192px size.
