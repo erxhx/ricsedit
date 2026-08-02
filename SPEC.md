@@ -54,11 +54,16 @@ The system consists of:
 
 ### Tables
 
-**clients**
-- id, name, email, phone, created_at
-- waiver_wax_signed (boolean + date)
-- waiver_tan_signed (boolean + date)
-- admin_notes (staff only, never visible to client)
+**clients** — *planned, never built.* There is no clients table. The admin's
+client list is derived by aggregating `appointments` by name (`dbListClients`),
+and waivers live in their own store. What survived of this design is:
+
+**client_notes**
+- phone (primary key), notes, updated_at
+- Staff-written notes about a person, persistent across all their appointments.
+- This is what the section labelled "Admin notes" in `AppointmentDetail` reads
+  and writes, via `/api/admin/clients/notes`. Keyed by phone because there is no
+  client id to key on.
 
 **appointments**
 - id, client_id, staff_id, service_id
@@ -486,6 +491,35 @@ project rather than a cost optimisation squeezed in beside one.
 
 Cheaper later if Web Push turns out to be unused — that removes one of the two
 hard blockers, and it is still unverified over HTTPS (see above).
+
+### Notes: three fields, one of them removed
+
+Resolved 2026-08-02. Worth reading before writing anything to a "notes" field.
+
+| where | what | rendered as |
+|---|---|---|
+| `appointments.notes` | the client's own note, submitted at booking | "Client note" |
+| `client_notes` table, keyed by phone | staff notes about a person, across all their appointments | **"Admin notes"** |
+| ~~`appointments.admin_notes`~~ | nothing — removed | never rendered |
+
+The trap: the section labelled **"Admin notes"** is backed by the `client_notes`
+table, not by a column called `admin_notes`. That column existed, was mapped in
+`lib/db.ts`, sat on the `Appointment` type, and was displayed by nothing.
+
+It cost real work. Importing Acuity's client notes, 65 of them went into
+`admin_notes` and became invisible; the working feature was only found afterwards
+by grepping for what renders `adminNotes` and getting no hits. Dropped rather
+than wired up: `client_notes` already covers staff-notes-about-a-client, and a
+genuine per-appointment internal note can be added later under a name that does
+not collide.
+
+- [ ] **Run `sql/002_drop_admin_notes.sql`.** Removes the column. Verified empty
+      first — 0 of 1597 rows. The code no longer references it either way, so
+      there is no ordering constraint against the deploy.
+
+Acuity, for its part, also keeps two things called notes — per-appointment and
+per-client — and only the first appears in an appointment export. See
+`scripts/import-acuity.mjs` and `scripts/import-client-notes.mjs`.
 
 ### Email authentication & Apple Branded Mail
 

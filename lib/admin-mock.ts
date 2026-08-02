@@ -42,7 +42,10 @@ export interface Appointment {
   price: number;
   status: AppointmentStatus;
   notes?: string;         // client-submitted note from booking form
-  adminNotes?: string;    // internal admin note — never shown to the client
+  // Staff-written notes about a client are NOT here. They live in the
+  // `client_notes` table keyed by phone (dbGetClientNotes/dbSaveClientNotes),
+  // which is what the section labelled "Admin notes" in AppointmentDetail
+  // reads and writes. See SPEC.md §12.
   reminderSent?: boolean; // true once the 24h reminder email/SMS has been dispatched
   intakeResponses?: { category: string; fields: Record<string, unknown> };
   manageToken: string;    // unique token for client self-serve cancel/reschedule
