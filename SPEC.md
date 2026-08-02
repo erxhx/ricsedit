@@ -349,9 +349,21 @@ in dev/simulator. Last reviewed 2026-07-31.
 - [ ] **Square is in sandbox.** Admin → Settings shows "Square connected
       (sandbox)". Swap to production credentials and re-run an end-to-end
       payment before any real money moves.
-- [ ] **Test records are mixed into the live client list.** The clients table
-      (445 rows, imported from Acuity) contains obvious test entries. Purge
-      before launch — they also skew Reports revenue and visit counts.
+- [x] **Test records purged from the client list.** Done 2026-08-02. Four
+      appointments deleted by explicit id after individual review; 1240 → 1236,
+      verified. Two were `@probe.test` (a reserved domain, so provably nobody),
+      two were staff testing the funnel in January.
+
+      **Delete by id, never by pattern, on this table.** The two January rows
+      were named `test test` but carried a real staff Gmail — the same address
+      as a genuine confirmed booking on 2026-07-23. Any query matching that
+      email would have taken a live appointment along with the tests. Confirm
+      what an address belongs to before matching on it.
+
+      Also note `appointments` has 1240 rows and **PostgREST caps a response at
+      1000 regardless of `limit`**. The first pass of this audit silently
+      surveyed 1000 and reported "total: 1000". Page with the `Range` header, and
+      get the true count from `Prefer: count=exact`.
 - [ ] **Confirm the security headers ship in production.** HSTS and the CSP's
       `upgrade-insecure-requests` are now gated on `NODE_ENV === 'production'`
       (they broke all device testing when sent from `next dev` over HTTP, and
