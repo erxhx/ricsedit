@@ -360,10 +360,19 @@ in dev/simulator. Last reviewed 2026-07-31.
       email would have taken a live appointment along with the tests. Confirm
       what an address belongs to before matching on it.
 
-      Also note `appointments` has 1240 rows and **PostgREST caps a response at
-      1000 regardless of `limit`**. The first pass of this audit silently
-      surveyed 1000 and reported "total: 1000". Page with the `Range` header, and
-      get the true count from `Prefer: count=exact`.
+      Also note **PostgREST caps a response at 1000 rows regardless of `limit`**.
+      The first pass of this audit silently surveyed 1000 of 1240 and reported
+      "total: 1000". Page with the `Range` header; get the true count from
+      `Prefer: count=exact`.
+
+      **That first purge was incomplete.** Matching on names containing "test"
+      missed `Etf Vvb` and `yo mama` — 16 further test bookings found on
+      2026-08-02, all under the owner's own address `eriche876@gmail.com`, and
+      all deleted. Two of them were `no_show`, which **counts toward payout**, so
+      they had been inflating Niamh's and Eric's earnings.
+
+      **Search by the tester's email, not by the name they typed.** Names are
+      whatever someone felt like at the time; the account is constant.
 - [ ] **Confirm the security headers ship in production.** HSTS and the CSP's
       `upgrade-insecure-requests` are now gated on `NODE_ENV === 'production'`
       (they broke all device testing when sent from `next dev` over HTTP, and

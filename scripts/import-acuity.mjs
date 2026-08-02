@@ -447,6 +447,16 @@ console.log('\nStaff breakdown:', Object.entries(byStaff).map(([k,v]) => `${k}: 
 const byStatus = records.reduce((acc, r) => { acc[r.status] = (acc[r.status] || 0) + 1; return acc; }, {});
 console.log('Status breakdown:', Object.entries(byStatus).map(([k,v]) => `${k}: ${v}`).join(', '));
 
+// Acuity's Notes column is sparse and staff-written ("refunded X", product
+// notes). It lands in `notes`, which is staff-visible only — the client's
+// manage page does not render it. Counted here so a silently-dropped column is
+// visible rather than assumed.
+const withNotes = records.filter(r => r.notes && String(r.notes).trim() !== '');
+console.log(`Notes: ${withNotes.length} of ${records.length} rows carry a note`);
+for (const r of withNotes.slice(0, 5)) {
+  console.log(`  ${r.date} ${r.client_name}: ${String(r.notes).slice(0, 60)}`);
+}
+
 if (DRY_RUN) {
   console.log('\n✓ DRY RUN complete — no data written.');
   console.log('  Re-run with --confirm to import:\n');
@@ -466,24 +476,36 @@ const db = createClient(SUPABASE_URL, SUPABASE_KEY, {
 const BATCH = 100;
 let inserted = 0;
 let failed = 0;
+const rejected = [];   // rows the database refused, with its reason
 
 for (let i = 0; i < records.length; i += BATCH) {
   const batch = records.slice(i, i + BATCH);
 
-  let data, error;
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    ({ data, error } = await db.from('appointments').insert(batch).select('id'));
-    if (!error) break;
-    if (attempt < 3) {
-      process.stdout.write(`  ↻ Batch ${i}–${i + batch.length} attempt ${attempt} failed (${error.message}), retrying…\n`);
-      await new Promise(r => setTimeout(r, 1000 * attempt));
-    }
-  }
+  let { data, error } = await db.from('appointments').insert(batch).select('id');
 
   if (error) {
-    console.error(`  ✗ Batch ${i}–${i + batch.length}: ${error.message}`);
-    failed += batch.length;
-    continue;
+    // A batch insert is one statement, so a single unacceptable row rejects all
+    // 99 of its neighbours. On the 2026-08-02 import that turned roughly a dozen
+    // genuine conflicts into 300 "failures" and made the real problem invisible.
+    //
+    // Rather than predict which rows the database will refuse — the constraints
+    // here have partial WHERE clauses that are easy to model wrongly — fall back
+    // to one row at a time and let the database be the authority. Slower, and
+    // only on the batches that actually fail.
+    process.stdout.write(`\n  ↻ Batch ${i}–${i + batch.length} rejected (${error.message})\n`);
+    process.stdout.write(`    retrying row by row to isolate it…\n`);
+    const ok = [];
+    for (const row of batch) {
+      const r = await db.from('appointments').insert(row).select('id');
+      if (r.error) {
+        failed++;
+        rejected.push({ row, reason: r.error.message });
+      } else {
+        ok.push(...(r.data ?? []));
+      }
+    }
+    data  = ok;
+    error = null;
   }
 
   // Back-fill a random manage_token per row using the DB-assigned id
@@ -494,9 +516,21 @@ for (let i = 0; i < records.length; i += BATCH) {
     }
   }
 
-  inserted += batch.length;
+  inserted += (data?.length ?? 0);
   process.stdout.write(`  ✓ ${inserted}/${records.length}\r`);
 }
 
-console.log(`\n\nDone. ${inserted} inserted, ${failed} failed.`);
+console.log(`\n\nDone. ${inserted} inserted, ${failed} rejected.`);
+
+if (rejected.length) {
+  console.log(`\nRows the database refused (${rejected.length}) — each needs a human decision:`);
+  for (const { row, reason } of rejected) {
+    const why = /no_double_book/.test(reason) ? 'slot already taken by another live appointment'
+              : /no_overlap/.test(reason)     ? 'overlaps an existing appointment'
+              : reason;
+    console.log(`  ${row.date} ${String(row.start_time).slice(0,5)} ${String(row.staff).padEnd(6)} ` +
+                `${String(row.client_name).slice(0,24).padEnd(24)} ${String(row.status).padEnd(9)} — ${why}`);
+  }
+  console.log('\nNothing else was affected; every other row imported.');
+}
 if (failed) console.log('  Check error messages above — failed rows were not imported.');
