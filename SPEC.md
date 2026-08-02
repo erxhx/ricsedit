@@ -497,7 +497,10 @@ evidence from real mail.
       without anyone having to remember what they were, which is exactly how
       `bookings@` and `dmarc@` came to be silently dead.
 
-      Verified by sending from Outlook and watching it arrive.
+      Verified from Outlook 2026-07-31, and from **Gmail** 2026-08-02 once
+      propagation completed. The Gmail test is the one that counts: most clients
+      are on Gmail, and it was the only sender still bouncing after the routing
+      itself was correct.
 
       **Propagation window, now closed.** Google's resolver was the last major
       one still delegating to SiteGround, so for about two days mail *from Gmail*
