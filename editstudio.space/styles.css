@@ -615,7 +615,15 @@ body { min-height: 100svh; }
   color: var(--ink-faint);
   margin-bottom: 18px;
   display: flex; justify-content: space-between;
+  /* Two long labels used to meet in the middle at 375px and read as one word
+     — "PREP + AFTERCAREREAD BEFORE YOUR APPOINTMENT". The gap makes that
+     impossible, and the right label wraps rather than pushing into the left. */
+  gap: 16px;
+  line-height: 1.5;
 }
+/* The section name never breaks; the descriptor gives way and wraps. */
+.cpanel .eyebrow > span:first-child { flex-shrink: 0; }
+.cpanel .eyebrow > span:last-child  { text-align: right; }
 .cpanel h2 {
   font-family: var(--display); font-weight: 300; font-style: italic;
   font-size: clamp(36px, 8vw, 80px);
@@ -884,6 +892,11 @@ body { min-height: 100svh; }
 .faq details[open] summary .plus { transform: rotate(45deg); }
 .faq summary .plus { transition: transform 0.3s var(--easing-spring); display: inline-block; }
 .faq .answer { padding-top: 12px; font-size: 14px; line-height: 1.55; color: var(--ink-soft); max-width: 56ch; }
+/* Most answers are a bare string; the cancellation policy needs paragraphs
+   around its list, so give them spacing without a stray trailing margin. */
+.faq .answer p { margin: 0 0 12px; }
+.faq .answer p:last-child { margin-bottom: 0; }
+.faq .answer .prep-list + p { margin-top: 12px; }
 .faq .answer .prep-list {
   margin: 0;
   padding: 0;

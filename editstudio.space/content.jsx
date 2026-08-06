@@ -108,6 +108,17 @@ function TanContent({ headline }) {
             </ul>
           </div>
         </details>
+        <details>
+          <summary>Cancellation policy <span className="plus">+</span></summary>
+          <div className="answer">
+            <p>A card on file is required to book your appointment, and will <strong>not</strong> be charged unless:</p>
+            <ul className="prep-list">
+              <li><strong>Late cancellation</strong> — cancelling within 12 hours of your appointment results in a 50% service charge.</li>
+              <li><strong>No show</strong> — results in a 100% service charge.</li>
+            </ul>
+            <p>Thank you for understanding!</p>
+          </div>
+        </details>
       </div>
 
       <div className="rule" />
