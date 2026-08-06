@@ -17,6 +17,43 @@ function MenuRow({ name, desc, price }) {
 }
 
 
+// ── Cancellation policies ──────────────────────────────────────
+//
+// Two different policies apply across the four services, so each is written
+// once and reused. They were briefly duplicated as inline copy, which is how
+// the Visit FAQ came to promise "no fees" while the Sunless page charged 50%
+// — a client could cite whichever suited them.
+//
+// Charged: Sunless, Waxing.  Flexible: Barbering.  Lashes: undecided, below.
+
+function ChargedCancellationPolicy() {
+  return (
+    <details>
+      <summary>Cancellation policy <span className="plus">+</span></summary>
+      <div className="answer">
+        <p>A card on file is required to book your appointment, and will <strong>not</strong> be charged unless:</p>
+        <ul className="prep-list">
+          <li><strong>Late cancellation</strong> — cancelling within 12 hours of your appointment results in a 50% service charge.</li>
+          <li><strong>No show</strong> — results in a 100% service charge.</li>
+        </ul>
+        <p>Thank you for understanding!</p>
+      </div>
+    </details>
+  );
+}
+
+/** Shared with the Visit page FAQ so the two can never drift apart. */
+const FLEXIBLE_POLICY_COPY = "Life happens — we get it. If something comes up, just give us a call or text as soon as you can so we can offer the spot to someone on the waitlist. No fees for the occasional cancel or reschedule. Repeated no-shows will result in a deposit or full charge on future bookings.";
+
+function FlexibleCancellationPolicy() {
+  return (
+    <details>
+      <summary>Cancellation policy <span className="plus">+</span></summary>
+      <div className="answer">{FLEXIBLE_POLICY_COPY}</div>
+    </details>
+  );
+}
+
 
 // ── Per-service content blocks ─────────────────────────────────
 function BarberingContent({ headline }) {
@@ -28,6 +65,12 @@ function BarberingContent({ headline }) {
 
       <div className="rule" />
       <window.BookingEmbed category="barber" />
+
+      <div className="rule" />
+      <Eyebrow left="Policies" right="Read before you book" />
+      <div className="faq">
+        <FlexibleCancellationPolicy />
+      </div>
 
       <div className="rule" />
       <Eyebrow left="Gallery" right="Recent work" />
@@ -108,17 +151,7 @@ function TanContent({ headline }) {
             </ul>
           </div>
         </details>
-        <details>
-          <summary>Cancellation policy <span className="plus">+</span></summary>
-          <div className="answer">
-            <p>A card on file is required to book your appointment, and will <strong>not</strong> be charged unless:</p>
-            <ul className="prep-list">
-              <li><strong>Late cancellation</strong> — cancelling within 12 hours of your appointment results in a 50% service charge.</li>
-              <li><strong>No show</strong> — results in a 100% service charge.</li>
-            </ul>
-            <p>Thank you for understanding!</p>
-          </div>
-        </details>
+        <ChargedCancellationPolicy />
       </div>
 
       <div className="rule" />
@@ -173,6 +206,12 @@ function WaxContent({ headline }) {
       <window.BookingEmbed category="wax" />
 
       <div className="rule" />
+      <Eyebrow left="Policies" right="Read before you book" />
+      <div className="faq">
+        <ChargedCancellationPolicy />
+      </div>
+
+      <div className="rule" />
       <Eyebrow left="Gallery" right="Studio &amp; brow work" />
       <div className="gallery">
         <div className="tile tall">
@@ -214,6 +253,19 @@ function LashesContent({ headline }) {
 
       <div className="rule" />
       <window.BookingEmbed category="lashes" />
+
+      {/* NOT PUBLISHED — awaiting a decision on which cancellation policy
+          applies to lashes. Uncomment once it is settled, and swap in
+          <ChargedCancellationPolicy /> or <FlexibleCancellationPolicy />.
+          Left commented rather than shown empty: a "policy coming soon"
+          heading on a page that takes a card on file is worse than silence.
+
+      <div className="rule" />
+      <Eyebrow left="Policies" right="Read before you book" />
+      <div className="faq">
+        <ChargedCancellationPolicy />
+      </div>
+      */}
 
       <div className="rule" />
       <Eyebrow left="Gallery" right="Lash &amp; brow work" />
@@ -301,7 +353,12 @@ function VisitContent() {
         </details>
         <details>
           <summary>What&apos;s your cancellation policy? <span className="plus">+</span></summary>
-          <div className="answer">Life happens — we get it. If something comes up, just give us a call or text as soon as you can so we can offer the spot to someone on the waitlist. No fees for the occasional cancel or reschedule. Repeated no-shows will result in a deposit or full charge on future bookings.</div>
+          {/* Same copy as the Barbering accordion, by construction.
+              NOTE: this answer is unscoped — it reads as studio-wide but is
+              only true of barbering. Sunless and Waxing now charge 50% inside
+              12 hours and 100% for a no-show, so a client quoting this page
+              would be quoting the wrong policy at two of four services. */}
+          <div className="answer">{FLEXIBLE_POLICY_COPY}</div>
         </details>
         <details>
           <summary>Are you accessible? <span className="plus">+</span></summary>
