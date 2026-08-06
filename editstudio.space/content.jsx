@@ -75,29 +75,6 @@ function TanContent({ headline }) {
       <window.BookingEmbed category="tan" />
 
       <div className="rule" />
-      <Eyebrow left="Gallery" right="Real bodies · real glow" />
-      <div className="gallery">
-        <div className="tile">
-          <img src="assets/spray-tan-in-progress-airbrush.webp" alt="Custom airbrush spray tan application in the Edit Studio sunless booth — Oak Bay Victoria BC" loading="lazy" decoding="async" width="1365" height="2048" style={{ objectPosition: "center 70%" }} />
-        </div>
-        <div className="tile">
-          <img src="assets/nuda-dark-chocolate-spray-tan-solution.webp" alt="NUDA Sunless Dark Chocolate professional spray tan solution — organic, vegan, cruelty-free formula used at Edit Studio Oak Bay" loading="lazy" decoding="async" width="1365" height="2048" style={{ objectPosition: "center 40%" }} />
-        </div>
-        <div className="tile tall">
-          <img src="assets/sunless-tan-closeup-bikini.webp" alt="Close-up of a custom-blended sunless spray tan in a black bikini — natural, streak-free, orange-free golden glow on light skin, by Edit Studio sunless tan artist in Oak Bay Victoria BC" loading="lazy" decoding="async" width="1179" height="2096" />
-        </div>
-        <div className="tile square">
-          <img src="assets/sunless-tan-bikini-outdoor-canon.webp" alt="Sun-drenched outdoor bikini photo showing a flawless custom sunless spray tan — natural, streak-free, orange-free bronze glow by Edit Studio sunless tan artist in Oak Bay Victoria BC" loading="lazy" decoding="async" width="1536" height="1434" style={{ objectPosition: "center bottom" }} />
-        </div>
-        <div className="tile square">
-          <img src="assets/sunless-shimmering-finishing-powder-brush.webp" alt="Gloved sunless tan artist dusting a shimmering finishing powder with a kabuki brush — the signature Edit Studio glow-set step that locks in colour and adds luminosity, Oak Bay Victoria BC" loading="lazy" decoding="async" width="1200" height="1200" style={{ objectPosition: "center 100%", transform: "scale(1.2)", transformOrigin: "bottom center" }} />
-        </div>
-        <div className="tile square">
-          <img src="assets/sunless-airbrush-spray-tan-gun.webp" alt="Edit Studio sunless tan artist holding a professional HVLP airbrush spray tan gun loaded with custom-blended NUDA tanning solution — Oak Bay Victoria BC" loading="lazy" decoding="async" width="1200" height="1200" />
-        </div>
-      </div>
-
-      <div className="rule" />
       <Eyebrow left="Prep + Aftercare" right="Read before your appointment" />
       <div className="faq">
         <details>
@@ -131,6 +108,29 @@ function TanContent({ headline }) {
             </ul>
           </div>
         </details>
+      </div>
+
+      <div className="rule" />
+      <Eyebrow left="Gallery" right="Real bodies · real glow" />
+      <div className="gallery">
+        <div className="tile">
+          <img src="assets/spray-tan-in-progress-airbrush.webp" alt="Custom airbrush spray tan application in the Edit Studio sunless booth — Oak Bay Victoria BC" loading="lazy" decoding="async" width="1365" height="2048" style={{ objectPosition: "center 70%" }} />
+        </div>
+        <div className="tile">
+          <img src="assets/nuda-dark-chocolate-spray-tan-solution.webp" alt="NUDA Sunless Dark Chocolate professional spray tan solution — organic, vegan, cruelty-free formula used at Edit Studio Oak Bay" loading="lazy" decoding="async" width="1365" height="2048" style={{ objectPosition: "center 40%" }} />
+        </div>
+        <div className="tile tall">
+          <img src="assets/sunless-tan-closeup-bikini.webp" alt="Close-up of a custom-blended sunless spray tan in a black bikini — natural, streak-free, orange-free golden glow on light skin, by Edit Studio sunless tan artist in Oak Bay Victoria BC" loading="lazy" decoding="async" width="1179" height="2096" />
+        </div>
+        <div className="tile square">
+          <img src="assets/sunless-tan-bikini-outdoor-canon.webp" alt="Sun-drenched outdoor bikini photo showing a flawless custom sunless spray tan — natural, streak-free, orange-free bronze glow by Edit Studio sunless tan artist in Oak Bay Victoria BC" loading="lazy" decoding="async" width="1536" height="1434" style={{ objectPosition: "center bottom" }} />
+        </div>
+        <div className="tile square">
+          <img src="assets/sunless-shimmering-finishing-powder-brush.webp" alt="Gloved sunless tan artist dusting a shimmering finishing powder with a kabuki brush — the signature Edit Studio glow-set step that locks in colour and adds luminosity, Oak Bay Victoria BC" loading="lazy" decoding="async" width="1200" height="1200" style={{ objectPosition: "center 100%", transform: "scale(1.2)", transformOrigin: "bottom center" }} />
+        </div>
+        <div className="tile square">
+          <img src="assets/sunless-airbrush-spray-tan-gun.webp" alt="Edit Studio sunless tan artist holding a professional HVLP airbrush spray tan gun loaded with custom-blended NUDA tanning solution — Oak Bay Victoria BC" loading="lazy" decoding="async" width="1200" height="1200" />
+        </div>
       </div>
 
       <div className="rule" />
