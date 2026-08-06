@@ -24,7 +24,18 @@ function MenuRow({ name, desc, price }) {
 // the Visit FAQ came to promise "no fees" while the Sunless page charged 50%
 // — a client could cite whichever suited them.
 //
-// Charged: Sunless, Waxing.  Flexible: Barbering.  Lashes: undecided, below.
+// Charged: Sunless, Waxing, Lashes.  Flexible: Barbering.
+//
+// The charged policy appears twice — in full as an accordion, and summarised
+// on the Visit FAQ — so its numbers live here rather than in either rendering.
+// Editing them in one place and not the other is the whole failure mode.
+//
+// These must match the per-category `cardOnFile` setting in admin Settings.
+// A published policy promising a charge, on a category that never collects a
+// card, is unenforceable.
+const LATE_WINDOW_HOURS  = 12;
+const LATE_CHARGE_PCT    = 50;
+const NO_SHOW_CHARGE_PCT = 100;
 
 function ChargedCancellationPolicy() {
   return (
@@ -33,8 +44,8 @@ function ChargedCancellationPolicy() {
       <div className="answer">
         <p>A card on file is required to book your appointment, and will <strong>not</strong> be charged unless:</p>
         <ul className="prep-list">
-          <li><strong>Late cancellation</strong> — cancelling within 12 hours of your appointment results in a 50% service charge.</li>
-          <li><strong>No show</strong> — results in a 100% service charge.</li>
+          <li><strong>Late cancellation</strong> — cancelling within {LATE_WINDOW_HOURS} hours of your appointment results in a {LATE_CHARGE_PCT}% service charge.</li>
+          <li><strong>No show</strong> — results in a {NO_SHOW_CHARGE_PCT}% service charge.</li>
         </ul>
         <p>Thank you for understanding!</p>
       </div>
@@ -254,18 +265,11 @@ function LashesContent({ headline }) {
       <div className="rule" />
       <window.BookingEmbed category="lashes" />
 
-      {/* NOT PUBLISHED — awaiting a decision on which cancellation policy
-          applies to lashes. Uncomment once it is settled, and swap in
-          <ChargedCancellationPolicy /> or <FlexibleCancellationPolicy />.
-          Left commented rather than shown empty: a "policy coming soon"
-          heading on a page that takes a card on file is worse than silence.
-
       <div className="rule" />
       <Eyebrow left="Policies" right="Read before you book" />
       <div className="faq">
         <ChargedCancellationPolicy />
       </div>
-      */}
 
       <div className="rule" />
       <Eyebrow left="Gallery" right="Lash &amp; brow work" />
@@ -353,12 +357,17 @@ function VisitContent() {
         </details>
         <details>
           <summary>What&apos;s your cancellation policy? <span className="plus">+</span></summary>
-          {/* Same copy as the Barbering accordion, by construction.
-              NOTE: this answer is unscoped — it reads as studio-wide but is
-              only true of barbering. Sunless and Waxing now charge 50% inside
-              12 hours and 100% for a no-show, so a client quoting this page
-              would be quoting the wrong policy at two of four services. */}
-          <div className="answer">{FLEXIBLE_POLICY_COPY}</div>
+          {/* Scoped per service, because the two policies genuinely differ.
+              An unscoped answer here reads as studio-wide and would be wrong
+              for three of the four — and this is the page a client checks
+              before disputing a charge. Both halves derive from the same
+              source as the per-service accordions. */}
+          <div className="answer">
+            {/* Colon, not an em dash — the flexible copy opens with one of its
+                own, and "Barbering — Life happens — we get it" reads as a stutter. */}
+            <p><strong>Barbering:</strong> {FLEXIBLE_POLICY_COPY}</p>
+            <p><strong>Sunless, waxing and lashes:</strong> a card on file is required to book, and won&apos;t be charged unless you cancel within {LATE_WINDOW_HOURS} hours of your appointment ({LATE_CHARGE_PCT}% of the service) or don&apos;t show ({NO_SHOW_CHARGE_PCT}%).</p>
+          </div>
         </details>
         <details>
           <summary>Are you accessible? <span className="plus">+</span></summary>
