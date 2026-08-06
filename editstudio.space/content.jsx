@@ -366,7 +366,7 @@ function VisitContent() {
             {/* Colon, not an em dash — the flexible copy opens with one of its
                 own, and "Barbering — Life happens — we get it" reads as a stutter. */}
             <p><strong>Barbering:</strong> {FLEXIBLE_POLICY_COPY}</p>
-            <p><strong>Sunless, waxing and lashes:</strong> a card on file is required to book, and won&apos;t be charged unless you cancel within {LATE_WINDOW_HOURS} hours of your appointment ({LATE_CHARGE_PCT}% of the service) or don&apos;t show ({NO_SHOW_CHARGE_PCT}%).</p>
+            <p><strong>Sunless, Waxing and Lashes:</strong> a card on file is required to book, and won&apos;t be charged unless you cancel within {LATE_WINDOW_HOURS} hours of your appointment ({LATE_CHARGE_PCT}% of the service) or no show ({NO_SHOW_CHARGE_PCT}%).</p>
           </div>
         </details>
         <details>
