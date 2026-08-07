@@ -443,6 +443,34 @@ async function sendEmail(to: string, subject: string, html: string): Promise<voi
   }
 }
 
+/**
+ * Downgrade typographic punctuation to its GSM-7 equivalent.
+ *
+ * A single character outside the GSM-7 alphabet re-encodes the WHOLE message as
+ * UCS-2, and the segment size drops from 153 characters to 67. The booking
+ * confirmation was 142 characters and billed as THREE segments because of one
+ * `·`. Across the templates that was 13 segments per booking cycle instead of 7.
+ *
+ * Done here rather than by rewriting the copy, because the same strings are
+ * display text elsewhere. Three service names contain an em dash — "Freshen Up
+ * — Haircut" — and they should keep it on the menu and in email, where the
+ * typography is free. Only SMS pays for it, so only SMS gives it up.
+ *
+ * Accented letters are deliberately left alone. Many are in GSM-7 (é à ñ ü ö),
+ * and the ones that are not — a client named Concepción — are worth a second
+ * segment rather than mangling somebody's name.
+ */
+function gsm7(text: string): string {
+  return text
+    .replace(/[—–‒]/g, '-')      // em, en, figure dash
+    .replace(/[·•]/g, '-')       // middle dot, bullet
+    .replace(/[’‘‚]/g, "'")      // curly single quotes
+    .replace(/[“”„]/g, '"')      // curly double quotes
+    .replace(/…/g, '...')
+    .replace(/[→⇒]/g, '->')
+    .replace(/ /g, ' ');    // non-breaking space
+}
+
 async function sendSms(to: string, body: string): Promise<void> {
   // Either sender will do — the Messaging Service is preferred, but a bare
   // number still sends. Requiring both would turn a config upgrade into an
@@ -460,10 +488,14 @@ async function sendSms(to: string, body: string): Promise<void> {
     // variable. Spreading widens the type and TypeScript stops excess-property
     // checking, so `messagingServiceSidTYPO` compiled clean — the mistake this
     // shape is most likely to make is exactly the one that would slip through.
+    // Applied here, at the single choke point, so it covers interpolated
+    // service names and staff-written cancellation notes as well as our own
+    // template copy — anything that reaches a client by SMS.
+    const text = gsm7(body);
     await twilioClient.messages.create(
       TWILIO_MSG_SERVICE
-        ? { messagingServiceSid: TWILIO_MSG_SERVICE, to: e164, body }
-        : { from: TWILIO_FROM, to: e164, body },
+        ? { messagingServiceSid: TWILIO_MSG_SERVICE, to: e164, body: text }
+        : { from: TWILIO_FROM, to: e164, body: text },
     );
   } catch (err) {
     console.error('[notifications] SMS send error', err);
@@ -482,11 +514,13 @@ export async function sendBookingConfirmation(apt: Appointment): Promise<void> {
   const client = buildEmail('confirmation', apt);
   const owner  = buildEmail('owner-new-booking', apt);
 
+  // Plain hyphens, not · or —. See the note above sendSms: one non-GSM-7
+  // character re-encodes the whole message and triples the segment count.
   const clientSms =
-    `Edit Studio: You're booked!\n${apt.service} · ${formatDate(apt.date)} at ${formatTime(apt.startTime)}\nManage: ${url}`;
+    `Edit Studio: You're booked!\n${apt.service} - ${formatDate(apt.date)} at ${formatTime(apt.startTime)}\nManage: ${url}`;
 
   const ownerSms =
-    `New booking: ${apt.clientName} · ${apt.service} · ${formatDate(apt.date)} at ${formatTime(apt.startTime)}`;
+    `New booking: ${apt.clientName} - ${apt.service} - ${formatDate(apt.date)} at ${formatTime(apt.startTime)}`;
 
   await Promise.all([
     sendEmail(apt.clientEmail, client.subject, client.html),
@@ -510,7 +544,7 @@ export async function sendCancellationNotification(
   const email = buildEmail(isAdmin ? 'cancelled-admin' : 'cancelled-client', apt, { note });
 
   const clientSms = isAdmin
-    ? `Edit Studio: We've had to cancel your ${apt.service} on ${formatDate(apt.date)}.${note ? ` ${note}` : ''} Sorry for the inconvenience — call us at 778 535 3348 or rebook at editstudio.space`
+    ? `Edit Studio: We've had to cancel your ${apt.service} on ${formatDate(apt.date)}.${note ? ` ${note}` : ''} Sorry for the inconvenience - call us at 778 535 3348 or rebook at editstudio.space`
     : `Edit Studio: Your ${apt.service} on ${formatDate(apt.date)} has been cancelled. Book again at editstudio.space`;
 
   await Promise.all([
@@ -536,7 +570,7 @@ export async function sendNoShowNotification(
   if (sms) {
     promises.push(sendSms(
       apt.clientPhone,
-      `Edit Studio: We missed you for your ${apt.service} today at ${formatTime(apt.startTime)}. Hope all is well — rebook anytime at editstudio.space`,
+      `Edit Studio: We missed you for your ${apt.service} today at ${formatTime(apt.startTime)}. Hope all is well - rebook anytime at editstudio.space`,
     ));
   }
 
@@ -595,7 +629,7 @@ export async function sendReminderNotification(apt: Appointment): Promise<void> 
   const email = buildEmail('reminder', apt);
 
   const clientSms =
-    `Edit Studio: Reminder — ${apt.service} is tomorrow at ${formatTime(apt.startTime)}.\nManage: ${url}`;
+    `Edit Studio: Reminder - ${apt.service} is tomorrow at ${formatTime(apt.startTime)}.\nManage: ${url}`;
 
   await Promise.all([
     sendEmail(apt.clientEmail, email.subject, email.html),
