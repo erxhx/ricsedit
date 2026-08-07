@@ -43,7 +43,20 @@ const OWNER_EMAIL = process.env.OWNER_EMAIL ?? '';
 const OWNER_PHONE = process.env.OWNER_PHONE ?? '';
 
 function siteUrl(): string {
-  return (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.editstudio.space').replace(/\/$/, '');
+  const raw = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.editstudio.space')
+    .trim()
+    .replace(/\/+$/, '');
+  // The scheme is added rather than assumed. NEXT_PUBLIC_SITE_URL is typed into
+  // a Vercel form by a human, and "ricsedit.vercel.app" is the natural thing to
+  // type — it was in fact what production held.
+  //
+  // Without a scheme the failures are quiet and unequal. In SMS the text still
+  // reads correctly and phones may or may not linkify it. In EMAIL the same
+  // string becomes href="ricsedit.vercel.app/..." — a relative path, which the
+  // mail client resolves against its own origin. Every "Manage appointment"
+  // button in every confirmation, reminder and reschedule goes nowhere, and the
+  // email itself looks perfectly fine.
+  return /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
 }
 
 // ── Formatters ────────────────────────────────────────────────────────────────
