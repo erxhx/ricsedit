@@ -354,6 +354,26 @@ in dev/simulator. Last reviewed 2026-07-31.
 - [ ] **Square is in sandbox.** Admin → Settings shows "Square connected
       (sandbox)". Swap to production credentials and re-run an end-to-end
       payment before any real money moves.
+
+      This is also what makes the **published cancellation policy enforceable**.
+      The customer site now states, on Sunless, Waxing and Lashes, that a card on
+      file is charged 50% for a cancellation inside 12 hours and 100% for a
+      no-show. In sandbox no card is ever charged, so that is currently a promise
+      the system cannot keep.
+- [ ] **Twilio is on a trial account.** Trial accounts can only send to numbers
+      verified in the Twilio console, so **every client SMS fails** — and fails
+      *silently*. `sendSms` catches and logs (`lib/notifications.ts:513`) so a
+      failed text never surfaces in the booking flow, in the admin, or to the
+      client. That swallow is deliberate — a booking should not fail because a
+      text did — but it means the only evidence is the Twilio Messaging log.
+
+      Upgrade before launch. The GST field in the upgrade form is optional, so
+      this does **not** need to wait on the open support ticket about the invalid
+      GST format.
+
+      Verify afterwards by booking a test appointment against a phone that is
+      *not* on the verified list, then checking Monitor → Logs → Messaging for a
+      `delivered` status. A booking that succeeds proves nothing here.
 - [x] **Test records purged from the client list.** Done 2026-08-02. Four
       appointments deleted by explicit id after individual review; 1240 → 1236,
       verified. Two were `@probe.test` (a reserved domain, so provably nobody),
