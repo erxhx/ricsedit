@@ -507,9 +507,6 @@ function Hero({ data, animComp, progress, speed, service }) {
     <div className="panel">
       <Anim progress={progress} speed={speed} />
       <div className="hero" data-service={service} style={{ padding: "0px 56px 110px 80px" }}>
-        {service === 'home' &&
-        <p className="hero-eyebrow">Barber · Sunless · Wax · Lash — Oak Bay, Victoria</p>
-        }
         {data.h1 && <h1 style={{ fontFamily: "sans-serif", margin: "0px" }}>{data.h1}</h1>}
         {service === 'home' && <HomeCollage />}
         {data.sub && <p className="sub" style={{ margin: "22px 0px 14px 5px" }}>{data.sub}</p>}

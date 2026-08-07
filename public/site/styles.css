@@ -1055,12 +1055,6 @@ body { min-height: 100svh; }
 @keyframes aura-drift-d { from { transform: translate(0,0) scale(1.05); } to { transform: translate(-14vmax,-16vmax) scale(1.2); } }
 @media (prefers-reduced-motion: reduce) { .aura-blob { animation: none; } }
 
-.hero-eyebrow {
-  font-family: var(--mono); font-size: 11px; letter-spacing: 0.22em;
-  text-transform: uppercase; color: var(--ink-soft);
-  margin: 0 0 18px 6px;
-}
-
 /* Home headline shares the stage with the imagery */
 .hero[data-service="home"] h1 {
   font-size: clamp(46px, min(9vw, 42vh - 220px), 128px);
@@ -1163,7 +1157,6 @@ body { min-height: 100svh; }
    competed with the panel swipe in the same band of screen. A grid shows all
    four services at once with no hidden gesture and nothing to clip. */
 @media (max-width: 759px) {
-  .hero-eyebrow { font-size: 9px; letter-spacing: 0.18em; margin-bottom: 12px; }
   .aura-collage {
     position: static; transform: none;
     width: auto; max-width: none; aspect-ratio: auto;
