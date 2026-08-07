@@ -360,20 +360,28 @@ in dev/simulator. Last reviewed 2026-07-31.
       file is charged 50% for a cancellation inside 12 hours and 100% for a
       no-show. In sandbox no card is ever charged, so that is currently a promise
       the system cannot keep.
-- [ ] **Twilio is on a trial account.** Trial accounts can only send to numbers
-      verified in the Twilio console, so **every client SMS fails** — and fails
-      *silently*. `sendSms` catches and logs (`lib/notifications.ts:513`) so a
-      failed text never surfaces in the booking flow, in the admin, or to the
-      client. That swallow is deliberate — a booking should not fail because a
-      text did — but it means the only evidence is the Twilio Messaging log.
+- [x] **Twilio upgraded off trial.** Done 2026-08-07. On trial, Twilio only
+      delivers to numbers verified in the console, so **every client SMS would
+      have failed — silently**. `sendSms` catches and logs
+      (`lib/notifications.ts:513`), so a failed text never surfaces in the
+      booking flow, in the admin, or to the client. That swallow is deliberate —
+      a booking should not fail because a text did — but it means the Twilio
+      Messaging log is the *only* place a delivery failure is visible. Worth
+      remembering any time SMS "isn't working": the app will look healthy.
 
-      Upgrade before launch. The GST field in the upgrade form is optional, so
-      this does **not** need to wait on the open support ticket about the invalid
-      GST format.
-
-      Verify afterwards by booking a test appointment against a phone that is
-      *not* on the verified list, then checking Monitor → Logs → Messaging for a
+      Still to verify: book a test appointment against a phone that was never on
+      the trial verified list, then check Monitor → Logs → Messaging for a
       `delivered` status. A booking that succeeds proves nothing here.
+
+- [ ] **Add the GST/HST number to Twilio billing.** Outstanding. Without a
+      registration number on file Twilio charges GST/HST on every invoice, and
+      adding it later is **not** retroactive — tax already billed stays billed.
+      Console → Billing → Manage Billing → tax/VAT details.
+
+      The upgrade form rejected the number as an invalid format and a support
+      ticket is open. Not launch-blocking (it only affects what Twilio bills, not
+      whether messages send), but the cost of leaving it is a slow leak rather
+      than a one-off, so it is worth closing early.
 - [x] **Test records purged from the client list.** Done 2026-08-02. Four
       appointments deleted by explicit id after individual review; 1240 → 1236,
       verified. Two were `@probe.test` (a reserved domain, so provably nobody),
