@@ -10,6 +10,10 @@
  *   TWILIO_ACCOUNT_SID      — from console.twilio.com
  *   TWILIO_AUTH_TOKEN       — from console.twilio.com
  *   TWILIO_PHONE_NUMBER     — your Twilio number, e.g. +12505551234
+ *   TWILIO_MESSAGING_SERVICE_SID — optional, starts MG. Preferred over the bare
+ *                             number: sending through the Messaging Service is
+ *                             what applies its sender pool, failover and any
+ *                             A2P registration. Falls back to the number.
  *   OWNER_EMAIL             — studio owner's email for new-booking alerts
  *   OWNER_PHONE             — studio owner's phone for new-booking SMS alerts (optional)
  *   NEXT_PUBLIC_SITE_URL    — base URL of this Next.js app, e.g. https://book.editstudio.space
@@ -34,6 +38,7 @@ const twilioClient =
 const FROM_EMAIL =
   process.env.RESEND_FROM_EMAIL ?? 'Edit Studio <bookings@editstudio.space>';
 const TWILIO_FROM = process.env.TWILIO_PHONE_NUMBER ?? '';
+const TWILIO_MSG_SERVICE = process.env.TWILIO_MESSAGING_SERVICE_SID ?? '';
 const OWNER_EMAIL = process.env.OWNER_EMAIL ?? '';
 const OWNER_PHONE = process.env.OWNER_PHONE ?? '';
 
@@ -439,11 +444,27 @@ async function sendEmail(to: string, subject: string, html: string): Promise<voi
 }
 
 async function sendSms(to: string, body: string): Promise<void> {
-  if (!twilioClient || !TWILIO_FROM) return;
+  // Either sender will do — the Messaging Service is preferred, but a bare
+  // number still sends. Requiring both would turn a config upgrade into an
+  // outage.
+  if (!twilioClient || (!TWILIO_MSG_SERVICE && !TWILIO_FROM)) return;
   const e164 = toE164(to);
   if (!e164) return;
   try {
-    await twilioClient.messages.create({ from: TWILIO_FROM, to: e164, body });
+    // Sending *through* the Messaging Service is what applies its sender pool,
+    // failover and A2P registration; a bare `from` bypasses all of that even
+    // when the number belongs to the service. Falls back to the number so an
+    // unset SID degrades to the old behaviour rather than dropping the message.
+    //
+    // Both option objects are written out in full rather than spread in from a
+    // variable. Spreading widens the type and TypeScript stops excess-property
+    // checking, so `messagingServiceSidTYPO` compiled clean — the mistake this
+    // shape is most likely to make is exactly the one that would slip through.
+    await twilioClient.messages.create(
+      TWILIO_MSG_SERVICE
+        ? { messagingServiceSid: TWILIO_MSG_SERVICE, to: e164, body }
+        : { from: TWILIO_FROM, to: e164, body },
+    );
   } catch (err) {
     console.error('[notifications] SMS send error', err);
   }
